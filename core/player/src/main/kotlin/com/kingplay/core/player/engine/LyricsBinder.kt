@@ -70,18 +70,20 @@ class LyricsBinder @Inject constructor(
 }
 
 @OptIn(UnstableApi::class)
-internal fun Metadata.toLyricTags(): List<Pair<String, String>> = buildList {
-    for (index in 0 until length()) {
-        when (val entry = get(index)) {
+internal fun Metadata.toLyricTags(): List<Pair<String, String>> {
+    val out = ArrayList<Pair<String, String>>()
+    for (entry in entryList()) {
+        when (entry) {
             is BinaryFrame -> when (entry.id) {
-                "USLT" -> parseUslt(entry.data)?.let { add("USLT" to it) }
-                "SYLT" -> syltToLrc(entry.data)?.let { add("SYLT" to it) }
+                "USLT" -> parseUslt(entry.data)?.let { out.add("USLT" to it) }
+                "SYLT" -> syltToLrc(entry.data)?.let { out.add("SYLT" to it) }
             }
-            is VorbisComment -> add(entry.key to entry.value)
+            is VorbisComment -> out.add(entry.key to entry.value)
             is TextInformationFrame -> {
                 val value = entry.values.firstOrNull() ?: continue
-                add((entry.description?.takeIf { it.isNotBlank() } ?: entry.id) to value)
+                out.add((entry.description?.takeIf { it.isNotBlank() } ?: entry.id) to value)
             }
         }
     }
+    return out
 }

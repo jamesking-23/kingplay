@@ -179,18 +179,31 @@ class AudioEngineBinder @Inject constructor(
     }
 }
 
+/**
+ * The entries of this [Metadata] as a list. Written outside any `buildList` block on purpose: inside one, `get(index)`
+ * resolves to the list being built and crashes with IndexOutOfBounds.
+ */
+@OptIn(UnstableApi::class)
+internal fun Metadata.entryList(): List<Metadata.Entry> {
+    val out = ArrayList<Metadata.Entry>(length())
+    for (index in 0 until length()) out.add(get(index))
+    return out
+}
+
 /** ID3, Vorbis and MP4 tags, flattened to name/value pairs. Only the kinds that can carry ReplayGain are read. */
 @OptIn(UnstableApi::class)
-internal fun Metadata.toNamedValues(): List<Pair<String, String>> = buildList {
-    for (index in 0 until length()) {
-        when (val entry = get(index)) {
+internal fun Metadata.toNamedValues(): List<Pair<String, String>> {
+    val out = ArrayList<Pair<String, String>>()
+    for (entry in entryList()) {
+        when (entry) {
             is TextInformationFrame -> {
                 val name = entry.description
                 val value = entry.values.firstOrNull()
-                if (name != null && value != null) add(name to value)
+                if (name != null && value != null) out.add(name to value)
             }
-            is VorbisComment -> add(entry.key to entry.value)
-            is InternalFrame -> add(entry.description to entry.text)
+            is VorbisComment -> out.add(entry.key to entry.value)
+            is InternalFrame -> out.add(entry.description to entry.text)
         }
     }
+    return out
 }
