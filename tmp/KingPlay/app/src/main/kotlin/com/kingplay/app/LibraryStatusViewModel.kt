@@ -2,9 +2,12 @@ package com.kingplay.app
 
 import androidx.lifecycle.viewModelScope
 import com.kingplay.core.model.ScanState
+import com.kingplay.core.model.MediaRef
 import com.kingplay.core.model.Track
 import com.kingplay.core.model.repository.LibraryRepository
 import com.kingplay.core.model.repository.LibraryScanner
+import com.kingplay.core.model.repository.PlaybackController
+import com.kingplay.core.model.repository.PlaybackState
 import com.kingplay.core.model.repository.VideoRepository
 import com.kingplay.core.ui.MviViewModel
 import com.kingplay.core.ui.UiEffect
@@ -23,6 +26,7 @@ data class LibraryStatusState(
     val artists: Int = 0,
     val videos: Int = 0,
     val recent: List<Track> = emptyList(),
+    val playback: PlaybackState = PlaybackState(),
 ) : UiState
 
 sealed interface LibraryStatusEvent : UiEvent {
@@ -32,6 +36,15 @@ sealed interface LibraryStatusEvent : UiEvent {
     data object Rescan : LibraryStatusEvent
 
     data object FullRescan : LibraryStatusEvent
+
+    /** Play the recent-tracks list starting at [index]. */
+    data class PlayRecent(val index: Int) : LibraryStatusEvent
+
+    data object TogglePlayPause : LibraryStatusEvent
+
+    data object Next : LibraryStatusEvent
+
+    data object Previous : LibraryStatusEvent
 }
 
 data object LibraryStatusEffect : UiEffect
@@ -40,6 +53,7 @@ data object LibraryStatusEffect : UiEffect
 @HiltViewModel
 class LibraryStatusViewModel @Inject constructor(
     private val scanner: LibraryScanner,
+    private val playback: PlaybackController,
     library: LibraryRepository,
     videos: VideoRepository,
 ) : MviViewModel<LibraryStatusState, LibraryStatusEvent, LibraryStatusEffect>(LibraryStatusState()) {
@@ -53,10 +67,13 @@ class LibraryStatusViewModel @Inject constructor(
         ) { songs, albums, artists, videoCount -> listOf(songs, albums, artists, videoCount) }
 
         viewModelScope.launch {
-            combine(scanner.state, counts, library.recentlyAdded(RECENT_LIMIT)) { scan, c, recent ->
-                LibraryStatusState(scan, c[0], c[1], c[2], c[3], recent)
+            val recent = library.recentlyAdded(RECENT_LIMIT)
+            combine(scanner.state, counts, recent, playback.state) { scan, c, tracks, now ->
+                LibraryStatusState(scan, c[0], c[1], c[2], c[3], tracks, now)
             }.collect { next -> setState { next } }
         }
+        // Binding to the service restores the saved queue (paused), so Now Playing survives app restarts.
+        playback.connect()
     }
 
     override fun onEvent(event: LibraryStatusEvent) {
@@ -64,6 +81,11 @@ class LibraryStatusViewModel @Inject constructor(
             LibraryStatusEvent.PermissionResult -> scanner.start()
             LibraryStatusEvent.Rescan -> scanner.requestScan()
             LibraryStatusEvent.FullRescan -> scanner.requestScan(full = true)
+            is LibraryStatusEvent.PlayRecent ->
+                playback.playMedia(state.value.recent.map { MediaRef.Audio(it.id) }, event.index)
+            LibraryStatusEvent.TogglePlayPause -> playback.togglePlayPause()
+            LibraryStatusEvent.Next -> playback.skipToNext()
+            LibraryStatusEvent.Previous -> playback.skipToPrevious()
         }
     }
 

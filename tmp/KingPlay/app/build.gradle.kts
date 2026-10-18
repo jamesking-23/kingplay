@@ -37,6 +37,7 @@ dependencies {
     implementation(projects.core.ui)
     implementation(projects.core.database)
     implementation(projects.data.library)
+    implementation(projects.core.player)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.work.runtime.ktx)

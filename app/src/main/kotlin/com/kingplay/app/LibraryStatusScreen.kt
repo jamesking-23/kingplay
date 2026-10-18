@@ -10,8 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,6 +32,7 @@ import com.kingplay.core.designsystem.theme.KpTheme
 import com.kingplay.core.model.ScanFailure
 import com.kingplay.core.model.ScanPhase
 import com.kingplay.core.model.ScanState
+import com.kingplay.core.model.repository.PlaybackState
 import com.kingplay.data.library.platform.MediaPermissions
 
 /** Temporary home for step 2b: permission, scan progress, counts and the newest tracks. Replaced in step 2d. */
@@ -70,7 +72,7 @@ fun LibraryStatusScreen(viewModel: LibraryStatusViewModel = hiltViewModel()) {
                 if (!hasPermission) {
                     KpButton(
                         text = stringResource(R.string.library_grant),
-                        onClick = { launcher.launch(MediaPermissions.required()) },
+                        onClick = { launcher.launch(MediaPermissions.required() + notificationPermission()) },
                     )
                 } else {
                     KpButton(
@@ -85,13 +87,19 @@ fun LibraryStatusScreen(viewModel: LibraryStatusViewModel = hiltViewModel()) {
                     )
                 }
             }
+            NowPlayingBar(
+                state = state.playback,
+                onToggle = { viewModel.onEvent(LibraryStatusEvent.TogglePlayPause) },
+                onNext = { viewModel.onEvent(LibraryStatusEvent.Next) },
+                onPrevious = { viewModel.onEvent(LibraryStatusEvent.Previous) },
+            )
             Text(stringResource(R.string.library_recent), style = MaterialTheme.typography.titleMedium)
             LazyColumn(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(spacing.sm),
             ) {
-                items(state.recent, key = { it.id }) { track ->
-                    Column {
+                itemsIndexed(state.recent, key = { _, track -> track.id }) { index, track ->
+                    Column(modifier = Modifier.clickable { viewModel.onEvent(LibraryStatusEvent.PlayRecent(index)) }) {
                         Text(track.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
                         Text(
                             "${track.artistName} · ${track.format}" +
@@ -119,4 +127,52 @@ private fun scanText(scan: ScanState): String = when (scan) {
         ScanPhase.INDEXING_VIDEO -> stringResource(R.string.library_scanning_video, scan.done, scan.total)
         ScanPhase.READING_DETAILS -> stringResource(R.string.library_reading_details, scan.done, scan.total)
     }
+}
+
+/** Android 13+ needs this runtime permission for the media notification to appear. */
+private fun notificationPermission(): Array<String> =
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        arrayOf(android.Manifest.permission.POST_NOTIFICATIONS)
+    } else {
+        emptyArray()
+    }
+
+@Composable
+private fun NowPlayingBar(
+    state: PlaybackState,
+    onToggle: () -> Unit,
+    onNext: () -> Unit,
+    onPrevious: () -> Unit,
+) {
+    if (!state.hasMedia) return
+    Column(verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.xs)) {
+        Text(state.title.orEmpty(), style = MaterialTheme.typography.titleMedium, maxLines = 1)
+        Text(
+            state.artist.orEmpty(),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
+        Text(
+            "${formatTime(state.positionMs)} / ${formatTime(state.durationMs)}",
+            style = MaterialTheme.typography.labelMedium,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
+            KpButton(
+                text = stringResource(R.string.player_previous),
+                onClick = onPrevious,
+                style = KpButtonStyle.Outlined,
+            )
+            KpButton(
+                text = stringResource(if (state.isPlaying) R.string.player_pause else R.string.player_play),
+                onClick = onToggle,
+            )
+            KpButton(text = stringResource(R.string.player_next), onClick = onNext, style = KpButtonStyle.Outlined)
+        }
+    }
+}
+
+private fun formatTime(ms: Long): String {
+    val totalSeconds = (ms / 1000).coerceAtLeast(0)
+    return "%d:%02d".format(totalSeconds / 60, totalSeconds % 60)
 }

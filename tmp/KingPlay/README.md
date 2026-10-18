@@ -35,6 +35,20 @@ Phase 1 (MVP) is built step by step; this drop is **step 2b: database, library s
   `core/database/schemas/`. Never use destructive fallback: playlists live in this database.
 - Temporary `LibraryStatusScreen` in `:app` shows permission, scan progress, counts and newest tracks. Replaced in step 2d.
 
+## Playback (step 2c)
+
+- `:core:player` owns one ExoPlayer inside a Media3 `MediaLibraryService` (`PlaybackService`), so the notification,
+  lock-screen controls and headset buttons work. The player is service-scoped, never a singleton.
+- The UI talks to it through `PlaybackController` (in `:core:model`). It sends id-only items (`a:<id>`, `v:<id>`);
+  the service resolves them to URIs and metadata from Room.
+- The queue, position, shuffle and repeat are saved to Room and restored (paused) on the next start. Files that no
+  longer exist are dropped on restore.
+- A play counts after half the track or 30 s, whichever comes first, with a 5 s floor.
+- On Android 13+ the notification needs the POST_NOTIFICATIONS permission; the dev screen asks for it.
+- Dev screen: tap a recent track to play it, then use Previous / Play-Pause / Next in the bar.
+
+Not built yet: crossfade and EQ (2e), artwork (2d), Android Auto browse tree (2h).
+
 ## Known limits (by design, tracked for later steps)
 - Tag editing and embedded ReplayGain reading land with step 2e (columns already exist, currently null).
 - External subtitle discovery is part of the video step (2g); `VideoItem.subtitleTracks` is empty for now.

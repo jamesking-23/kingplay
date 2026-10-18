@@ -34,4 +34,8 @@
     <string name="library_rescan">Rescan</string>
     <string name="library_full_rescan">Full rescan</string>
     <string name="library_recent">Recently added</string>
+    <string name="player_previous">Previous</string>
+    <string name="player_next">Next</string>
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
 </resources>

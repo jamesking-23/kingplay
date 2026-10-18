@@ -11,6 +11,7 @@ activityCompose = "1.9.3"
 navigationCompose = "2.8.5"
 coroutines = "1.9.0"
 media3 = "1.5.0"
+guava = "33.3.1-android"
 room = "2.6.1"
 datastore = "1.1.1"
 coil = "2.7.0"
@@ -75,6 +76,7 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
 media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3" }
 media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
 media3-cast = { group = "androidx.media3", name = "media3-cast", version.ref = "media3" }
 
 # Room (used from step 2b)
