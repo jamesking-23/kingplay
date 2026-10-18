@@ -75,7 +75,11 @@ fun NowPlayingScreen(
 
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(modifier = Modifier.statusBarsPadding().navigationBarsPadding()) {
-            TopBar(onClose = navigator::back, onQueue = { showQueue = true })
+            TopBar(
+                onClose = navigator::back,
+                onEqualizer = navigator::toEqualizer,
+                onQueue = { showQueue = true },
+            )
             if (!state.playback.hasMedia) {
                 KpEmptyState(
                     icon = KpIcons.MusicNote,
@@ -97,7 +101,7 @@ fun NowPlayingScreen(
 }
 
 @Composable
-private fun TopBar(onClose: () -> Unit, onQueue: () -> Unit) {
+private fun TopBar(onClose: () -> Unit, onEqualizer: () -> Unit, onQueue: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = KpTheme.spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
@@ -113,11 +117,18 @@ private fun TopBar(onClose: () -> Unit, onQueue: () -> Unit) {
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.semantics { heading() },
         )
-        KpIconButton(
-            icon = KpIcons.QueueMusic,
-            contentDescription = stringResource(R.string.np_open_queue),
-            onClick = onQueue,
-        )
+        Row {
+            KpIconButton(
+                icon = KpIcons.Equalizer,
+                contentDescription = stringResource(R.string.np_open_equalizer),
+                onClick = onEqualizer,
+            )
+            KpIconButton(
+                icon = KpIcons.QueueMusic,
+                contentDescription = stringResource(R.string.np_open_queue),
+                onClick = onQueue,
+            )
+        }
     }
 }
 

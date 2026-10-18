@@ -18,6 +18,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.kingplay.core.designsystem.theme.Motion
+import com.kingplay.feature.equalizer.EqualizerScreen
 import com.kingplay.feature.library.detail.AlbumDetailRoute
 import com.kingplay.feature.library.detail.ArtistDetailRoute
 import com.kingplay.feature.library.detail.DetailArgs
@@ -81,6 +82,7 @@ fun KingPlayRoot(settings: @Composable () -> Unit, modifier: Modifier = Modifier
                 route = Routes.FOLDER,
                 arguments = listOf(navArgument(DetailArgs.FOLDER_PATH) { type = NavType.StringType }),
             ) { FolderDetailRoute(navigator) }
+            composable(Routes.EQUALIZER) { EqualizerScreen(navigator) }
             composable(Routes.SETTINGS) { settings() }
         }
     }

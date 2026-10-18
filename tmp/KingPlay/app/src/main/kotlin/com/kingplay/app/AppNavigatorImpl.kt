@@ -18,10 +18,10 @@ class AppNavigatorImpl(private val navController: NavHostController) : AppNaviga
 
     override fun toFolder(path: String) = go(Routes.folder(path))
 
-    // The video player (2g) and equalizer (2e) screens do not exist yet; their entry points do nothing until then.
+    // The video player screen (2g) does not exist yet; its entry point does nothing until then.
     override fun toVideo(videoId: Long) = Unit
 
-    override fun toEqualizer() = Unit
+    override fun toEqualizer() = go(Routes.EQUALIZER)
 
     override fun toSettings() = go(Routes.SETTINGS)
 

@@ -8,6 +8,7 @@ object Routes {
     const val LIBRARY = "library"
     const val NOW_PLAYING = "nowplaying"
     const val SETTINGS = "settings"
+    const val EQUALIZER = "equalizer"
 
     const val ALBUM = "album/{${DetailArgs.ALBUM_ID}}"
     const val ARTIST = "artist/{${DetailArgs.ARTIST_ID}}"

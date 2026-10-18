@@ -38,6 +38,7 @@ dependencies {
     implementation(projects.core.database)
     implementation(projects.data.library)
     implementation(projects.core.player)
+    implementation(projects.feature.equalizer)
     implementation(projects.feature.library)
     implementation(projects.feature.nowplaying)
     implementation(libs.androidx.core.ktx)

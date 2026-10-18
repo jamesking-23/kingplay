@@ -2,6 +2,7 @@
 <resources>
     <string name="np_title">Now playing</string>
     <string name="np_close">Close now playing</string>
+    <string name="np_open_equalizer">Open equalizer</string>
     <string name="np_queue">Queue</string>
     <string name="np_open_queue">Show queue</string>
     <string name="np_play">Play</string>

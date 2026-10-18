@@ -17,6 +17,7 @@ import com.kingplay.core.model.MediaRef
 import com.kingplay.core.model.repository.LibraryRepository
 import com.kingplay.core.model.repository.QueueRepository
 import com.kingplay.core.model.repository.VideoRepository
+import com.kingplay.core.player.engine.AudioEngineBinder
 import com.kingplay.core.player.logic.MediaIds
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -42,6 +43,8 @@ class PlaybackService : MediaLibraryService() {
 
     @Inject lateinit var queueRepository: QueueRepository
 
+    @Inject lateinit var audioEngine: AudioEngineBinder
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var session: MediaLibrarySession? = null
     private var persistence: QueuePersistence? = null
@@ -49,6 +52,7 @@ class PlaybackService : MediaLibraryService() {
     override fun onCreate() {
         super.onCreate()
         session = MediaLibrarySession.Builder(this, player, LibraryCallback()).setId(SESSION_ID).build()
+        audioEngine.start(scope)
         val persistence = QueuePersistence(player, queueRepository, library, videos, scope)
         this.persistence = persistence
         scope.launch {
@@ -65,6 +69,7 @@ class PlaybackService : MediaLibraryService() {
     }
 
     override fun onDestroy() {
+        audioEngine.stop()
         persistence?.stop()
         session?.release()
         session = null

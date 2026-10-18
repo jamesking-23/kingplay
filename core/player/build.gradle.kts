@@ -12,6 +12,7 @@ dependencies {
     implementation(projects.core.common)
     implementation(libs.androidx.core.ktx)
     implementation(libs.media3.exoplayer)
+    implementation(libs.media3.extractor)
     api(libs.media3.session)
     implementation(libs.guava)
 

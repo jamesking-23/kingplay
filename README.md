@@ -67,15 +67,29 @@ Not built yet: crossfade and EQ (2e), Android Auto browse tree (2h).
   seek bar exposes "1:23 of 3:45", queue reordering uses menu items (Move up / Move down) instead of drag only.
 - Queue items are resolved by id in the service, so Now Playing shows titles by looking them up, not from the player.
 
+## Audio engine (step 2e)
+
+- `core/player/.../dsp` is pure Kotlin (unit tested): 10-band peaking EQ (31 Hz to 16 kHz), 100 Hz bass shelf, preamp,
+  loudness, ReplayGain, automatic headroom and a soft limiter.
+- `engine/KingPlayAudioProcessor` runs that chain inside ExoPlayer's audio sink (16-bit and float PCM; other formats play
+  untouched). `AudioEngineBinder` feeds it the settings, reads ReplayGain from the playing song's tags, applies tempo and
+  pitch, and runs the fade.
+- `DefaultAudioSettingsRepository` keeps the live settings. When the output (speaker, wired, Bluetooth, USB) has a saved
+  profile it is applied automatically; "Remember for this output" in the equalizer saves one.
+- Equalizer screen: Now Playing top bar, equalizer icon.
+
 ## Known limits (by design, tracked for later steps)
-- Tag editing and embedded ReplayGain reading land with step 2e (columns already exist, currently null).
+- Tag editing is not built yet. ReplayGain is read from the file while it plays; the library columns for it stay null.
 - External subtitle discovery is part of the video step (2g); `VideoItem.subtitleTracks` is empty for now.
 - Playlists refer to MediaStore ids. If Android rebuilds its media index, ids change; the backup step (2h) will relink by path.
 
-- No search screen yet (`SearchRepository` exists); no video library or player until 2g; the equalizer entry point is a no-op until 2e.
+- No search screen yet (`SearchRepository` exists); no video library or player until 2g.
 - Playlist rename and drag-to-reorder are not built yet; the queue can be reordered with Move up / Move down.
 - Settings is a placeholder (the design gallery with theme controls) until step 2h; theme choices are not persisted yet.
 - Genres and folders list songs only; an album grid view and per-tab sort options (other than Songs) come with polish in 2i.
+- Fade is a fade out and in per song, not an overlapping crossfade (that needs a second player).
+- The output device is guessed (USB, wired, Bluetooth, speaker) because Android before 13 does not say which is active.
+- The EQ uses 16-bit or float output; bit-perfect / USB exclusive output is not part of this step.
 
 ## Rules
 - Feature modules never depend on each other; they use `AppNavigator`.

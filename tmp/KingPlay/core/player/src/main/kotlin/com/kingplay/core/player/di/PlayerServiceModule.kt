@@ -5,6 +5,8 @@ import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import com.kingplay.core.player.engine.KingPlayAudioProcessor
+import com.kingplay.core.player.engine.KingPlayRenderersFactory
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,12 +23,12 @@ import dagger.hilt.android.scopes.ServiceScoped
 object PlayerServiceModule {
     @Provides
     @ServiceScoped
-    fun player(@ApplicationContext context: Context): Player {
+    fun player(@ApplicationContext context: Context, processor: KingPlayAudioProcessor): Player {
         val music = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
             .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
             .build()
-        return ExoPlayer.Builder(context)
+        return ExoPlayer.Builder(context, KingPlayRenderersFactory(context, processor))
             .setAudioAttributes(music, /* handleAudioFocus = */ true)
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_LOCAL)
