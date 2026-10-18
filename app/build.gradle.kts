@@ -61,5 +61,6 @@ dependencies {
     androidTestImplementation(libs.media3.exoplayer)
     androidTestImplementation(libs.room.runtime)
     androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation("androidx.test:rules:1.6.1")
     androidTestImplementation(libs.kotlinx.coroutines.android)
 }
