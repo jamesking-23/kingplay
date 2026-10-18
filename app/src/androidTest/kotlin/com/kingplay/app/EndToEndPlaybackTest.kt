@@ -42,7 +42,7 @@ class EndToEndPlaybackTest {
 
     private fun wavBytes(): ByteArray {
         val rate = 22050
-        val n = rate * 3
+        val n = rate * 8
         val b = ByteBuffer.allocate(44 + n * 2).order(ByteOrder.LITTLE_ENDIAN)
         b.put("RIFF".toByteArray()).putInt(36 + n * 2).put("WAVE".toByteArray()).put("fmt ".toByteArray())
         b.putInt(16).putShort(1).putShort(1).putInt(rate).putInt(rate * 2).putShort(2).putShort(16)
