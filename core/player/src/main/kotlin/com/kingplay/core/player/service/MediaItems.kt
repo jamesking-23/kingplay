@@ -17,6 +17,8 @@ internal fun Track.toMediaItem(): MediaItem = MediaItem.Builder()
     .setMediaMetadata(
         MediaMetadata.Builder()
             .setTitle(title)
+            // The cover is inside the file; ArtworkBitmapLoader reads it from the song's own address.
+            .setArtworkUri(uri.toUri())
             .setArtist(artistName)
             .setAlbumTitle(albumTitle)
             .setAlbumArtist(albumArtist)
@@ -36,6 +38,7 @@ internal fun VideoItem.toMediaItem(subtitle: ExternalSubtitle? = null): MediaIte
     .setMediaMetadata(
         MediaMetadata.Builder()
             .setTitle(title)
+            .setArtworkUri(uri.toUri())
             .setIsBrowsable(false)
             .setIsPlayable(true)
             .setMediaType(MediaMetadata.MEDIA_TYPE_VIDEO)

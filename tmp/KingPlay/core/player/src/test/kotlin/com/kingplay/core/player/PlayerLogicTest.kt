@@ -3,14 +3,20 @@ package com.kingplay.core.player
 import com.kingplay.core.model.MediaRef
 import com.kingplay.core.model.QueueState
 import com.kingplay.core.model.RepeatMode
+import com.kingplay.core.player.logic.BrowseIds
+import com.kingplay.core.player.logic.BrowseNode
 import com.kingplay.core.player.logic.MediaIds
 import com.kingplay.core.player.logic.PlayCountTracker
 import com.kingplay.core.player.logic.defaultPlayThresholdMs
+import com.kingplay.core.player.logic.expandToList
+import com.kingplay.core.player.logic.pageOf
 import com.kingplay.core.player.logic.playNextInsertIndex
 import com.kingplay.core.player.logic.pruneQueue
 import com.kingplay.core.player.logic.snapshotOf
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MediaIdsTest {
@@ -163,5 +169,59 @@ class PlayCountTrackerTest {
         assertNull(t.addPlayed(-5, 240_000))
         t.onItemStarted(null)
         assertNull(t.addPlayed(60_000, 240_000))
+    }
+}
+
+class BrowseIdsTest {
+    @Test
+    fun everyNodeSurvivesAnIdRoundTrip() {
+        val nodes = BrowseIds.rootChildren + BrowseIds.smartLists + listOf(
+            BrowseNode.Root,
+            BrowseNode.Playlist(7),
+            BrowseNode.Album(123_456_789_012L),
+            BrowseNode.Artist(0),
+        )
+        for (node in nodes) assertEquals(node, BrowseIds.parse(BrowseIds.of(node)))
+    }
+
+    @Test
+    fun playableAndGarbageIdsAreNotFolders() {
+        for (id in listOf(null, "", "a:5", "v:5", "browse:", "browse:album", "browse:album:x", "browse:nope:1", "x")) {
+            assertNull("accepted: $id", BrowseIds.parse(id))
+        }
+    }
+
+    @Test
+    fun theRootHasFourTabsAndEachIsReachable() {
+        assertEquals(4, BrowseIds.rootChildren.size)
+        assertTrue(BrowseIds.rootChildren.none { it == BrowseNode.Root })
+        assertTrue(BrowseIds.rootChildren.all { BrowseIds.parse(BrowseIds.of(it)) == it })
+    }
+
+    @Test
+    fun onlySongFoldersExpandToTheWholeList() {
+        assertTrue(BrowseIds.listsSongs(BrowseNode.Album(1)))
+        assertTrue(BrowseIds.listsSongs(BrowseNode.Recent))
+        assertTrue(BrowseIds.listsSongs(BrowseNode.Favorites))
+        assertFalse(BrowseIds.listsSongs(BrowseNode.Albums))
+        assertFalse(BrowseIds.listsSongs(BrowseNode.Playlists))
+    }
+
+    @Test
+    fun pagesSliceTheListAndStopAtTheEnd() {
+        val items = (1..10).toList()
+        assertEquals(listOf(1, 2, 3, 4), pageOf(items, 0, 4))
+        assertEquals(listOf(5, 6, 7, 8), pageOf(items, 1, 4))
+        assertEquals(listOf(9, 10), pageOf(items, 2, 4))
+        assertEquals(emptyList<Int>(), pageOf(items, 3, 4))
+        assertEquals(emptyList<Int>(), pageOf(items, -1, 4))
+        assertEquals(emptyList<Int>(), pageOf(items, 0, 0))
+        assertEquals(emptyList<Int>(), pageOf(items, Int.MAX_VALUE, Int.MAX_VALUE))
+    }
+
+    @Test
+    fun tappingASongQueuesTheListFromThatSong() {
+        assertEquals(listOf(10L, 20L, 30L) to 1, expandToList(listOf(10L, 20L, 30L), 20L))
+        assertNull(expandToList(listOf(10L, 20L), 99L))
     }
 }

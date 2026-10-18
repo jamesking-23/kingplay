@@ -53,7 +53,7 @@ Phase 1 (MVP) is built step by step; this drop is **step 2d: Library and Now Pla
 - On Android 13+ the notification needs the POST_NOTIFICATIONS permission; the permission screen asks for it together
   with media access.
 
-Not built yet: crossfade and EQ (2e), Android Auto browse tree (2h).
+Android Auto and the widget arrived in step 2i (below).
 
 ## Screens (step 2d)
 
@@ -115,6 +115,18 @@ Not built yet: crossfade and EQ (2e), Android Auto browse tree (2h).
 - Lyrics import: when a song has no lyrics, Now Playing offers "Import .lrc file". Imported lyrics are stored by
   artist and title and win over tags; "Remove imported lyrics" brings the tags back.
 - The database is now version 2 (new `imported_lyrics` table) with a real migration. Nothing is wiped.
+
+## Android Auto, resume, cover art, widget (step 2i)
+- **Android Auto / Assistant:** `PlaybackService` is a `MediaLibraryService`. Browse tree (`core/player/browse/BrowseTree`):
+  four root tabs (Recent, Playlists, Albums, Artists); Favorites, Most played and Recently added sit at the top of Playlists.
+  Lists are capped (100 songs, 200 folders) and paged. Voice "play X" is resolved through library search.
+- **Resume:** the media/play button restores the saved queue (`onPlaybackResumption`).
+- **Cover art:** lock screen and notification now show the cover read from the file (`ArtworkBitmapLoader`).
+- **Widget (`:feature:widget`):** 4x2 Glance widget with cover, title, artist, previous / play-pause / next.
+  Buttons send media keys to the service; the body opens the app. It is fed through the optional `NowPlayingPublisher`
+  binding, so `core:player` does not depend on it.
+- Limits: Auto browse lists show no cover art (the car cannot read our file URIs); music only; the widget shows audio, not video.
+  Not compiled or run on a device, Desktop Head Unit or launcher: the Media3 and Glance calls were checked only against stand-in declarations.
 
 ## Known limits (by design, tracked for later steps)
 - Tag editing is not built yet. ReplayGain is read from the file while it plays; the library columns for it stay null.

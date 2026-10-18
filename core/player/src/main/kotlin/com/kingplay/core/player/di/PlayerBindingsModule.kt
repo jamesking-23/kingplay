@@ -2,6 +2,7 @@ package com.kingplay.core.player.di
 
 import com.kingplay.core.model.repository.AudioSettingsRepository
 import com.kingplay.core.model.repository.LyricsRepository
+import com.kingplay.core.model.repository.NowPlayingPublisher
 import com.kingplay.core.model.repository.PlaybackController
 import com.kingplay.core.model.repository.SleepTimer
 import com.kingplay.core.model.repository.SpectrumSource
@@ -11,6 +12,7 @@ import com.kingplay.core.player.engine.DefaultSleepTimer
 import com.kingplay.core.player.engine.DefaultSpectrumSource
 import com.kingplay.core.player.engine.PlayingLyrics
 import dagger.Binds
+import dagger.BindsOptionalOf
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -32,4 +34,8 @@ abstract class PlayerBindingsModule {
 
     @Binds
     abstract fun spectrum(impl: DefaultSpectrumSource): SpectrumSource
+
+    /** The widget module supplies this when the app includes it; without one the playback service just skips it. */
+    @BindsOptionalOf
+    abstract fun nowPlayingPublisher(): NowPlayingPublisher
 }

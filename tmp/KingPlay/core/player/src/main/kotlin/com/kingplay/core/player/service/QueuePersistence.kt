@@ -36,28 +36,12 @@ internal class QueuePersistence(
 
     /** Loads the saved queue into the player, paused. Items whose files vanished are dropped. */
     suspend fun restore() {
-        val saved = queueRepository.load()
-        if (saved.items.isEmpty()) return
-        val audioIds = saved.items.filterIsInstance<MediaRef.Audio>().map { it.id }
-        val videoIds = saved.items.filterIsInstance<MediaRef.Video>().map { it.id }
-        val audio = library.getTracks(audioIds).associateBy { it.id }
-        val video = videos.getVideos(videoIds).associateBy { it.id }
-        val pruned = pruneQueue(saved) { ref ->
-            when (ref) {
-                is MediaRef.Audio -> ref.id in audio
-                is MediaRef.Video -> ref.id in video
-            }
-        }
-        val items = pruned.items.mapNotNull { ref ->
-            when (ref) {
-                is MediaRef.Audio -> audio[ref.id]?.toMediaItem()
-                is MediaRef.Video -> video[ref.id]?.toMediaItem()
-            }
-        }
-        if (items.isEmpty()) return
-        player.shuffleModeEnabled = pruned.shuffleEnabled
-        player.repeatMode = pruned.repeatMode.toPlayerMode()
-        player.setMediaItems(items, pruned.currentIndex.coerceAtLeast(0), pruned.positionMs)
+        // A play button pressed before this finished may already have restored the queue (see onPlaybackResumption).
+        if (player.mediaItemCount > 0) return
+        val loaded = loadSavedQueue(queueRepository, library, videos) ?: return
+        player.shuffleModeEnabled = loaded.shuffleEnabled
+        player.repeatMode = loaded.repeatMode.toPlayerMode()
+        player.setMediaItems(loaded.items, loaded.index, loaded.positionMs)
         player.prepare()
     }
 
@@ -141,6 +125,47 @@ internal class QueuePersistence(
         const val POSITION_SAVE_EVERY_TICKS = 5
         const val SAVE_DEBOUNCE_MS = 500L
     }
+}
+
+/** The saved queue turned into playable items, ready to hand to the player. */
+internal class LoadedQueue(
+    val items: List<MediaItem>,
+    val index: Int,
+    val positionMs: Long,
+    val shuffleEnabled: Boolean,
+    val repeatMode: RepeatMode,
+)
+
+/** Reads the saved queue and drops items whose files vanished. Null when there is nothing left to play. */
+internal suspend fun loadSavedQueue(
+    queueRepository: QueueRepository,
+    library: LibraryRepository,
+    videos: VideoRepository,
+): LoadedQueue? {
+    val saved = queueRepository.load()
+    if (saved.items.isEmpty()) return null
+    val audio = library.getTracks(saved.items.filterIsInstance<MediaRef.Audio>().map { it.id }).associateBy { it.id }
+    val video = videos.getVideos(saved.items.filterIsInstance<MediaRef.Video>().map { it.id }).associateBy { it.id }
+    val pruned = pruneQueue(saved) { ref ->
+        when (ref) {
+            is MediaRef.Audio -> ref.id in audio
+            is MediaRef.Video -> ref.id in video
+        }
+    }
+    val items = pruned.items.mapNotNull { ref ->
+        when (ref) {
+            is MediaRef.Audio -> audio[ref.id]?.toMediaItem()
+            is MediaRef.Video -> video[ref.id]?.toMediaItem()
+        }
+    }
+    if (items.isEmpty()) return null
+    return LoadedQueue(
+        items = items,
+        index = pruned.currentIndex.coerceAtLeast(0),
+        positionMs = pruned.positionMs,
+        shuffleEnabled = pruned.shuffleEnabled,
+        repeatMode = pruned.repeatMode,
+    )
 }
 
 internal fun RepeatMode.toPlayerMode(): Int = when (this) {
