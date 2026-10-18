@@ -5,6 +5,7 @@ import com.kingplay.core.model.QueueState
 import com.kingplay.core.model.RepeatMode
 import com.kingplay.core.player.logic.BrowseIds
 import com.kingplay.core.player.logic.BrowseNode
+import com.kingplay.core.player.logic.CallerPolicy
 import com.kingplay.core.player.logic.MediaIds
 import com.kingplay.core.player.logic.PlayCountTracker
 import com.kingplay.core.player.logic.defaultPlayThresholdMs
@@ -223,5 +224,40 @@ class BrowseIdsTest {
     fun tappingASongQueuesTheListFromThatSong() {
         assertEquals(listOf(10L, 20L, 30L) to 1, expandToList(listOf(10L, 20L, 30L), 20L))
         assertNull(expandToList(listOf(10L, 20L), 99L))
+    }
+}
+
+class CallerPolicyTest {
+    private val own = "com.kingplay.app"
+
+    @Test
+    fun ownAppAndTrustedSystemCallersAreAllowed() {
+        assertTrue(CallerPolicy.isAllowed(own, own, trusted = false))
+        assertTrue(CallerPolicy.isAllowed("android", own, trusted = true))
+    }
+
+    @Test
+    fun knownCarAndAssistantPackagesAreAllowed() {
+        assertTrue(CallerPolicy.isAllowed("com.google.android.projection.gearhead", own, trusted = false))
+        assertTrue(CallerPolicy.isAllowed("com.google.android.googlequicksearchbox", own, trusted = false))
+        assertTrue(CallerPolicy.isAllowed("com.android.bluetooth", own, trusted = false))
+    }
+
+    @Test
+    fun anyOtherPackageIsRefused() {
+        assertFalse(CallerPolicy.isAllowed("com.example.snoop", own, trusted = false))
+        assertFalse(CallerPolicy.isAllowed("", own, trusted = false))
+    }
+
+    @Test
+    fun lookAlikeNamesDoNotMatch() {
+        assertFalse(CallerPolicy.isAllowed("com.google.android.projection.gearhead.evil", own, trusted = false))
+        assertFalse(CallerPolicy.isAllowed("evil.com.android.bluetooth", own, trusted = false))
+        assertFalse(CallerPolicy.isAllowed(own + ".other", own, trusted = false))
+    }
+
+    @Test
+    fun theListIsWellFormed() {
+        assertTrue(CallerPolicy.ALLOWED_PACKAGES.all { it == it.trim().lowercase() && it.contains('.') })
     }
 }

@@ -1,6 +1,7 @@
 package com.kingplay.core.player.service
 
 import android.content.Intent
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -21,25 +22,26 @@ import com.kingplay.core.model.MediaRef
 import com.kingplay.core.model.repository.LibraryRepository
 import com.kingplay.core.model.repository.QueueRepository
 import com.kingplay.core.model.repository.VideoRepository
-import com.kingplay.core.player.engine.AudioEngineBinder
 import com.kingplay.core.player.browse.BrowseTree
+import com.kingplay.core.player.engine.AudioEngineBinder
 import com.kingplay.core.player.engine.LyricsBinder
 import com.kingplay.core.player.engine.NowPlayingBinder
 import com.kingplay.core.player.engine.SleepTimerBinder
 import com.kingplay.core.player.logic.BrowseIds
 import com.kingplay.core.player.logic.BrowseNode
+import com.kingplay.core.player.logic.CallerPolicy
 import com.kingplay.core.player.logic.MediaIds
 import com.kingplay.core.player.logic.expandToList
 import com.kingplay.core.player.logic.pageOf
 import com.kingplay.core.player.video.SubtitleExtras
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Owns the one player. Media3 turns it into a media session, which gives us the notification, lock-screen controls,
@@ -114,6 +116,19 @@ class PlaybackService : MediaLibraryService() {
     }
 
     private inner class LibraryCallback : MediaLibrarySession.Callback {
+
+        /** Only this app, the system and known car, assistant and Bluetooth packages may connect ([CallerPolicy]). */
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+        ): MediaSession.ConnectionResult {
+            val allowed = CallerPolicy.isAllowed(controller.packageName, packageName, controller.isTrusted)
+            if (!allowed) {
+                Log.w(TAG, "Refused a connection from ${controller.packageName}")
+                return MediaSession.ConnectionResult.reject()
+            }
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session).build()
+        }
 
         override fun onGetLibraryRoot(
             session: MediaLibrarySession,
@@ -265,5 +280,6 @@ class PlaybackService : MediaLibraryService() {
 
     private companion object {
         const val SESSION_ID = "kingplay"
+        const val TAG = "PlaybackService"
     }
 }

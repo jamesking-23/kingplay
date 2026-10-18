@@ -132,7 +132,7 @@ Android Auto and the widget arrived in step 2i (below).
 - Song rows and the mini player are announced as buttons; the playing song is announced as "selected".
 - Decorative motion (visualizer, lyric glow, shimmer) is reduced by the in-app low-power switch **or** the system "remove animations" setting.
 - `.github/workflows/ci.yml` runs detekt, lint, unit tests and a debug build. The repo ships no Gradle wrapper yet, so CI installs Gradle 8.10.2; commit a wrapper (`gradle wrapper --gradle-version 8.10.2`) and switch the steps to `./gradlew`.
-- Security note: `PlaybackService` is exported (Android Auto and Assistant need that) and any app can browse the library tree. The data is local only, but restricting callers to a package allow-list is a sensible hardening step before release.
+- Security: `PlaybackService` is exported (Android Auto and Assistant need that), so `onConnect` refuses every caller that is not this app, a system-trusted controller, or a package in `CallerPolicy.ALLOWED_PACKAGES` (Android Auto, the car and Google assistants, Wear OS, Cast, Bluetooth, system UI, Android Automotive). A refused package is logged as `Refused a connection from <package>` under the tag `PlaybackService`. If a car, watch or speaker system stops working, look for that line and add its package to the list. The list is a trade-off: a stricter list blocks unknown apps but can also block a legitimate system you did not think of, such as a car maker's own media app.
 
 ## PC version (step 3a)
 Compose Multiplatform Desktop, Windows first. Module `:desktop`; it reuses `:core:model` (tracks, `PlaybackController`, JSON codec) and does not touch the Android modules.
