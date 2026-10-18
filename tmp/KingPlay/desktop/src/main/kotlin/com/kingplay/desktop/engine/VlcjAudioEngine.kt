@@ -22,19 +22,24 @@ class VlcjAudioEngine private constructor(
     )
     override val events: Flow<EngineEvent> = bus
 
+    /** Kept from the event callbacks, because the callbacks must not call back into the player. */
+    @Volatile
+    private var isPlayingNow = false
+
     init {
         player.events().addMediaPlayerEventListener(object : MediaPlayerEventAdapter() {
             override fun playing(mediaPlayer: MediaPlayer) {
+                isPlayingNow = true
                 bus.tryEmit(EngineEvent.State(isPlaying = true, isBuffering = false))
             }
 
             override fun paused(mediaPlayer: MediaPlayer) {
+                isPlayingNow = false
                 bus.tryEmit(EngineEvent.State(isPlaying = false, isBuffering = false))
             }
 
             override fun buffering(mediaPlayer: MediaPlayer, newCache: Float) {
-                val playing = mediaPlayer.status().isPlaying
-                bus.tryEmit(EngineEvent.State(isPlaying = playing, isBuffering = newCache < FULL))
+                bus.tryEmit(EngineEvent.State(isPlaying = isPlayingNow, isBuffering = newCache < FULL))
             }
 
             override fun timeChanged(mediaPlayer: MediaPlayer, newTime: Long) {
@@ -46,6 +51,7 @@ class VlcjAudioEngine private constructor(
             }
 
             override fun finished(mediaPlayer: MediaPlayer) {
+                isPlayingNow = false
                 bus.tryEmit(EngineEvent.Ended)
             }
 
@@ -77,6 +83,7 @@ class VlcjAudioEngine private constructor(
             equalizer.setAmp(band, if (enabled) bandGainsDb[band].coerceIn(-MAX_DB, MAX_DB) else 0f)
         }
         player.audio().setEqualizer(equalizer)
+        equalizer.release() // libVLC copies the settings, so this one is no longer needed
     }
 
     override fun release() {

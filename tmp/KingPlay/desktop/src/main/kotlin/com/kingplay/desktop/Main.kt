@@ -1,5 +1,6 @@
 package com.kingplay.desktop
 
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,8 +41,11 @@ import com.kingplay.desktop.ui.trayTooltip
 import com.kingplay.desktop.userdata.UserDataStore
 import com.kingplay.desktop.video.VideoFile
 import com.kingplay.desktop.video.videoFileFor
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.awt.SystemTray
 import java.io.File
 
@@ -95,20 +99,27 @@ private fun runApp(inbox: Channel<LaunchRequest?>) = application {
     LaunchedEffect(app) {
         val keysOn = app.settings.value.globalMediaKeys
         if (keysOn) {
-            WindowsMediaKeys { action ->
-                val controller = app.controller
-                when (action) {
-                    MediaKeyAction.PlayPause -> controller?.togglePlayPause()
-                    MediaKeyAction.Next -> controller?.skipToNext()
-                    MediaKeyAction.Previous -> controller?.skipToPrevious()
-                    MediaKeyAction.Stop -> controller?.pause()
+            val keys = WindowsMediaKeys { action ->
+                // The hot-key thread is not the UI thread: hand the work over.
+                scope.launch {
+                    val controller = app.controller
+                    when (action) {
+                        MediaKeyAction.PlayPause -> controller?.togglePlayPause()
+                        MediaKeyAction.Next -> controller?.skipToNext()
+                        MediaKeyAction.Previous -> controller?.skipToPrevious()
+                        MediaKeyAction.Stop -> controller?.pause()
+                    }
                 }
-            }.start()
+            }
+            withContext(Dispatchers.IO) { keys.start() }
         }
+    }
+    DisposableEffect(engine) {
+        // Released only when the application is really ending, after everything that used it has stopped.
+        onDispose { engine?.release() }
     }
     val quit = {
         app.flush()
-        engine?.release()
         exitApplication()
     }
     val showMain = {

@@ -198,3 +198,11 @@ Compose Multiplatform Desktop, Windows first. Module `:desktop`; it reuses `:cor
 3. Expose a `NavGraphBuilder` extension; navigate elsewhere through `AppNavigator`.
 
 (How to add an audio effect is documented in step 2e, when the processor chain lands.)
+
+## Review fixes (step 4g)
+
+An independent read of the never-compiled desktop code found and fixed: drag-to-reorder using a stale drag state after
+the first move; video playback starting before the picture surface was visible; a crash when VLC is missing while
+opening a video (the window now just closes); media-key actions running off the UI thread; an equalizer object leaked
+on every slider tick; a native callback calling back into the player; the video Play button doing nothing after the
+video ended; and the audio engine being released before the app had fully stopped. None of this has been compiled.

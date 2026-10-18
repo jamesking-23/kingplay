@@ -69,7 +69,7 @@ fun ReorderHandle(state: DragState, label: String) {
             .size(40.dp)
             .padding(8.dp)
             .alpha(if (state.dragging) 1f else HANDLE_ALPHA)
-            .pointerInput(Unit) {
+            .pointerInput(state) {
                 detectDragGestures(
                     onDragStart = { state.dragging = true },
                     onDragEnd = state::finish,

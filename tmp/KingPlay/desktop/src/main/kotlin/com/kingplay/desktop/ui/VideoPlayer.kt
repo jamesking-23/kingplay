@@ -56,12 +56,14 @@ import androidx.compose.ui.window.rememberWindowState
 import com.kingplay.desktop.settings.DesktopSettings
 import com.kingplay.desktop.video.VideoFile
 import kotlinx.coroutines.delay
+import uk.co.caprica.vlcj.player.base.State
 import uk.co.caprica.vlcj.player.component.EmbeddedMediaPlayerComponent
 
 private enum class TrackPanel { Subtitles, Audio }
 
 private const val SKIP_MS = 10_000L
 private const val POLL_MS = 500L
+private const val SURFACE_POLL_MS = 50L
 private const val SAVE_EVERY_POLLS = 10
 
 /** One choice in the subtitle or audio list. */
@@ -79,7 +81,13 @@ fun VideoWindow(
     onProgress: (positionMs: Long, durationMs: Long) -> Unit,
     onClose: () -> Unit,
 ) {
-    val component = remember(video.id) { EmbeddedMediaPlayerComponent() }
+    // Without 64-bit VLC this throws; close the window instead of crashing the whole app.
+    val created = remember(video.id) { runCatching { EmbeddedMediaPlayerComponent() }.getOrNull() }
+    if (created == null) {
+        LaunchedEffect(video.id) { onClose() }
+        return
+    }
+    val component = created
     val player = component.mediaPlayer()
     val windowState = rememberWindowState(size = DpSize(WINDOW_WIDTH, WINDOW_HEIGHT))
     var position by remember(video.id) { mutableLongStateOf(startMs) }
@@ -91,13 +99,18 @@ fun VideoWindow(
     var tracks by remember(video.id) { mutableStateOf<Pair<List<TrackChoice>, Int>>(emptyList<TrackChoice>() to -1) }
     val fullscreen = windowState.placement == WindowPlacement.Fullscreen
 
-    DisposableEffect(component) {
+    LaunchedEffect(component) {
+        // VLC needs a visible surface when playback starts, or it opens a window of its own.
+        while (!component.isShowing) delay(SURFACE_POLL_MS)
         if (startMs > 0) {
             player.media().play(video.path, ":start-time=${startMs / MS_PER_SECOND}")
         } else {
             player.media().play(video.path)
         }
         player.audio().setVolume(settings.volumePercent)
+    }
+
+    DisposableEffect(component) {
         onDispose {
             val lastPosition = player.status().time()
             val lastLength = player.status().length()
@@ -120,7 +133,14 @@ fun VideoWindow(
         }
     }
 
-    fun togglePlay() = player.controls().setPause(player.status().isPlaying)
+    fun togglePlay() {
+        val status = player.status()
+        when {
+            status.isPlaying -> player.controls().setPause(true)
+            status.state() == State.PAUSED -> player.controls().setPause(false)
+            else -> player.controls().play() // ended or stopped: start again
+        }
+    }
 
     fun skip(ms: Long) = player.controls().skipTime(ms)
 
