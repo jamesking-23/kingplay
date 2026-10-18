@@ -39,7 +39,7 @@ import com.kingplay.desktop.ui.closeAction
 import com.kingplay.desktop.ui.trayIconPainter
 import com.kingplay.desktop.ui.trayTooltip
 import com.kingplay.desktop.userdata.UserDataStore
-import com.kingplay.desktop.video.VideoFile
+import com.kingplay.desktop.video.VideoQueue
 import com.kingplay.desktop.video.videoFileFor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -79,7 +79,8 @@ private fun runApp(inbox: Channel<LaunchRequest?>) = application {
 
     var mainVisible by remember { mutableStateOf(true) }
     var miniVisible by remember { mutableStateOf(false) }
-    var playingVideo by remember { mutableStateOf<Pair<VideoFile, Long>?>(null) }
+    var videoQueue by remember { mutableStateOf<VideoQueue?>(null) }
+    var firstStartMs by remember { mutableStateOf(0L) }
     val trayAvailable = remember { SystemTray.isSupported() }
     val settings by app.settings.collectAsState()
     val idle = remember { MutableStateFlow(PlaybackState()) }
@@ -91,7 +92,8 @@ private fun runApp(inbox: Channel<LaunchRequest?>) = application {
                 app.openAudioFiles(it.audio)
                 it.videos.firstNotNullOfOrNull { path -> videoFileFor(File(path)) }?.let { video ->
                     app.pauseMusicForVideo()
-                    playingVideo = video to 0L
+                    videoQueue = VideoQueue(listOf(video))
+                    firstStartMs = 0L
                 }
             }
         }
@@ -159,14 +161,19 @@ private fun runApp(inbox: Channel<LaunchRequest?>) = application {
         }
     }
 
-    playingVideo?.let { (video, startMs) ->
+    videoQueue?.let { queue ->
+        val video = queue.current ?: return@let
+        // Only the first video of a queue resumes; the ones after it start from the beginning.
+        val startMs = firstStartMs
         key(video.id) {
             VideoWindow(
                 video = video,
                 startMs = startMs,
                 settings = settings,
                 onProgress = { position, duration -> app.saveVideoProgress(video, position, duration) },
-                onClose = { playingVideo = null },
+                onClose = { videoQueue = null },
+                onNext = queue.next()?.let { next -> { firstStartMs = 0L; videoQueue = next } },
+                onPrevious = queue.previous()?.let { prev -> { firstStartMs = 0L; videoQueue = prev } },
             )
         }
     }
@@ -199,9 +206,14 @@ private fun runApp(inbox: Channel<LaunchRequest?>) = application {
             app,
             covers,
             onOpenMini = { miniVisible = true },
-            onPlayVideo = { video, startMs ->
+            onPlayVideo = { video, startMs, queueAll ->
                 app.pauseMusicForVideo()
-                playingVideo = video to startMs
+                firstStartMs = startMs
+                videoQueue = if (queueAll) {
+                    VideoQueue.startingAt(app.videos.value, video)
+                } else {
+                    VideoQueue(listOf(video))
+                }
             },
         )
     }

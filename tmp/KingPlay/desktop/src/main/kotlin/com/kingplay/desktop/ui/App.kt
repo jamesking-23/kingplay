@@ -128,7 +128,7 @@ fun App(
     app: DesktopAppState,
     covers: CoverRepository,
     onOpenMini: () -> Unit,
-    onPlayVideo: (VideoFile, startMs: Long) -> Unit,
+    onPlayVideo: (VideoFile, startMs: Long, queueAll: Boolean) -> Unit,
 ) {
     val index by app.index.collectAsState()
     val folders by app.folders.collectAsState()
@@ -288,7 +288,7 @@ private fun PageContent(
     onNotice: (String) -> Unit,
     onOpenMini: () -> Unit,
     videos: List<VideoFile>,
-    onPlayVideo: (VideoFile, startMs: Long) -> Unit,
+    onPlayVideo: (VideoFile, startMs: Long, queueAll: Boolean) -> Unit,
 ) {
     when (page) {
         Page.Songs -> {

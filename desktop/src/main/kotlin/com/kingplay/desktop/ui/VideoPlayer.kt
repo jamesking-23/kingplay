@@ -19,6 +19,8 @@ import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -80,6 +82,8 @@ fun VideoWindow(
     settings: DesktopSettings,
     onProgress: (positionMs: Long, durationMs: Long) -> Unit,
     onClose: () -> Unit,
+    onNext: (() -> Unit)? = null,
+    onPrevious: (() -> Unit)? = null,
 ) {
     // Without 64-bit VLC this throws; close the window instead of crashing the whole app.
     val created = remember(video.id) { runCatching { EmbeddedMediaPlayerComponent() }.getOrNull() }
@@ -121,11 +125,16 @@ fun VideoWindow(
 
     LaunchedEffect(component) {
         var polls = 0
+        var finished = false
         while (true) {
             delay(POLL_MS)
             position = player.status().time().coerceAtLeast(0)
             length = player.status().length().coerceAtLeast(0)
             playing = player.status().isPlaying
+            if (!finished && player.status().state() == State.ENDED) {
+                finished = true
+                onNext?.invoke()
+            }
             if (++polls >= SAVE_EVERY_POLLS && length > 0) {
                 polls = 0
                 onProgress(position, length)
@@ -228,6 +237,8 @@ fun VideoWindow(
                         onAudio = { showTracks(TrackPanel.Audio) },
                         onFullscreen = ::toggleFullscreen,
                         onClose = onClose,
+                        onNext = onNext,
+                        onPrevious = onPrevious,
                     )
                 }
             }
@@ -280,6 +291,8 @@ private fun Controls(
     onAudio: () -> Unit,
     onFullscreen: () -> Unit,
     onClose: () -> Unit,
+    onNext: (() -> Unit)?,
+    onPrevious: (() -> Unit)?,
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant,
@@ -302,6 +315,11 @@ private fun Controls(
                 Text(formatTime(length), style = MaterialTheme.typography.labelMedium)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (onPrevious != null) {
+                    IconButton(onClick = onPrevious) {
+                        Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous video")
+                    }
+                }
                 IconButton(onClick = { onSkip(-SKIP_MS) }) {
                     Icon(Icons.Filled.Replay10, contentDescription = "Back 10 seconds")
                 }
@@ -313,6 +331,9 @@ private fun Controls(
                 }
                 IconButton(onClick = { onSkip(SKIP_MS) }) {
                     Icon(Icons.Filled.Forward10, contentDescription = "Forward 10 seconds")
+                }
+                if (onNext != null) {
+                    IconButton(onClick = onNext) { Icon(Icons.Filled.SkipNext, contentDescription = "Next video") }
                 }
                 TextButton(onClick = onSubtitles) { Text("Subtitles") }
                 TextButton(onClick = onAudio) { Text("Audio") }

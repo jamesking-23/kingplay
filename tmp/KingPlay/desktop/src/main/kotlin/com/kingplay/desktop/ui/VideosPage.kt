@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,10 +33,19 @@ import com.kingplay.desktop.video.resumePositionMs
 fun VideosPage(
     videos: List<VideoFile>,
     progress: Map<Long, VideoProgress>,
-    onPlay: (VideoFile, startMs: Long) -> Unit,
+    onPlay: (VideoFile, startMs: Long, queueAll: Boolean) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-        Text("Videos", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Videos", style = MaterialTheme.typography.titleLarge)
+            if (videos.size > 1) {
+                OutlinedButton(onClick = { onPlay(videos.first(), 0L, true) }) { Text("Play all") }
+            }
+        }
         if (videos.isEmpty()) {
             Text(
                 "No videos found in your library folders. Add a folder that has videos on the Library page.",
@@ -55,7 +65,7 @@ fun VideosPage(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 56.dp)
-                        .clickable(role = Role.Button) { onPlay(video, resumeAt) }
+                        .clickable(role = Role.Button) { onPlay(video, resumeAt, false) }
                         .semantics { contentDescription = "${video.title}, $detail" }
                         .padding(horizontal = 16.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),

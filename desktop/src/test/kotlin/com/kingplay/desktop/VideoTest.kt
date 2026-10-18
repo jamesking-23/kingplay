@@ -2,18 +2,20 @@ package com.kingplay.desktop
 
 import com.kingplay.desktop.userdata.UserData
 import com.kingplay.desktop.userdata.UserDataStore
+import com.kingplay.desktop.video.VideoFile
 import com.kingplay.desktop.video.VideoProgress
+import com.kingplay.desktop.video.VideoQueue
 import com.kingplay.desktop.video.VideoScanner
 import com.kingplay.desktop.video.formatSize
 import com.kingplay.desktop.video.isVideoFile
 import com.kingplay.desktop.video.resumePositionMs
 import com.kingplay.desktop.video.videoTitle
-import java.io.File
-import java.nio.file.Files
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
+import java.nio.file.Files
 
 class VideoLibraryTest {
     @Test fun recognisesVideoFilesByExtension() {
@@ -70,5 +72,29 @@ class VideoLibraryTest {
         assertEquals("37 KB", formatSize(37 * 1024))
         assertEquals("812 MB", formatSize(812L * 1024 * 1024))
         assertEquals("1.4 GB", formatSize((1.4 * 1024 * 1024 * 1024).toLong()))
+    }
+}
+
+class VideoQueueTest {
+    private fun v(id: Long) = VideoFile(id, "D:/v$id.mp4", "v$id", "D:/", 1, 1)
+    private val all = listOf(v(1), v(2), v(3))
+
+    @Test fun startsAtTheChosenVideoAndWalksBothWays() {
+        val q = VideoQueue.startingAt(all, v(2))
+        assertEquals(2L, q.current?.id)
+        assertEquals(3L, q.next()?.current?.id)
+        assertEquals(1L, q.previous()?.current?.id)
+        assertEquals(null, q.next()?.next())
+        assertEquals(null, q.previous()?.previous())
+    }
+
+    @Test fun aVideoOutsideTheListPlaysAlone() {
+        val q = VideoQueue.startingAt(all, v(9))
+        assertEquals(listOf(9L), q.items.map { it.id })
+        assertTrue(!q.hasNext && !q.hasPrevious)
+    }
+
+    @Test fun emptyQueueHasNoCurrent() {
+        assertEquals(null, VideoQueue(emptyList()).current)
     }
 }
