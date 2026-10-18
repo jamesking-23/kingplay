@@ -49,7 +49,7 @@ object CommonProvidesModule {
 
     @Provides
     @Dispatcher(KpDispatchers.Default)
-    fun default(): CoroutineDispatcher = Dispatchers.Default
+    fun provideDefaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
 
     @Provides
     @Dispatcher(KpDispatchers.Main)
