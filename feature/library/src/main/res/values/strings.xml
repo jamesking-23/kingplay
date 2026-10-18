@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_title">Library</string>
+    <string name="library_settings">Settings</string>
+    <string name="library_rescan">Rescan library</string>
+    <string name="library_full_rescan">Full rescan</string>
+    <string name="library_more">More library options</string>
+
+    <string name="tab_songs">Songs</string>
+    <string name="tab_albums">Albums</string>
+    <string name="tab_artists">Artists</string>
+    <string name="tab_genres">Genres</string>
+    <string name="tab_folders">Folders</string>
+    <string name="tab_playlists">Playlists</string>
+
+    <string name="library_added_next">Will play next</string>
+    <string name="library_added_queue">Added to queue</string>
+
+    <string name="sort_title">Title</string>
+    <string name="sort_artist">Artist</string>
+    <string name="sort_album">Album</string>
+    <string name="sort_date_added">Date added</string>
+    <string name="sort_duration">Duration</string>
+    <string name="sort_play_count">Most played</string>
+    <string name="sort_ascending">ascending</string>
+    <string name="sort_descending">descending</string>
+    <string name="sort_button_description">Sort by %1$s, %2$s. Tap to change.</string>
+
+    <string name="library_shuffle_all">Shuffle all</string>
+    <string name="library_play_all">Play</string>
+
+    <string name="scan_audio">Scanning music: %1$d of %2$d</string>
+    <string name="scan_video">Scanning videos: %1$d of %2$d</string>
+    <string name="scan_details">Reading file details: %1$d of %2$d</string>
+    <string name="scan_failed">The scan failed. Try again.</string>
+    <string name="scan_permission_needed">Allow access to your media to see your library.</string>
+
+    <string name="songs_empty_title">No music found</string>
+    <string name="songs_empty_message">Add music to your device, then rescan the library.</string>
+    <string name="albums_empty_title">No albums yet</string>
+    <string name="albums_empty_message">Albums appear here once your music is scanned.</string>
+    <string name="artists_empty_title">No artists yet</string>
+    <string name="artists_empty_message">Artists appear here once your music is scanned.</string>
+    <string name="genres_empty_title">No genres yet</string>
+    <string name="genres_empty_message">Songs with a genre tag are grouped here.</string>
+    <string name="folders_empty_title">No folders yet</string>
+    <string name="folders_empty_message">Folders that contain music or videos appear here.</string>
+    <string name="playlists_empty_title">No playlists yet</string>
+    <string name="playlists_empty_message">Create one to collect songs your way.</string>
+    <string name="detail_empty_title">Nothing here</string>
+    <string name="detail_empty_message">This list has no songs, or it was removed.</string>
+
+    <string name="playlist_new">New playlist</string>
+    <string name="playlist_name_label">Playlist name</string>
+    <string name="playlist_create">Create</string>
+    <string name="playlist_cancel">Cancel</string>
+    <string name="playlist_delete">Delete</string>
+    <string name="playlist_delete_title">Delete this playlist?</string>
+    <string name="playlist_delete_message">The songs stay in your library. Only the playlist is removed.</string>
+    <string name="playlist_remove_track">Remove from playlist</string>
+
+    <string name="albums_section">Albums</string>
+    <string name="songs_section">Songs</string>
+
+    <plurals name="count_songs">
+        <item quantity="one">%1$d song</item>
+        <item quantity="other">%1$d songs</item>
+    </plurals>
+    <plurals name="count_albums">
+        <item quantity="one">%1$d album</item>
+        <item quantity="other">%1$d albums</item>
+    </plurals>
+    <plurals name="count_items">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+</resources>

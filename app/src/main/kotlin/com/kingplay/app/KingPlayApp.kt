@@ -3,12 +3,15 @@ package com.kingplay.app
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import coil.ImageLoader
+import coil.ImageLoaderFactory
 import com.kingplay.core.model.repository.LibraryScanner
+import com.kingplay.core.ui.artwork.createArtworkImageLoader
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
 @HiltAndroidApp
-class KingPlayApp : Application(), Configuration.Provider {
+class KingPlayApp : Application(), Configuration.Provider, ImageLoaderFactory {
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
@@ -18,6 +21,9 @@ class KingPlayApp : Application(), Configuration.Provider {
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
+
+    /** Cover art loader shared by every screen. */
+    override fun newImageLoader(): ImageLoader = createArtworkImageLoader(this)
 
     override fun onCreate() {
         super.onCreate()

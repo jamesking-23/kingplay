@@ -55,3 +55,45 @@ class LibraryModelTest {
         assertEquals(true, SearchResults.Empty.isEmpty)
     }
 }
+
+class QueueWindowTest {
+    @Test
+    fun shortListIsUsedWhole() {
+        val w = com.kingplay.core.model.queue.queueWindow(listOf(1, 2, 3), 2)
+        org.junit.Assert.assertEquals(listOf(1, 2, 3), w.items)
+        org.junit.Assert.assertEquals(2, w.startIndex)
+    }
+
+    @Test
+    fun emptyList() {
+        val w = com.kingplay.core.model.queue.queueWindow(emptyList<Int>(), 5)
+        org.junit.Assert.assertTrue(w.items.isEmpty())
+        org.junit.Assert.assertEquals(0, w.startIndex)
+    }
+
+    @Test
+    fun longListIsWindowedAroundTappedItem() {
+        val all = (0 until 10_000).toList()
+        val w = com.kingplay.core.model.queue.queueWindow(all, 5_000, before = 10, after = 20)
+        org.junit.Assert.assertEquals(30, w.items.size)
+        org.junit.Assert.assertEquals(5_000, w.items[w.startIndex])
+        org.junit.Assert.assertEquals(10, w.startIndex)
+    }
+
+    @Test
+    fun windowNearTheStartAndEnd() {
+        val all = (0 until 10_000).toList()
+        val start = com.kingplay.core.model.queue.queueWindow(all, 3, before = 10, after = 20)
+        org.junit.Assert.assertEquals(3, start.items[start.startIndex])
+        org.junit.Assert.assertEquals(0, start.items.first())
+        val end = com.kingplay.core.model.queue.queueWindow(all, 9_995, before = 10, after = 20)
+        org.junit.Assert.assertEquals(9_995, end.items[end.startIndex])
+        org.junit.Assert.assertEquals(9_999, end.items.last())
+    }
+
+    @Test
+    fun tappedIndexIsClamped() {
+        val w = com.kingplay.core.model.queue.queueWindow(listOf(1, 2, 3), 99)
+        org.junit.Assert.assertEquals(2, w.startIndex)
+    }
+}

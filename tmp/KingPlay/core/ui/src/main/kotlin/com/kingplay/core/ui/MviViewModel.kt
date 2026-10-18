@@ -16,6 +16,9 @@ interface UiEvent
 
 interface UiEffect
 
+/** For view models that never need to tell the screen anything one-shot. */
+data object NoEffect : UiEffect
+
 /**
  * Unidirectional data flow base: UI sends [UiEvent]s, the ViewModel reduces them into [UiState]
  * and emits one-shot [UiEffect]s (navigation, snackbars) that are delivered exactly once.

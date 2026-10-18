@@ -5,10 +5,17 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.RawQuery
 import androidx.room.Upsert
+import androidx.sqlite.db.SimpleSQLiteQuery
+import androidx.sqlite.db.SupportSQLiteQuery
 import com.kingplay.core.database.entity.TrackEntity
 import com.kingplay.core.database.entity.TrackUserDataEntity
+import com.kingplay.core.model.SongFilter
+import com.kingplay.core.model.SongSort
+import com.kingplay.core.model.SongSortField
 import com.kingplay.core.model.UnknownNames
+import java.util.Locale
 import kotlinx.coroutines.flow.Flow
 
 // Raw strings below are compile-time constants so they can be concatenated inside @Query.
@@ -34,20 +41,43 @@ internal const val SONG_FILTER = """
       AND t.durationMs >= :minDuration AND t.durationMs <= :maxDuration
 """
 
-private const val ORDER_TITLE_ASC = " ORDER BY t.titleSort ASC, t.id ASC"
-private const val ORDER_TITLE_DESC = " ORDER BY t.titleSort DESC, t.id ASC"
+internal const val ORDER_TITLE_ASC = " ORDER BY t.titleSort ASC, t.id ASC"
+internal const val ORDER_TITLE_DESC = " ORDER BY t.titleSort DESC, t.id ASC"
 private const val ALBUM_TAIL = "t.albumTitle COLLATE NOCASE ASC, t.discNumber ASC, t.trackNumber ASC, t.id ASC"
-private const val ORDER_ARTIST_ASC = " ORDER BY t.artistName COLLATE NOCASE ASC, " + ALBUM_TAIL
-private const val ORDER_ARTIST_DESC = " ORDER BY t.artistName COLLATE NOCASE DESC, " + ALBUM_TAIL
-private const val ORDER_ALBUM_ASC = " ORDER BY " + ALBUM_TAIL
-private const val ORDER_ALBUM_DESC =
+internal const val ORDER_ARTIST_ASC = " ORDER BY t.artistName COLLATE NOCASE ASC, " + ALBUM_TAIL
+internal const val ORDER_ARTIST_DESC = " ORDER BY t.artistName COLLATE NOCASE DESC, " + ALBUM_TAIL
+internal const val ORDER_ALBUM_ASC = " ORDER BY " + ALBUM_TAIL
+internal const val ORDER_ALBUM_DESC =
     " ORDER BY t.albumTitle COLLATE NOCASE DESC, t.discNumber ASC, t.trackNumber ASC, t.id ASC"
-private const val ORDER_ADDED_ASC = " ORDER BY t.dateAddedMs ASC, t.id ASC"
-private const val ORDER_ADDED_DESC = " ORDER BY t.dateAddedMs DESC, t.id ASC"
-private const val ORDER_DURATION_ASC = " ORDER BY t.durationMs ASC, t.id ASC"
-private const val ORDER_DURATION_DESC = " ORDER BY t.durationMs DESC, t.id ASC"
-private const val ORDER_PLAYS_ASC = " ORDER BY playCount ASC, t.titleSort ASC, t.id ASC"
-private const val ORDER_PLAYS_DESC = " ORDER BY playCount DESC, t.titleSort ASC, t.id ASC"
+internal const val ORDER_ADDED_ASC = " ORDER BY t.dateAddedMs ASC, t.id ASC"
+internal const val ORDER_ADDED_DESC = " ORDER BY t.dateAddedMs DESC, t.id ASC"
+internal const val ORDER_DURATION_ASC = " ORDER BY t.durationMs ASC, t.id ASC"
+internal const val ORDER_DURATION_DESC = " ORDER BY t.durationMs DESC, t.id ASC"
+internal const val ORDER_PLAYS_ASC = " ORDER BY playCount ASC, t.titleSort ASC, t.id ASC"
+internal const val ORDER_PLAYS_DESC = " ORDER BY playCount DESC, t.titleSort ASC, t.id ASC"
+
+private fun orderFor(sort: SongSort): String = when (sort.field) {
+    SongSortField.TITLE -> if (sort.ascending) ORDER_TITLE_ASC else ORDER_TITLE_DESC
+    SongSortField.ARTIST -> if (sort.ascending) ORDER_ARTIST_ASC else ORDER_ARTIST_DESC
+    SongSortField.ALBUM -> if (sort.ascending) ORDER_ALBUM_ASC else ORDER_ALBUM_DESC
+    SongSortField.DATE_ADDED -> if (sort.ascending) ORDER_ADDED_ASC else ORDER_ADDED_DESC
+    SongSortField.DURATION -> if (sort.ascending) ORDER_DURATION_ASC else ORDER_DURATION_DESC
+    SongSortField.PLAY_COUNT -> if (sort.ascending) ORDER_PLAYS_ASC else ORDER_PLAYS_DESC
+}
+
+/**
+ * Ids of all songs matching [filter], ordered exactly like the paged queries. It uses the same ORDER BY text and the
+ * same filter conditions, so a queue built from it matches what the list shows.
+ */
+fun songIdsQuery(sort: SongSort, filter: SongFilter): SupportSQLiteQuery {
+    val format = filter.format?.trim()?.uppercase(Locale.ROOT)?.ifEmpty { null }
+    val sql = "SELECT t.id, COALESCE(u.playCount, 0) AS playCount " +
+        "FROM tracks t LEFT JOIN track_user_data u ON u.trackId = t.id " +
+        "WHERE (? IS NULL OR t.format = ?) AND t.bitrateKbps >= ? " +
+        "AND t.durationMs >= ? AND t.durationMs <= ?" + orderFor(sort)
+    val args: Array<Any?> = arrayOf(format, format, filter.minBitrateKbps, filter.minDurationMs, filter.maxDurationMs)
+    return SimpleSQLiteQuery(sql, args)
+}
 
 @Dao
 @Suppress("TooManyFunctions")
@@ -66,6 +96,10 @@ interface TrackDao {
 
     @Query("SELECT id, uri, sizeBytes, durationMs, bitrateKbps FROM tracks WHERE needsDetails = 1 LIMIT :limit")
     suspend fun pendingDetails(limit: Int): List<PendingDetailsRow>
+
+    /** Built by [songIdsQuery] so the order matches the paged queries below exactly. */
+    @RawQuery
+    suspend fun songIdsRaw(query: SupportSQLiteQuery): List<Long>
 
     @Query("SELECT COUNT(*) FROM tracks WHERE needsDetails = 1")
     suspend fun pendingDetailsCount(): Int

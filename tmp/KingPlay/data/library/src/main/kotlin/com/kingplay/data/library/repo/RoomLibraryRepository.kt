@@ -9,6 +9,7 @@ import androidx.room.withTransaction
 import com.kingplay.core.database.KingPlayDatabase
 import com.kingplay.core.database.dao.TrackDao
 import com.kingplay.core.database.dao.TrackRow
+import com.kingplay.core.database.dao.songIdsQuery
 import com.kingplay.core.database.dao.VideoDao
 import com.kingplay.core.database.entity.TrackUserDataEntity
 import com.kingplay.core.database.toModel
@@ -40,6 +41,9 @@ class RoomLibraryRepository @Inject constructor(
         config = PagingConfig(pageSize = PAGE_SIZE, initialLoadSize = PAGE_SIZE * 2, enablePlaceholders = true),
         pagingSourceFactory = { songSource(sort, filter) },
     ).flow.map { page -> page.map { row -> row.toModel() } }
+
+    override suspend fun songIds(sort: SongSort, filter: SongFilter): List<Long> =
+        trackDao.songIdsRaw(songIdsQuery(sort, filter))
 
     override fun songCount(): Flow<Int> = trackDao.observeCount()
 

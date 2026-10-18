@@ -15,6 +15,9 @@ interface LibraryRepository {
     /** Paged so lists of 50,000+ tracks stay smooth. */
     fun songs(sort: SongSort = SongSort(), filter: SongFilter = SongFilter.None): Flow<PagingData<Track>>
 
+    /** Ids of every song in the same order [songs] would show them. Used to build a queue from a long list. */
+    suspend fun songIds(sort: SongSort = SongSort(), filter: SongFilter = SongFilter.None): List<Long>
+
     fun songCount(): Flow<Int>
 
     fun albums(): Flow<List<Album>>

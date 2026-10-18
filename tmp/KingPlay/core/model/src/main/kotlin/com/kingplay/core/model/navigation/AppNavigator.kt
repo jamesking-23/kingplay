@@ -13,6 +13,10 @@ interface AppNavigator {
 
     fun toPlaylist(playlistId: Long)
 
+    fun toGenre(genre: String)
+
+    fun toFolder(path: String)
+
     fun toVideo(videoId: Long)
 
     fun toEqualizer()

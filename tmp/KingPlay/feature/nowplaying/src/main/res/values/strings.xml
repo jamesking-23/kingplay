@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="np_title">Now playing</string>
+    <string name="np_close">Close now playing</string>
+    <string name="np_queue">Queue</string>
+    <string name="np_open_queue">Show queue</string>
+    <string name="np_play">Play</string>
+    <string name="np_pause">Pause</string>
+    <string name="np_next">Next</string>
+    <string name="np_previous">Previous</string>
+    <string name="np_shuffle_on">Shuffle is on. Tap to turn off.</string>
+    <string name="np_shuffle_off">Shuffle is off. Tap to turn on.</string>
+    <string name="np_repeat_off">Repeat is off. Tap to repeat all.</string>
+    <string name="np_repeat_all">Repeating all. Tap to repeat one.</string>
+    <string name="np_repeat_one">Repeating one. Tap to turn repeat off.</string>
+    <string name="np_favorite_add">Add to favorites</string>
+    <string name="np_favorite_remove">Remove from favorites</string>
+    <string name="np_seek">Seek</string>
+    <string name="np_position">%1$s of %2$s</string>
+    <string name="np_nothing_title">Nothing is playing</string>
+    <string name="np_nothing_message">Pick a song from your library to start.</string>
+    <string name="np_queue_empty">The queue is empty.</string>
+    <string name="np_queue_clear">Clear queue</string>
+    <string name="np_unavailable">File not available</string>
+    <string name="np_move_up">Move up</string>
+    <string name="np_move_down">Move down</string>
+    <string name="np_remove">Remove from queue</string>
+    <string name="np_mini_open">Open now playing: %1$s by %2$s</string>
+    <string name="np_mini_open_no_artist">Open now playing: %1$s</string>
+</resources>

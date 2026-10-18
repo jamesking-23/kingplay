@@ -11,6 +11,8 @@ dependencies {
     api(projects.core.designsystem)
     api(projects.core.model)
     api(libs.androidx.lifecycle.viewmodel)
+    api(libs.coil.compose)
+    implementation(libs.androidx.core.ktx)
     api(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)
