@@ -97,3 +97,12 @@ fun saveTextFile(title: String, suggestedName: String, text: String): String? {
 }
 
 private const val MAX_TEXT_FILE_BYTES = 20L * 1024 * 1024
+
+/** Lets the person pick a lyrics file (.lrc or .txt). Returns null when cancelled. */
+fun chooseLyricsFile(): File? {
+    val chooser = JFileChooser().apply {
+        dialogTitle = "Choose a lyrics file"
+        fileFilter = FileNameExtensionFilter("Lyrics (.lrc, .txt)", "lrc", "txt")
+    }
+    return if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) chooser.selectedFile else null
+}

@@ -175,6 +175,9 @@ class DesktopPlaybackController(
 
     fun setVolume(percent: Int) = engine.setVolume(percent)
 
+    fun setEqualizer(enabled: Boolean, preampDb: Float, bandGainsDb: List<Float>) =
+        engine.setEqualizer(enabled, preampDb, bandGainsDb)
+
     private fun onEngineEvent(event: EngineEvent) {
         when (event) {
             is EngineEvent.State -> {

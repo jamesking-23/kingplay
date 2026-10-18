@@ -26,6 +26,7 @@ class UserDataStore(private val file: File) {
             "stats" to data.stats.map { (id, s) ->
                 mapOf("id" to id, "count" to s.count.toLong(), "lastPlayedMs" to s.lastPlayedMs)
             },
+            "lyrics" to data.lyrics,
             "queue" to data.queue?.let {
                 mapOf(
                     "tracks" to it.trackIds,
@@ -73,6 +74,8 @@ class UserDataStore(private val file: File) {
                 stats = stats,
                 queue = queue,
                 // Never reuse an id even if the saved counter is missing or stale.
+                lyrics = (root["lyrics"] as? Map<*, *>).orEmpty()
+                    .mapNotNull { (k, v) -> if (k is String && v is String) k to v else null }.toMap(),
                 nextPlaylistId = maxOf((root["nextPlaylistId"] as? Number)?.toLong() ?: 1, highest + 1),
             )
         }

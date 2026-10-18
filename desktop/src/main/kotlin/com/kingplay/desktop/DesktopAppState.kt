@@ -2,6 +2,8 @@ package com.kingplay.desktop
 
 import com.kingplay.core.model.MediaRef
 import com.kingplay.core.model.Track
+import com.kingplay.core.model.lyrics.Lyrics
+import com.kingplay.core.model.lyrics.parseLyrics
 import com.kingplay.core.model.playlist.M3uEntry
 import com.kingplay.core.model.playlist.M3uParser
 import com.kingplay.core.model.playlist.M3uWriter
@@ -12,6 +14,9 @@ import com.kingplay.desktop.library.LibraryIndex
 import com.kingplay.desktop.library.LibraryStore
 import com.kingplay.desktop.library.SavedLibrary
 import com.kingplay.desktop.library.TrackScanner
+import com.kingplay.desktop.lyrics.LyricsResolver
+import com.kingplay.desktop.lyrics.readEmbeddedLyrics
+import com.kingplay.desktop.lyrics.readSidecarLrc
 import com.kingplay.desktop.playback.DesktopPlaybackController
 import com.kingplay.desktop.settings.DesktopSettings
 import com.kingplay.desktop.settings.SettingsStore
@@ -90,6 +95,7 @@ class DesktopAppState(
             _index.value = LibraryIndex(saved.tracks)
             _user.value = user
             controller?.setVolume(_settings.value.volumePercent)
+            applyEqualizer(_settings.value)
             restoreQueue(user)
             launch { writeUserDataLoop() }
             launch { saveQueueLoop() }
@@ -114,6 +120,16 @@ class DesktopAppState(
         _settings.update(change)
         val snapshot = _settings.value
         scope.launch(Dispatchers.IO) { runCatching { settingsStore.save(snapshot) } }
+    }
+
+    /** Changes the equalizer settings, saves them and sends them to the player. */
+    fun updateEqualizer(change: (DesktopSettings) -> DesktopSettings) {
+        updateSettings(change)
+        applyEqualizer(_settings.value)
+    }
+
+    private fun applyEqualizer(settings: DesktopSettings) {
+        controller?.setEqualizer(settings.eqEnabled, settings.eqPreampDb, settings.eqGainsDb)
     }
 
     fun setVolume(percent: Int) {
@@ -193,6 +209,28 @@ class DesktopAppState(
             .map { M3uEntry(it.uri.replace('\\', '/'), (it.durationMs / MS_PER_SECOND).toInt(), it.title) }
         return M3uWriter.write(entries)
     }
+
+    // ---- lyrics ----------------------------------------------------------------------------------------
+
+    private val lyricsResolver = LyricsResolver(
+        readSidecar = { readSidecarLrc(File(it.uri)) },
+        readEmbedded = { readEmbeddedLyrics(File(it.uri)) },
+    )
+
+    /** Reads the song's lyrics (imported, then `.lrc` beside it, then embedded). Runs off the UI thread. */
+    suspend fun lyricsFor(track: Track): Lyrics? {
+        val imported = _user.value.lyrics
+        return withContext(Dispatchers.IO) { lyricsResolver.resolve(track, imported) }
+    }
+
+    /** Keeps [text] as the lyrics of [track]. Returns false when it holds no lyrics. */
+    fun importLyrics(track: Track, text: String): Boolean {
+        if (parseLyrics(text) == null) return false
+        updateUser { it.withLyrics(LyricsResolver.keyOf(track), text) }
+        return true
+    }
+
+    fun removeImportedLyrics(track: Track) = updateUser { it.withoutLyrics(LyricsResolver.keyOf(track)) }
 
     // ---- library ---------------------------------------------------------------------------------------
 

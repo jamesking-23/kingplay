@@ -30,6 +30,8 @@ data class UserData(
     val stats: Map<Long, PlayStat> = emptyMap(),
     val queue: SavedQueue? = null,
     val nextPlaylistId: Long = 1,
+    /** Lyrics the person imported, by lyrics key (artist and title). They win over embedded and sidecar lyrics. */
+    val lyrics: Map<String, String> = emptyMap(),
 ) {
     fun playlist(id: Long): DesktopPlaylist? = playlists.firstOrNull { it.id == id }
 
@@ -79,6 +81,10 @@ data class UserData(
     }
 
     fun withQueue(queue: SavedQueue?): UserData = copy(queue = queue)
+
+    fun withLyrics(key: String, lrc: String): UserData = copy(lyrics = lyrics + (key to lrc))
+
+    fun withoutLyrics(key: String): UserData = copy(lyrics = lyrics - key)
 
     private fun updatePlaylist(id: Long, change: (DesktopPlaylist) -> DesktopPlaylist): UserData =
         copy(playlists = playlists.map { if (it.id == id) change(it) else it })

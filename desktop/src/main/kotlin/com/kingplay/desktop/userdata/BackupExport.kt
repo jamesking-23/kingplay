@@ -11,7 +11,8 @@ import com.kingplay.desktop.library.LibraryIndex
 /**
  * Writes playlists and favorites in the same backup format the Android app reads, so they can go phone-ward.
  * Paths use '/' because the phone matches by folder and file name. Songs no longer in the library are left out
- * (their paths are unknown). Marked as a desktop backup so restoring it does not touch the phone's settings.
+ * (their paths are unknown). Imported lyrics go along, keyed by artist and title. Marked as a desktop backup
+ * so restoring it does not touch the phone's settings.
  */
 object BackupExport {
     fun build(library: LibraryIndex, data: UserData, now: Long): String {
@@ -26,7 +27,7 @@ object BackupExport {
                 favorites = favoriteTracks(library, data).map(::entry),
                 presets = emptyList(),
                 excludedFolders = emptyList(),
-                lyrics = emptyMap(),
+                lyrics = data.lyrics,
                 source = BackupCodec.SOURCE_DESKTOP,
             ),
         )

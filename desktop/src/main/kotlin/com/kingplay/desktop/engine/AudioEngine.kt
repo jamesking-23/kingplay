@@ -31,5 +31,11 @@ interface AudioEngine {
     /** 0..100. */
     fun setVolume(percent: Int)
 
+    /**
+     * Switches the 10-band equalizer. Band [i] of [bandGainsDb] goes to the engine's band [i]; the engine's centre
+     * frequencies differ a little from the app's, so this is an approximation. Default does nothing.
+     */
+    fun setEqualizer(enabled: Boolean, preampDb: Float, bandGainsDb: List<Float>) = Unit
+
     fun release()
 }

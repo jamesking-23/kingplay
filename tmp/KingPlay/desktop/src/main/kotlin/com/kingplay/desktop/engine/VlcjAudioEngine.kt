@@ -69,6 +69,16 @@ class VlcjAudioEngine private constructor(
         player.audio().setVolume(percent.coerceIn(0, 100))
     }
 
+    override fun setEqualizer(enabled: Boolean, preampDb: Float, bandGainsDb: List<Float>) {
+        // "Off" is a flat equalizer: it passes sound through unchanged and needs no special case in libVLC.
+        val equalizer = factory.equalizer().newEqualizer()
+        equalizer.setPreamp(if (enabled) preampDb.coerceIn(-MAX_DB, MAX_DB) else 0f)
+        for (band in 0 until minOf(equalizer.bandCount(), bandGainsDb.size)) {
+            equalizer.setAmp(band, if (enabled) bandGainsDb[band].coerceIn(-MAX_DB, MAX_DB) else 0f)
+        }
+        player.audio().setEqualizer(equalizer)
+    }
+
     override fun release() {
         player.release()
         factory.release()
@@ -76,6 +86,7 @@ class VlcjAudioEngine private constructor(
 
     companion object {
         private const val FULL = 100f
+        private const val MAX_DB = 20f
 
         /** Null when VLC is not installed, so the app can tell the person instead of crashing. */
         fun createOrNull(): VlcjAudioEngine? = runCatching {

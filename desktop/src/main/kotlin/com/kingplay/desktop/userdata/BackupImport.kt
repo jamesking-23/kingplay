@@ -13,6 +13,7 @@ data class ImportSummary(
     val tracksTotal: Int,
     val favoritesMatched: Int,
     val favoritesTotal: Int,
+    val lyricsAdded: Int = 0,
 )
 
 sealed interface ImportOutcome {
@@ -58,9 +59,11 @@ object BackupImport {
         }
         val favoriteIds = backup.favorites.mapNotNull { paths.match(it.path) }
         data = data.copy(favorites = data.favorites + favoriteIds)
+        val newLyrics = backup.lyrics.filterKeys { it !in data.lyrics }
+        data = data.copy(lyrics = data.lyrics + newLyrics)
         return ImportOutcome.Done(
             data,
-            ImportSummary(added, skipped, matched, total, favoriteIds.size, backup.favorites.size),
+            ImportSummary(added, skipped, matched, total, favoriteIds.size, backup.favorites.size, newLyrics.size),
         )
     }
 }

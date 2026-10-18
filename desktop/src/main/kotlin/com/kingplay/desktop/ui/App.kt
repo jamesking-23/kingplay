@@ -1,23 +1,30 @@
 package com.kingplay.desktop.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
@@ -28,7 +35,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -83,6 +89,10 @@ private sealed interface Page {
     data object Playlists : Page
 
     data object Queue : Page
+
+    data object Lyrics : Page
+
+    data object Equalizer : Page
 
     data object Library : Page
 
@@ -188,7 +198,16 @@ fun App(app: DesktopAppState, covers: CoverRepository) {
 
 @Composable
 private fun Rail(page: Page, onPage: (Page) -> Unit) {
-    NavigationRail {
+    // A plain scrolling column rather than NavigationRail, so every item stays reachable in a short window.
+    Column(
+        modifier = Modifier
+            .width(RAIL_WIDTH)
+            .fillMaxHeight()
+            .background(MaterialTheme.colorScheme.surface)
+            .verticalScroll(rememberScrollState())
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         RailItem("Songs", Icons.Filled.MusicNote, page is Page.Songs) { onPage(Page.Songs) }
         RailItem("Albums", Icons.Filled.Album, page is Page.Albums || page is Page.AlbumDetail) { onPage(Page.Albums) }
         RailItem("Artists", Icons.Filled.Person, page is Page.Artists || page is Page.ArtistDetail) {
@@ -200,10 +219,14 @@ private fun Rail(page: Page, onPage: (Page) -> Unit) {
             page is Page.Playlists || page is Page.PlaylistDetail || page is Page.Smart,
         ) { onPage(Page.Playlists) }
         RailItem("Queue", Icons.AutoMirrored.Filled.QueueMusic, page is Page.Queue) { onPage(Page.Queue) }
+        RailItem("Lyrics", Icons.Filled.Lyrics, page is Page.Lyrics) { onPage(Page.Lyrics) }
+        RailItem("Equalizer", Icons.Filled.Equalizer, page is Page.Equalizer) { onPage(Page.Equalizer) }
         RailItem("Library", Icons.Filled.Folder, page is Page.Library) { onPage(Page.Library) }
         RailItem("Settings", Icons.Filled.Settings, page is Page.Settings) { onPage(Page.Settings) }
     }
 }
+
+private val RAIL_WIDTH = 88.dp
 
 @Composable
 private fun RailItem(label: String, icon: ImageVector, selected: Boolean, onClick: () -> Unit) {
@@ -271,6 +294,14 @@ private fun PageContent(
             onNotice = onNotice,
         )
         Page.Queue -> QueuePage(app, index, playback, onDialog)
+        Page.Lyrics -> LyricsPage(
+            app = app,
+            track = currentId?.let(index::get),
+            positionMs = playback.positionMs,
+            importedKeys = user.lyrics.keys,
+            onNotice = onNotice,
+        )
+        Page.Equalizer -> EqualizerPage(settings, app::updateEqualizer)
         Page.Library -> LibraryPage(
             folders = folders,
             onAdd = { chooseFolder()?.let(app::addFolder) },
