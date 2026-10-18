@@ -9,11 +9,11 @@ PIDS=$(grep -o -E 'Start proc [0-9]+:com\.kingplay\.app\.debug' logcat.txt | gre
   echo "pids: $PIDS rc=$rc"
   grep -h -B2 -A14 -E '<failure|<error' $(find app/build/outputs -name '*.xml' 2>/dev/null) /dev/null | head -30
   echo "---- app errors"
-  if [ -n "$PIDS" ]; then grep -E "^[0-9-]+ [0-9:.]+ +($PIDS) +[0-9]+ [EWF] " logcat.txt | grep -v -E 'ThreadPoolExecutor|Choreographer' | head -45; fi
+  if [ -n "$PIDS" ]; then grep -E "^[0-9-]+ [0-9:.]+ +($PIDS) +[0-9]+ [EWF] " logcat.txt | grep -v -E 'ThreadPoolExecutor|Choreographer|ClassLoaderContext|ziparchive|CPU variant|Known variants|different ABI' | cut -c1-260 | head -30; fi
   echo "---- kingplay tags"
   grep -i -E 'kingplay|ScanWorker|Hilt' logcat.txt | grep -E ' [EWF] ' | head -15
   echo "---- last app lines"
-  if [ -n "$PIDS" ]; then grep -E "^[0-9-]+ [0-9:.]+ +($PIDS) +[0-9]+ [IDEWF] " logcat.txt | tail -25; fi
+  if [ -n "$PIDS" ]; then grep -E "^[0-9-]+ [0-9:.]+ +($PIDS) +[0-9]+ [IDEWF] " logcat.txt | grep -v -E 'ClassLoaderContext|ziparchive|nativeloader|CPU variant' | cut -c1-260 | tail -40; fi
   echo "---- ANR"
   grep -i -E 'ANR in|am_anr|Input dispatching timed out' logcat.txt | head -5
 } > summary.txt 2>&1
