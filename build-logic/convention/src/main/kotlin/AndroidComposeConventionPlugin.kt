@@ -24,7 +24,7 @@ class AndroidComposeConventionPlugin : Plugin<Project> {
                 add("implementation", libs.library("androidx-compose-ui-tooling-preview"))
                 add("implementation", libs.library("androidx-compose-material3"))
                 add("implementation", libs.library("androidx-compose-material-icons-core"))
-                add("implementation", libs.library("androidx-compose-material3-window-size-class"))
+                add("implementation", libs.library("androidx-compose-material3-window-size"))
                 add("implementation", libs.library("androidx-lifecycle-runtime-compose"))
                 add("debugImplementation", libs.library("androidx-compose-ui-tooling"))
                 add("debugImplementation", libs.library("androidx-compose-ui-test-manifest"))
