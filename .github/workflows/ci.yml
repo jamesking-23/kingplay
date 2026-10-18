@@ -24,7 +24,18 @@ jobs:
         with:
           gradle-version: 8.10.2
       - name: Static analysis
-        run: gradle detekt lint -PwarningsAsErrors=true
+        shell: bash
+        run: |
+          set +e
+          gradle detekt lint -PwarningsAsErrors=true 2>&1 | tee build.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            grep -nE "^e: |What went wrong|Could not |Unresolved|FAILED|error:" -A2 build.log | head -70 > errs.txt
+            [ -s errs.txt ] || tail -60 build.log > errs.txt
+            msg=$(sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g' errs.txt | cut -c1-7000)
+            echo "::error title=Gradle output::$msg"
+          fi
+          exit $code
       - name: Unit tests
         run: gradle testDebugUnitTest
       - name: Assemble
