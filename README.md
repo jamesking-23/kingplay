@@ -226,3 +226,9 @@ saved queue replacing a file opened from Explorer at start-up; video auto-advanc
 being re-sorted on every playback tick (now remembered); songs without an album tag sharing one cover; and the export
 dialog suggesting invalid file names and overwriting without asking. Not fixed: file dialogs are still unparented, and
 songs opened from Explorer are not kept across a library rescan.
+
+## First real build (step 4k)
+
+Built on GitHub Actions for the first time. Desktop (Windows): compiles, 175 tests pass, MSI and EXE installers are
+produced. Android: unit tests pass and the debug APK assembles. Static analysis (detekt) still reports style findings
+and is report-only in CI until they are cleaned up.
