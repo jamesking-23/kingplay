@@ -1,5 +1,6 @@
 package com.kingplay.feature.nowplaying
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -56,7 +57,13 @@ import com.kingplay.core.ui.displayName
 import com.kingplay.core.ui.format.formatDuration
 import com.kingplay.core.ui.format.formatQuality
 import com.kingplay.core.ui.format.progressFraction
+import com.kingplay.feature.nowplaying.logic.StageMode
 import com.kingplay.feature.nowplaying.logic.seekTargetMs
+import com.kingplay.feature.nowplaying.stage.LyricsView
+import com.kingplay.feature.nowplaying.stage.SleepTimerSheet
+import com.kingplay.feature.nowplaying.stage.StageEvent
+import com.kingplay.feature.nowplaying.stage.StageViewModel
+import com.kingplay.feature.nowplaying.stage.VisualizerView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 
@@ -72,6 +79,8 @@ fun NowPlayingScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showQueue by rememberSaveable { mutableStateOf(false) }
+    var showSleep by rememberSaveable { mutableStateOf(false) }
+    var mode by rememberSaveable { mutableStateOf(StageMode.ARTWORK) }
 
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(modifier = Modifier.statusBarsPadding().navigationBarsPadding()) {
@@ -90,6 +99,9 @@ fun NowPlayingScreen(
                 PlayerBody(
                     state = state,
                     positionMs = viewModel.positionMs,
+                    mode = mode,
+                    onMode = { mode = if (mode == it) StageMode.ARTWORK else it },
+                    onSleep = { showSleep = true },
                     onEvent = viewModel::onEvent,
                 )
             }
@@ -97,6 +109,9 @@ fun NowPlayingScreen(
     }
     if (showQueue) {
         QueueSheet(state = state, onEvent = viewModel::onEvent, onDismiss = { showQueue = false })
+    }
+    if (showSleep) {
+        SleepTimerSheet(onDismiss = { showSleep = false })
     }
 }
 
@@ -136,6 +151,9 @@ private fun TopBar(onClose: () -> Unit, onEqualizer: () -> Unit, onQueue: () -> 
 private fun PlayerBody(
     state: NowPlayingState,
     positionMs: StateFlow<Long>,
+    mode: StageMode,
+    onMode: (StageMode) -> Unit,
+    onSleep: () -> Unit,
     onEvent: (NowPlayingEvent) -> Unit,
 ) {
     val spacing = KpTheme.spacing
@@ -150,8 +168,16 @@ private fun PlayerBody(
                 modifier = artModifier,
             )
         }
+        val stage: @Composable (Modifier) -> Unit = { stageModifier ->
+            Stage(
+                mode = mode,
+                isPlaying = state.playback.isPlaying,
+                positionMs = positionMs,
+                modifier = stageModifier,
+            ) { artwork(Modifier.fillMaxSize()) }
+        }
         val controls: @Composable (Modifier) -> Unit = { controlsModifier ->
-            Controls(state, positionMs, onEvent, controlsModifier)
+            Controls(state, positionMs, mode, onMode, onSleep, onEvent, controlsModifier)
         }
         if (landscape) {
             Row(
@@ -159,7 +185,7 @@ private fun PlayerBody(
                 horizontalArrangement = Arrangement.spacedBy(spacing.xl),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                artwork(Modifier.fillMaxHeight(0.85f).aspectRatio(1f))
+                stage(Modifier.fillMaxHeight(0.85f).aspectRatio(1f))
                 controls(Modifier.weight(1f))
             }
         } else {
@@ -173,7 +199,7 @@ private fun PlayerBody(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
-                    artwork(Modifier.fillMaxWidth().aspectRatio(1f))
+                    stage(Modifier.fillMaxWidth().aspectRatio(1f))
                 }
                 controls(Modifier.fillMaxWidth())
             }
@@ -185,6 +211,9 @@ private fun PlayerBody(
 private fun Controls(
     state: NowPlayingState,
     positionMs: StateFlow<Long>,
+    mode: StageMode,
+    onMode: (StageMode) -> Unit,
+    onSleep: () -> Unit,
     onEvent: (NowPlayingEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -225,6 +254,7 @@ private fun Controls(
                     },
                 )
             }
+            StageButtons(mode = mode, onMode = onMode, onSleep = onSleep)
             if (track != null) {
                 Text(
                     text = formatQuality(track.format, track.sampleRateHz, track.bitrateKbps),
@@ -373,5 +403,77 @@ private fun ToggleIconButton(
             contentDescription = contentDescription,
             tint = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun StageButtons(mode: StageMode, onMode: (StageMode) -> Unit, onSleep: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        StageToggle(
+            icon = KpIcons.Notes,
+            label = stringResource(R.string.np_lyrics),
+            selected = mode == StageMode.LYRICS,
+            onClick = { onMode(StageMode.LYRICS) },
+        )
+        StageToggle(
+            icon = KpIcons.GraphicEq,
+            label = stringResource(R.string.np_visualizer),
+            selected = mode == StageMode.VISUALIZER,
+            onClick = { onMode(StageMode.VISUALIZER) },
+        )
+        KpIconButton(
+            icon = KpIcons.Bedtime,
+            contentDescription = stringResource(R.string.np_sleep_title),
+            onClick = onSleep,
+        )
+    }
+}
+
+@Composable
+private fun StageToggle(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
+    val stateText = stringResource(if (selected) R.string.np_toggle_on else R.string.np_toggle_off)
+    IconButton(
+        onClick = rememberHapticClick(onClick),
+        modifier = Modifier.semantics { stateDescription = stateText },
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/** The big square: cover art, lyrics or the visualizer. The art stays composed-by-caller so its cache is shared. */
+@Composable
+private fun Stage(
+    mode: StageMode,
+    isPlaying: Boolean,
+    positionMs: StateFlow<Long>,
+    modifier: Modifier = Modifier,
+    viewModel: StageViewModel = hiltViewModel(),
+    artwork: @Composable () -> Unit,
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    Crossfade(targetState = mode, modifier = modifier, label = "stage") { shown ->
+        when (shown) {
+            StageMode.ARTWORK -> artwork()
+            StageMode.LYRICS -> Surface(
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                LyricsView(
+                    state = state.lyrics,
+                    positionMs = positionMs,
+                    onSeek = { viewModel.onEvent(StageEvent.Seek(it)) },
+                )
+            }
+            StageMode.VISUALIZER -> Surface(
+                shape = MaterialTheme.shapes.extraLarge,
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                modifier = Modifier.fillMaxSize(),
+            ) { VisualizerView(source = viewModel.spectrum, isPlaying = isPlaying) }
+        }
     }
 }

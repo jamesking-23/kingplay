@@ -15,7 +15,11 @@ import com.kingplay.core.player.dsp.BiquadDesign
 import com.kingplay.core.player.dsp.BiquadState
 import com.kingplay.core.player.dsp.DspConfig
 import com.kingplay.core.player.dsp.EqChain
+import com.kingplay.core.player.dsp.Fft
 import com.kingplay.core.player.dsp.OutputCandidate
+import com.kingplay.core.player.dsp.SPECTRUM_BANDS
+import com.kingplay.core.player.dsp.SpectrumAnalyzer
+import com.kingplay.core.player.dsp.bandEdges
 import com.kingplay.core.player.dsp.buildDspConfig
 import com.kingplay.core.player.dsp.fadeVolume
 import com.kingplay.core.player.dsp.outputKey
@@ -30,6 +34,9 @@ import com.kingplay.core.player.dsp.responseDb
 import com.kingplay.core.player.dsp.settingsFrom
 import com.kingplay.core.player.dsp.softLimit
 import com.kingplay.core.player.dsp.toOutputDevice
+import com.kingplay.core.player.lyrics.parseUslt
+import com.kingplay.core.player.lyrics.pickLyrics
+import com.kingplay.core.player.lyrics.syltToLrc
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.log10
@@ -432,5 +439,128 @@ class ProfileAndCodecTest {
         assertEquals(AudioSettings.MAX_PITCH_SEMITONES, wild.effects.pitchSemitones, 0f)
         assertEquals(-AudioSettings.MAX_PREAMP_DB, wild.replayGainPreampDb, 0f)
         assertEquals(0, wild.fadeMs)
+    }
+}
+
+class SpectrumTest {
+    private val fs = 48_000
+
+    private fun sine(hz: Double, amplitude: Double, frames: Int): FloatArray =
+        FloatArray(frames) { (amplitude * Math.sin(2 * Math.PI * hz * it / fs)).toFloat() }
+
+    private fun run(samples: FloatArray, channels: Int = 1): FloatArray {
+        var last = FloatArray(SPECTRUM_BANDS)
+        val analyzer = SpectrumAnalyzer(fs, channels) { last = it }
+        analyzer.process(samples, samples.size / channels)
+        return last
+    }
+
+    @Test fun fftFindsASineInTheRightBin() {
+        val fft = Fft(1_024)
+        val re = FloatArray(1_024) { Math.sin(2 * Math.PI * 64 * it / 1_024).toFloat() }
+        val im = FloatArray(1_024)
+        fft.transform(re, im)
+        val mags = FloatArray(512) { Math.hypot(re[it].toDouble(), im[it].toDouble()).toFloat() }
+        val peak = mags.indices.maxByOrNull { mags[it] }!!
+        assertEquals(64, peak)
+        assertEquals(512.0, mags[64].toDouble(), 1.0)
+    }
+
+    @Test fun silenceReadsZero() {
+        assertTrue(run(FloatArray(8_192)).all { it == 0f })
+    }
+
+    @Test fun aToneLightsTheBandItBelongsTo() {
+        val bands = run(sine(1_000.0, 0.5, 16_384))
+        val edges = bandEdges(SPECTRUM_BANDS, fs)
+        val binOf1k = (1_000.0 / (fs / 1_024.0)).toInt()
+        val expected = (0 until SPECTRUM_BANDS).first { binOf1k in edges[it]..edges[it + 1] }
+        val loudest = bands.indices.maxByOrNull { bands[it] }!!
+        assertTrue(Math.abs(loudest - expected) <= 1)
+        assertTrue(bands[loudest] > 0.8f)
+        assertTrue(bands[0] < 0.3f)
+        assertTrue(bands[SPECTRUM_BANDS - 1] < 0.3f)
+    }
+
+    @Test fun stereoIsMixedToMono() {
+        val mono = sine(2_000.0, 0.5, 8_192)
+        val stereo = FloatArray(mono.size * 2) { mono[it / 2] }
+        val a = run(mono)
+        val b = run(stereo, channels = 2)
+        for (i in a.indices) assertEquals(a[i].toDouble(), b[i].toDouble(), 0.001)
+    }
+
+    @Test fun barsFallAfterTheSoundStops() {
+        var last = FloatArray(SPECTRUM_BANDS)
+        val analyzer = SpectrumAnalyzer(fs, 1) { last = it }
+        val tone = sine(1_000.0, 0.5, 8_192)
+        analyzer.process(tone, tone.size)
+        val loud = last.max()
+        val quiet = FloatArray(8_192)
+        analyzer.process(quiet, quiet.size)
+        assertTrue(last.max() < loud * 0.5f)
+    }
+
+    @Test fun bandEdgesAreOrderedAndInRange() {
+        for (rate in listOf(22_050, 44_100, 48_000, 96_000)) {
+            val e = bandEdges(SPECTRUM_BANDS, rate)
+            assertEquals(SPECTRUM_BANDS + 1, e.size)
+            for (i in 1 until e.size) assertTrue(e[i] >= e[i - 1])
+            assertTrue(e.first() >= 1 && e.last() <= 511)
+        }
+    }
+}
+
+class EmbeddedLyricsTest {
+    private fun bytes(vararg values: Int) = ByteArray(values.size) { values[it].toByte() }
+
+    @Test fun usltInLatin1() {
+        val data = bytes(0, 'e'.code, 'n'.code, 'g'.code, 0) + "Hello\nWorld".toByteArray(Charsets.ISO_8859_1)
+        assertEquals("Hello\nWorld", parseUslt(data))
+    }
+
+    @Test fun usltInUtf8SkipsTheDescriptor() {
+        val data = bytes(3, 'e'.code, 'n'.code, 'g'.code) + "desc".toByteArray() + bytes(0) + "Zażółć".toByteArray()
+        assertEquals("Zażółć", parseUslt(data))
+    }
+
+    @Test fun usltInUtf16WithBom() {
+        val text = "Hi".toByteArray(Charsets.UTF_16LE)
+        val data = bytes(1, 'e'.code, 'n'.code, 'g'.code, 0, 0) + bytes(0xFF, 0xFE) + text
+        assertEquals("Hi", parseUslt(data))
+    }
+
+    @Test fun malformedUsltIsNull() {
+        assertNull(parseUslt(bytes(0, 1)))
+        assertNull(parseUslt(bytes(9, 'e'.code, 'n'.code, 'g'.code, 0, 65)))
+        assertNull(parseUslt(bytes(0, 'e'.code, 'n'.code, 'g'.code, 65, 66)))
+    }
+
+    @Test fun syltBecomesLrc() {
+        val body = bytes(0, 'e'.code, 'n'.code, 'g'.code, 2, 1, 0) +
+            "Hello".toByteArray() + bytes(0, 0, 0, 0x03, 0xE8) +
+            "World".toByteArray() + bytes(0, 0, 0, 0xEA, 0x60)
+        assertEquals("[00:01.00]Hello\n[01:00.00]World\n", syltToLrc(body))
+    }
+
+    @Test fun syltInFrameUnitsIsSkipped() {
+        val body = bytes(0, 'e'.code, 'n'.code, 'g'.code, 1, 1, 0) + "A".toByteArray() + bytes(0, 0, 0, 0, 5)
+        assertNull(syltToLrc(body))
+    }
+
+    @Test fun picksTimedLyricsOverPlain() {
+        val picked = pickLyrics(
+            listOf(
+                "TITLE" to "[00:01.00]Not lyrics",
+                "UNSYNCEDLYRICS" to "A very long plain text version of the song that goes on and on",
+                "SYLT" to "[00:01.00]Timed\n[00:02.00]Lines",
+            ),
+        )!!
+        assertTrue(picked.synced)
+        assertEquals(listOf("Timed", "Lines"), picked.lines.map { it.text })
+    }
+
+    @Test fun noLyricsTagsGivesNull() {
+        assertNull(pickLyrics(listOf("ARTIST" to "Someone", "REPLAYGAIN_TRACK_GAIN" to "-3 dB")))
     }
 }

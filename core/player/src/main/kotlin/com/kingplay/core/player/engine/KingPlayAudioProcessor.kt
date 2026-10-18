@@ -7,6 +7,7 @@ import androidx.media3.common.audio.BaseAudioProcessor
 import androidx.media3.common.util.UnstableApi
 import com.kingplay.core.player.dsp.DspConfig
 import com.kingplay.core.player.dsp.EqChain
+import com.kingplay.core.player.dsp.SpectrumAnalyzer
 import dagger.hilt.android.scopes.ServiceScoped
 import java.nio.ByteBuffer
 import javax.inject.Inject
@@ -20,10 +21,13 @@ import kotlin.math.roundToInt
  */
 @OptIn(UnstableApi::class)
 @ServiceScoped
-class KingPlayAudioProcessor @Inject constructor() : BaseAudioProcessor() {
+class KingPlayAudioProcessor @Inject constructor(
+    private val spectrum: DefaultSpectrumSource,
+) : BaseAudioProcessor() {
 
     @Volatile private var config: DspConfig = DspConfig.Bypass
     private var chain: EqChain? = null
+    private var analyzer: SpectrumAnalyzer? = null
     private var encoding = C.ENCODING_INVALID
     private var channels = 0
     private var wasBypass = true
@@ -43,6 +47,7 @@ class KingPlayAudioProcessor @Inject constructor() : BaseAudioProcessor() {
         encoding = inputAudioFormat.encoding
         channels = inputAudioFormat.channelCount
         chain = EqChain(inputAudioFormat.sampleRate, channels)
+        analyzer = SpectrumAnalyzer(inputAudioFormat.sampleRate, channels, onBands = spectrum::publish)
         wasBypass = true
         return inputAudioFormat
     }
@@ -55,6 +60,7 @@ class KingPlayAudioProcessor @Inject constructor() : BaseAudioProcessor() {
         val eq = chain
         if (eq == null || current.bypass) {
             wasBypass = true
+            if (spectrum.active) analyzeUntouched(inputBuffer)
             output.put(inputBuffer)
             output.flip()
             return
@@ -75,6 +81,7 @@ class KingPlayAudioProcessor @Inject constructor() : BaseAudioProcessor() {
             for (i in 0 until samples) scratch[i] = inputBuffer.getShort() / PCM16_SCALE
         }
         eq.process(scratch, frames)
+        if (spectrum.active) analyzer?.process(scratch, frames)
         if (encoding == C.ENCODING_PCM_FLOAT) {
             for (i in 0 until samples) output.putFloat(scratch[i])
         } else {
@@ -87,6 +94,21 @@ class KingPlayAudioProcessor @Inject constructor() : BaseAudioProcessor() {
         output.flip()
     }
 
+    /** Reads the samples for the visualizer without consuming them, so they still go to the output unchanged. */
+    private fun analyzeUntouched(inputBuffer: ByteBuffer) {
+        val bytesPerSample = if (encoding == C.ENCODING_PCM_FLOAT) BYTES_FLOAT else BYTES_16BIT
+        val frames = inputBuffer.remaining() / bytesPerSample / channels
+        val samples = frames * channels
+        if (scratch.size < samples) scratch = FloatArray(samples)
+        val view = inputBuffer.duplicate().order(inputBuffer.order())
+        if (encoding == C.ENCODING_PCM_FLOAT) {
+            for (i in 0 until samples) scratch[i] = view.getFloat()
+        } else {
+            for (i in 0 until samples) scratch[i] = view.getShort() / PCM16_SCALE
+        }
+        analyzer?.process(scratch, frames)
+    }
+
     @Suppress("OVERRIDE_DEPRECATION")
     override fun onFlush() {
         chain?.reset()
@@ -95,6 +117,7 @@ class KingPlayAudioProcessor @Inject constructor() : BaseAudioProcessor() {
 
     override fun onReset() {
         chain = null
+        analyzer = null
         scratch = FloatArray(0)
         encoding = C.ENCODING_INVALID
         channels = 0

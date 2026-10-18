@@ -5,8 +5,10 @@ import com.kingplay.core.model.RepeatMode
 import com.kingplay.core.model.Track
 import com.kingplay.core.model.VideoItem
 import com.kingplay.feature.nowplaying.logic.buildQueueItems
+import com.kingplay.feature.nowplaying.logic.formatRemaining
 import com.kingplay.feature.nowplaying.logic.nextRepeatMode
 import com.kingplay.feature.nowplaying.logic.seekTargetMs
+import com.kingplay.feature.nowplaying.logic.smoothBars
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -54,5 +56,33 @@ class NowPlayingLogicTest {
         assertEquals(50_000, seekTargetMs(0.5f, 100_000))
         assertEquals(100_000, seekTargetMs(2f, 100_000))
         assertEquals(0, seekTargetMs(-1f, 100_000))
+    }
+}
+
+class StageLogicTest {
+    @Test fun remainingTimeFormats() {
+        assertEquals("0:00", formatRemaining(0))
+        assertEquals("0:01", formatRemaining(1))
+        assertEquals("4:05", formatRemaining(245_000))
+        assertEquals("29:59", formatRemaining(1_798_500))
+        assertEquals("1:02:03", formatRemaining(3_723_000))
+        assertEquals("0:00", formatRemaining(-5))
+    }
+
+    @Test fun barsRiseAtOnceAndFallSlowly() {
+        val shown = FloatArray(3)
+        smoothBars(shown, floatArrayOf(0.8f, 0.2f, 0f))
+        assertEquals(0.8f, shown[0], 0.0001f)
+        smoothBars(shown, FloatArray(3))
+        assertEquals(0.8f * 0.88f, shown[0], 0.0001f)
+        assertEquals(0.2f * 0.88f, shown[1], 0.0001f)
+        smoothBars(shown, floatArrayOf(0.9f, 0f, 0f))
+        assertEquals(0.9f, shown[0], 0.0001f)
+    }
+
+    @Test fun shortLatestArraysAreTolerated() {
+        val shown = floatArrayOf(0.5f, 0.5f)
+        smoothBars(shown, FloatArray(1))
+        assertEquals(0.44f, shown[1], 0.0001f)
     }
 }

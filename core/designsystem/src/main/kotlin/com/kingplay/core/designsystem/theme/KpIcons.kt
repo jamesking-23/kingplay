@@ -46,6 +46,23 @@ object KpIcons {
         icon("Equalizer") { path("M10 20h4V4h-4v16zm-6 0h4v-8H4v8zM16 9v11h4V9h-4z") }
     }
 
+    val GraphicEq: ImageVector by lazy {
+        icon("GraphicEq") { path("M7 18h2V6H7v12zm4 4h2V2h-2v20zm-8-8h2v-4H3v4zm12 4h2V6h-2v12zm4-8v4h2v-4h-2z") }
+    }
+
+    val Notes: ImageVector by lazy {
+        icon("Notes") { path("M3 18h12v-2H3v2zM3 6v2h18V6H3zm0 7h18v-2H3v2z") }
+    }
+
+    val Bedtime: ImageVector by lazy {
+        icon("Bedtime") {
+            path(
+                "M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 " +
+                    "2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z",
+            )
+        }
+    }
+
     val QueueMusic: ImageVector by lazy {
         icon("QueueMusic") {
             path(

@@ -78,6 +78,17 @@ Not built yet: crossfade and EQ (2e), Android Auto browse tree (2h).
   profile it is applied automatically; "Remember for this output" in the equalizer saves one.
 - Equalizer screen: Now Playing top bar, equalizer icon.
 
+## Lyrics, visualizer, sleep timer (step 2f)
+
+- Now Playing has three new buttons next to the heart: lyrics, visualizer and sleep timer. Lyrics and visualizer replace the
+  cover art in the big square; tap the button again to go back.
+- Lyrics come from the song's own tags: ID3 USLT and SYLT, Vorbis/FLAC `LYRICS`, MP4. Timed lyrics (LRC text or SYLT)
+  highlight and follow the music; tap a line to jump there. Plain lyrics scroll freely.
+- The visualizer is 32 bars from a 1024-point FFT run inside the audio processor, and only while it is on screen.
+  With low-power visuals on it updates about 15 times a second.
+- Sleep timer: 5 to 90 minutes, end of this song, or after 3 songs. It fades out over the last 30 seconds, can be
+  extended by 10 minutes, and stops exactly at the end of the song for "end of this song".
+
 ## Known limits (by design, tracked for later steps)
 - Tag editing is not built yet. ReplayGain is read from the file while it plays; the library columns for it stay null.
 - External subtitle discovery is part of the video step (2g); `VideoItem.subtitleTracks` is empty for now.
@@ -90,6 +101,11 @@ Not built yet: crossfade and EQ (2e), Android Auto browse tree (2h).
 - Fade is a fade out and in per song, not an overlapping crossfade (that needs a second player).
 - The output device is guessed (USB, wired, Bluetooth, speaker) because Android before 13 does not say which is active.
 - The EQ uses 16-bit or float output; bit-perfect / USB exclusive output is not part of this step.
+- Lyrics are read only from tags inside the file. A separate `.lrc` file next to the song is not reachable under scoped
+  storage; importing one (and editing lyrics) needs a small database table and comes with the backup/settings step.
+- The visualizer is drawn from the audio just before it reaches the speaker buffer, so on Bluetooth it can lead the sound
+  by a fraction of a second.
+- The sleep timer lives in the playback service. It does not survive the app being killed.
 
 ## Rules
 - Feature modules never depend on each other; they use `AppNavigator`.

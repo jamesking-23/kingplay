@@ -1,5 +1,6 @@
 package com.kingplay.core.player.engine
 
+import android.os.SystemClock
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -15,6 +16,9 @@ import com.kingplay.core.model.AudioSettings
 import com.kingplay.core.model.MediaRef
 import com.kingplay.core.model.ReplayGain
 import com.kingplay.core.model.repository.AudioSettingsRepository
+import com.kingplay.core.model.repository.SleepTimer
+import com.kingplay.core.model.sleep.SleepTimerState
+import com.kingplay.core.model.sleep.sleepVolume
 import com.kingplay.core.player.dsp.buildDspConfig
 import com.kingplay.core.player.dsp.fadeVolume
 import com.kingplay.core.player.dsp.replayGainDb
@@ -47,6 +51,7 @@ class AudioEngineBinder @Inject constructor(
     private val player: Player,
     private val processor: KingPlayAudioProcessor,
     private val settingsRepository: AudioSettingsRepository,
+    private val sleepTimer: SleepTimer,
 ) {
     private var settings: AudioSettings = settingsRepository.settings.value
     private var replayGain: ReplayGain? = null
@@ -59,10 +64,10 @@ class AudioEngineBinder @Inject constructor(
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             refreshReplayGain(player.currentTracks)
-            updateFade()
+            updateVolume()
         }
 
-        override fun onIsPlayingChanged(isPlaying: Boolean) = updateFade()
+        override fun onIsPlayingChanged(isPlaying: Boolean) = updateVolume()
     }
 
     fun start(scope: CoroutineScope) {
@@ -75,7 +80,7 @@ class AudioEngineBinder @Inject constructor(
                 settingsRepository.settings.collect {
                     settings = it
                     pushConfig()
-                    updateFade()
+                    updateVolume()
                 }
             },
             scope.launch {
@@ -86,8 +91,9 @@ class AudioEngineBinder @Inject constructor(
                         player.playbackParameters = PlaybackParameters(tempo, semitonesToPitch(semitones))
                     }
             },
+            scope.launch { sleepTimer.state.collect { updateVolume() } },
         )
-        updateFade()
+        updateVolume()
     }
 
     fun stop() {
@@ -108,27 +114,36 @@ class AudioEngineBinder @Inject constructor(
         pushConfig()
     }
 
-    /** Runs the fade ticker only while it has something to do; otherwise leaves the volume at full. */
-    private fun updateFade() {
+    /**
+     * Owns the player's volume: the per-song fade and the sleep timer's fade-out multiply together. The ticker runs
+     * only while something needs it; otherwise the volume stays at full.
+     */
+    private fun updateVolume() {
         fadeJob?.cancel()
         fadeJob = null
-        val isAudio = MediaIds.parse(player.currentMediaItem?.mediaId) is MediaRef.Audio
-        if (settings.fadeMs <= 0 || !isAudio) {
+        val songFade = settings.fadeMs > 0 && MediaIds.parse(player.currentMediaItem?.mediaId) is MediaRef.Audio
+        val sleeping = sleepTimer.state.value is SleepTimerState.Timed
+        if (!songFade && !sleeping) {
             player.volume = 1f
             return
         }
         if (!player.isPlaying) return
         fadeJob = fadeScope?.launch {
             while (isActive) {
-                val duration = player.duration
-                player.volume = if (duration == C.TIME_UNSET) {
-                    1f
-                } else {
-                    fadeVolume(player.currentPosition, duration, settings.fadeMs)
-                }
+                player.volume = volumeNow(songFade)
                 delay(FADE_TICK_MS)
             }
         }
+    }
+
+    private fun volumeNow(songFade: Boolean): Float {
+        val duration = player.duration
+        val fade = if (songFade && duration != C.TIME_UNSET) {
+            fadeVolume(player.currentPosition, duration, settings.fadeMs)
+        } else {
+            1f
+        }
+        return fade * sleepVolume(sleepTimer.state.value, SystemClock.elapsedRealtime())
     }
 
     private fun readReplayGain(tracks: Tracks) = replayGainFromTags(
