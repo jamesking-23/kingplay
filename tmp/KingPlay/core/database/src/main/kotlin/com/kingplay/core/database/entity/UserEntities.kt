@@ -88,3 +88,11 @@ data class DeviceProfileEntity(
 data class ExcludedFolderEntity(
     @PrimaryKey val path: String,
 )
+
+/** Lyrics the user imported from a .lrc file. [lyricsKey] is artist and title, so it survives library rebuilds. */
+@Entity(tableName = "imported_lyrics")
+data class ImportedLyricsEntity(
+    @PrimaryKey val lyricsKey: String,
+    val lrc: String,
+    val updatedAtMs: Long,
+)

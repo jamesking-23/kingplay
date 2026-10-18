@@ -3,8 +3,10 @@ package com.kingplay.core.database.di
 import android.content.Context
 import androidx.room.Room
 import com.kingplay.core.database.KingPlayDatabase
+import com.kingplay.core.database.Migrations
 import com.kingplay.core.database.dao.EqDao
 import com.kingplay.core.database.dao.ExcludedFolderDao
+import com.kingplay.core.database.dao.LyricsDao
 import com.kingplay.core.database.dao.PlaylistDao
 import com.kingplay.core.database.dao.QueueDao
 import com.kingplay.core.database.dao.TrackDao
@@ -23,7 +25,8 @@ object DatabaseModule {
     @Singleton
     fun database(@ApplicationContext context: Context): KingPlayDatabase =
         Room.databaseBuilder(context, KingPlayDatabase::class.java, KingPlayDatabase.NAME)
-            // Migrations are added here as the schema evolves. No destructive fallback: playlists live in this DB.
+            // No destructive fallback: playlists live in this DB.
+            .addMigrations(*Migrations.ALL)
             .build()
 
     @Provides
@@ -43,4 +46,7 @@ object DatabaseModule {
 
     @Provides
     fun excludedFolderDao(db: KingPlayDatabase): ExcludedFolderDao = db.excludedFolderDao()
+
+    @Provides
+    fun lyricsDao(db: KingPlayDatabase): LyricsDao = db.lyricsDao()
 }

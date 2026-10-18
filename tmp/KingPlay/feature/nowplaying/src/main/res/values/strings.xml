@@ -29,6 +29,9 @@
     <string name="np_mini_open">Open now playing: %1$s by %2$s</string>
     <string name="np_mini_open_no_artist">Open now playing: %1$s</string>
     <string name="np_lyrics">Lyrics</string>
+    <string name="np_lyrics_import">Import .lrc file</string>
+    <string name="np_lyrics_import_failed">That file could not be used as lyrics. Pick a .lrc or .txt file.</string>
+    <string name="np_lyrics_remove_imported">Remove imported lyrics</string>
     <string name="np_lyrics_none">No lyrics found in this song\'s tags.</string>
     <string name="np_visualizer">Visualizer</string>
     <string name="np_toggle_on">On</string>

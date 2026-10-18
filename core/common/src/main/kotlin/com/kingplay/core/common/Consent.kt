@@ -18,7 +18,7 @@ interface AnalyticsTracker {
     fun track(event: String, params: Map<String, String> = emptyMap())
 }
 
-/** Phase 1 consent store. The settings step swaps this for a DataStore-backed implementation. */
+/** In-memory consent store for tests. The app uses the DataStore-backed one in `:data:settings`. */
 @Singleton
 class InMemoryConsentGate @Inject constructor() : ConsentGate {
     private val granted = MutableStateFlow(false)

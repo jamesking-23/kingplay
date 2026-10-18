@@ -22,6 +22,8 @@ Phase 1 (MVP) is built step by step; this drop is **step 2d: Library and Now Pla
   (`ArtworkImage`), the shared list row (`MediaRow`) and formatters.
 - `:feature:library` Library home (Songs, Albums, Artists, Genres, Folders, Playlists tabs) and the detail screens.
 - `:feature:nowplaying` Now Playing screen, queue sheet and the mini player.
+- `:feature:settings` Settings screen: theme, library scan, privacy, backup and restore.
+- `:data:settings` DataStore-backed app settings and analytics consent (off by default).
 - `:feature:video` Video player screen: gestures, controls, speed, audio and subtitle tracks, picture-in-picture.
 - `:core:database` Room schema v1 (tracks, videos, playlists, queue, EQ presets, device profiles, FTS4 search), DAOs, mappers.
 - `:data:library` MediaStore scanner, Room-backed repositories, WorkManager scan worker, M3U import/export.
@@ -102,21 +104,34 @@ Not built yet: crossfade and EQ (2e), Android Auto browse tree (2h).
 - Subtitles: embedded tracks are listed. For a separate file use "Load subtitle file" (.srt, .vtt, .ass, .ttml).
 - Picture-in-picture: button, and automatic when you leave during playback on Android 12+.
 
+## Settings, backup, lyrics import (step 2h)
+- Settings is a real screen now and the theme (mode, accent, wallpaper colours, low-power visuals) is saved and applied
+  to the whole app. Other screens: scan for new music, scan everything again, folders left out of the library
+  (with "include again"), analytics consent (off; no analytics service is connected in this version), about.
+- Backup: one `.json` file with playlists, favourites, saved EQ presets, left-out folders, imported lyrics and settings.
+  Songs are stored as file paths and matched again by path on restore (same loose matching as M3U import), so a backup
+  works after Android rebuilds its media index or on a new phone. Restore adds to what you have: playlists with an
+  existing name are skipped, existing EQ presets and lyrics are kept. Music files and video entries are not included.
+- Lyrics import: when a song has no lyrics, Now Playing offers "Import .lrc file". Imported lyrics are stored by
+  artist and title and win over tags; "Remove imported lyrics" brings the tags back.
+- The database is now version 2 (new `imported_lyrics` table) with a real migration. Nothing is wiped.
+
 ## Known limits (by design, tracked for later steps)
 - Tag editing is not built yet. ReplayGain is read from the file while it plays; the library columns for it stay null.
 - Subtitle files next to a video are not found automatically (scoped storage); pick the file with the system picker.
   A picked subtitle is not remembered after the app restarts, and adding one reloads the video at the same position.
-- Playlists refer to MediaStore ids. If Android rebuilds its media index, ids change; the backup step (2h) will relink by path.
+- Playlists refer to MediaStore ids. If Android rebuilds its media index, ids change; a backup file relinks them by path.
 
 - No search screen yet (`SearchRepository` exists).
 - Playlist rename and drag-to-reorder are not built yet; the queue can be reordered with Move up / Move down.
-- Settings is a placeholder (the design gallery with theme controls) until step 2h; theme choices are not persisted yet.
+- Device EQ profiles and the queue are not part of the backup (device keys are hardware-specific).
+- Folders can be re-included in Settings but not newly excluded there (the system picker gives no plain path); use the folder screens.
 - Genres and folders list songs only; an album grid view and per-tab sort options (other than Songs) come with polish in 2i.
 - Fade is a fade out and in per song, not an overlapping crossfade (that needs a second player).
 - The output device is guessed (USB, wired, Bluetooth, speaker) because Android before 13 does not say which is active.
 - The EQ uses 16-bit or float output; bit-perfect / USB exclusive output is not part of this step.
 - Lyrics are read only from tags inside the file. A separate `.lrc` file next to the song is not reachable under scoped
-  storage; importing one (and editing lyrics) needs a small database table and comes with the backup/settings step.
+  storage; use "Import .lrc file" in Now Playing instead. Lyrics editing is not built.
 - The visualizer is drawn from the audio just before it reaches the speaker buffer, so on Bluetooth it can lead the sound
   by a fraction of a second.
 - The sleep timer lives in the playback service. It does not survive the app being killed.

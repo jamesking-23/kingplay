@@ -28,16 +28,16 @@ import com.kingplay.feature.library.detail.PlaylistDetailRoute
 import com.kingplay.feature.library.home.LibraryScreen
 import com.kingplay.feature.nowplaying.MiniPlayer
 import com.kingplay.feature.nowplaying.NowPlayingScreen
+import com.kingplay.feature.settings.SettingsScreen
 import com.kingplay.feature.video.VideoArgs
 import com.kingplay.feature.video.ui.VideoPlayerScreen
 
 /**
  * The app's frame: one nav graph, and the mini player pinned above the system bar on every screen except the
  * full-screen ones (Now Playing and the video player).
- * [settings] is whatever the settings route should show; until the settings step it is the design gallery.
  */
 @Composable
-fun KingPlayRoot(settings: @Composable () -> Unit, modifier: Modifier = Modifier) {
+fun KingPlayRoot(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
     val navigator = remember(navController) { AppNavigatorImpl(navController) }
     val backStack by navController.currentBackStackEntryAsState()
@@ -91,7 +91,7 @@ fun KingPlayRoot(settings: @Composable () -> Unit, modifier: Modifier = Modifier
                 arguments = listOf(navArgument(VideoArgs.VIDEO_ID) { type = NavType.LongType }),
             ) { VideoPlayerScreen(navigator) }
             composable(Routes.EQUALIZER) { EqualizerScreen(navigator) }
-            composable(Routes.SETTINGS) { settings() }
+            composable(Routes.SETTINGS) { SettingsScreen(navigator) }
         }
     }
 }

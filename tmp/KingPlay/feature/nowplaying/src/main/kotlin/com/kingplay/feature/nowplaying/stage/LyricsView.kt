@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,7 +14,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -43,25 +46,52 @@ private const val AUTO_SCROLL_PAUSE_NS = 3_000_000_000L
 private const val VIEWPORT_ANCHOR_DIVISOR = 3
 private const val INACTIVE_ALPHA = 0.55f
 
-/** Lyrics of the playing song: follows the music when they are timed, scrolls freely when they are not. */
+/**
+ * Lyrics of the playing song: follows the music when they are timed, scrolls freely when they are not. When the song
+ * has none, the user can import a .lrc file for it.
+ */
 @Composable
 fun LyricsView(
     state: LyricsState,
     positionMs: StateFlow<Long>,
+    imported: Boolean,
+    importFailed: Boolean,
     onSeek: (Long) -> Unit,
+    onImport: () -> Unit,
+    onRemoveImported: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     when (state) {
         LyricsState.Loading -> Box(modifier)
-        LyricsState.None -> Box(modifier.padding(KpTheme.spacing.lg), contentAlignment = Alignment.Center) {
+        LyricsState.None -> Column(
+            modifier = modifier.fillMaxSize().padding(KpTheme.spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.md, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             Text(
                 text = stringResource(R.string.np_lyrics_none),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
+            if (importFailed) {
+                Text(
+                    text = stringResource(R.string.np_lyrics_import_failed),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            OutlinedButton(onClick = onImport) { Text(stringResource(R.string.np_lyrics_import)) }
         }
-        is LyricsState.Available -> LyricsList(state.lyrics, positionMs, onSeek, modifier)
+        is LyricsState.Available -> Box(modifier) {
+            LyricsList(state.lyrics, positionMs, onSeek, Modifier)
+            if (imported) {
+                TextButton(onClick = onRemoveImported, modifier = Modifier.align(Alignment.BottomEnd)) {
+                    Text(stringResource(R.string.np_lyrics_remove_imported))
+                }
+            }
+        }
     }
 }
 

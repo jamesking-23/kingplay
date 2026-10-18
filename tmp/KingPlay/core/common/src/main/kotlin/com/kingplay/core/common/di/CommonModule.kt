@@ -2,13 +2,11 @@ package com.kingplay.core.common.di
 
 import com.kingplay.core.common.AnalyticsTracker
 import com.kingplay.core.common.ApplicationScope
-import com.kingplay.core.common.ConsentGate
 import com.kingplay.core.common.DefaultFeatureFlags
 import com.kingplay.core.common.Dispatcher
 import com.kingplay.core.common.Entitlements
 import com.kingplay.core.common.FeatureFlagSource
 import com.kingplay.core.common.FeatureFlags
-import com.kingplay.core.common.InMemoryConsentGate
 import com.kingplay.core.common.InMemoryFeatureFlagSource
 import com.kingplay.core.common.KpDispatchers
 import com.kingplay.core.common.NoOpAnalyticsTracker
@@ -37,9 +35,6 @@ abstract class CommonBindingsModule {
 
     @Binds
     abstract fun entitlements(impl: ProUnlockedEntitlements): Entitlements
-
-    @Binds
-    abstract fun consentGate(impl: InMemoryConsentGate): ConsentGate
 
     @Binds
     abstract fun analyticsTracker(impl: NoOpAnalyticsTracker): AnalyticsTracker

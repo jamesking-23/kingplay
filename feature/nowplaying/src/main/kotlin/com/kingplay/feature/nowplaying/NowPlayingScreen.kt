@@ -1,5 +1,7 @@
 package com.kingplay.feature.nowplaying
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -35,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -64,6 +67,7 @@ import com.kingplay.feature.nowplaying.stage.SleepTimerSheet
 import com.kingplay.feature.nowplaying.stage.StageEvent
 import com.kingplay.feature.nowplaying.stage.StageViewModel
 import com.kingplay.feature.nowplaying.stage.VisualizerView
+import com.kingplay.feature.nowplaying.stage.readLrcFile
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 
@@ -455,6 +459,10 @@ private fun Stage(
     artwork: @Composable () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val pickLrc = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) viewModel.onEvent(StageEvent.ImportLrc(readLrcFile(context, uri)))
+    }
     Crossfade(targetState = mode, modifier = modifier, label = "stage") { shown ->
         when (shown) {
             StageMode.ARTWORK -> artwork()
@@ -466,7 +474,11 @@ private fun Stage(
                 LyricsView(
                     state = state.lyrics,
                     positionMs = positionMs,
+                    imported = state.lyricsImported,
+                    importFailed = state.importFailed,
                     onSeek = { viewModel.onEvent(StageEvent.Seek(it)) },
+                    onImport = { pickLrc.launch(arrayOf("*/*")) },
+                    onRemoveImported = { viewModel.onEvent(StageEvent.RemoveImported) },
                 )
             }
             StageMode.VISUALIZER -> Surface(
