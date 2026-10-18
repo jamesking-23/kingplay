@@ -6,6 +6,7 @@ Premium local-first music and video player: an Android app (Kotlin, Jetpack Comp
 ## Setup
 
 First time building? Read `docs/FIRST_BUILD.md`: it lists what was never compiled and the order to fix things in.
+Using the Windows app? Read `docs/DESKTOP_USER_GUIDE.md`.
 1. Install Android Studio (latest stable) with JDK 17 and Android SDK 35.
 2. Open this folder. If there is no `gradlew`, run once: `gradle wrapper --gradle-version 8.10.2`.
 3. Run the `app` configuration. First launch asks for media access, then shows your library. The settings icon opens a
