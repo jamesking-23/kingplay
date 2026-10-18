@@ -120,8 +120,10 @@ fun SettingsPage(
         }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        Text("About", style = MaterialTheme.typography.titleMedium)
+        AboutSection()
         Text(
-            "KingPlay for Windows $APP_VERSION. Sound by VLC. Your music files are only read, never changed.",
+            "Sound by VLC. Your music files are only read, never changed.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -143,7 +145,6 @@ internal fun exportBackup(app: DesktopAppState, onNotice: (String) -> Unit) {
     onNotice(if (saved != null) "Saved $saved" else "The backup was not saved.")
 }
 
-private const val APP_VERSION = "1.0.0"
 
 private const val TRAY_LABEL = "Keep playing in the tray when the window is closed"
 

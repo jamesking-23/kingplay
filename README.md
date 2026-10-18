@@ -232,3 +232,11 @@ songs opened from Explorer are not kept across a library rescan.
 Built on GitHub Actions for the first time. Desktop (Windows): compiles, 175 tests pass, MSI and EXE installers are
 produced. Android: unit tests pass and the debug APK assembles. Static analysis (detekt) still reports style findings
 and is report-only in CI until they are cleaned up.
+
+## About section (step 4l)
+
+Settings now ends with an About block on both apps, in the style of Windows Media Player: the app name, "© <year>
+KKINGG Corporation. All rights reserved.", the version, and a chevron that opens a session identifier, License Terms,
+Privacy Policy and Third-Party Software Acknowledgements, with Help and Feedback links below. The text and links live
+in `core/model/.../about/AboutInfo.kt`, shared by both apps. The licence and privacy texts are plain-language drafts
+and should be reviewed before a public release.

@@ -178,11 +178,8 @@ fun SettingsContent(
             }
             item { SectionTitle(R.string.settings_about) }
             item {
-                Column {
-                    Text(
-                        text = stringResource(R.string.settings_version, versionName),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
+                    AboutSection(versionName)
                     Text(
                         text = stringResource(R.string.settings_about_note),
                         style = MaterialTheme.typography.bodyMedium,
