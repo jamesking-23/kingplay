@@ -1,11 +1,11 @@
 package com.kingplay.desktop.library
 
-import java.io.File
-import java.util.logging.Level
-import java.util.logging.Logger
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.Tag
+import java.io.File
+import java.util.logging.Level
+import java.util.logging.Logger
 
 /** Reads tags with jaudiotagger (mp3, flac, m4a, ogg, wav and more). Unreadable files return null. */
 class JAudioTaggerReader : TagReader {

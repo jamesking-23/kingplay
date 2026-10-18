@@ -1,10 +1,10 @@
 package com.kingplay.data.library
 
-import com.kingplay.data.library.playlist.M3uEntry
-import com.kingplay.data.library.playlist.M3uParser
-import com.kingplay.data.library.playlist.M3uWriter
-import com.kingplay.data.library.playlist.PathRow
-import com.kingplay.data.library.playlist.TrackPathIndex
+import com.kingplay.core.model.playlist.M3uEntry
+import com.kingplay.core.model.playlist.M3uParser
+import com.kingplay.core.model.playlist.M3uWriter
+import com.kingplay.core.model.playlist.PathRow
+import com.kingplay.core.model.playlist.TrackPathIndex
 import com.kingplay.data.library.repo.moveItem
 import com.kingplay.data.library.repo.normalizedResumePosition
 import com.kingplay.data.library.repo.removeItem

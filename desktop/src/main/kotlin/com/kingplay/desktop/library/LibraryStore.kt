@@ -1,10 +1,7 @@
 package com.kingplay.desktop.library
 
 import com.kingplay.core.model.Track
-import com.kingplay.core.model.backup.Json
 import java.io.File
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 
 /** What is kept between runs: the scanned songs and the folders to scan. One JSON file per kind. */
 data class SavedLibrary(val folders: List<String>, val tracks: List<Track>)
@@ -12,29 +9,22 @@ data class SavedLibrary(val folders: List<String>, val tracks: List<Track>)
 class LibraryStore(private val file: File) {
 
     fun load(): SavedLibrary {
-        if (!file.isFile) return SavedLibrary(emptyList(), emptyList())
-        return runCatching {
-            val root = Json.parse(file.readText(Charsets.UTF_8)) as Map<*, *>
-            SavedLibrary(
-                folders = (root["folders"] as? List<*>).orEmpty().filterIsInstance<String>(),
-                tracks = (root["tracks"] as? List<*>).orEmpty().mapNotNull { (it as? Map<*, *>)?.toTrack() },
-            )
-        }.getOrElse { SavedLibrary(emptyList(), emptyList()) } // a damaged file means "rescan", never a crash
+        val root = JsonFile.read(file) ?: return SavedLibrary(emptyList(), emptyList())
+        return SavedLibrary(
+            folders = (root["folders"] as? List<*>).orEmpty().filterIsInstance<String>(),
+            tracks = (root["tracks"] as? List<*>).orEmpty().mapNotNull { (it as? Map<*, *>)?.toTrack() },
+        ) // a damaged file means "rescan", never a crash
     }
 
-    /** Writes to a temporary file first so a crash mid-write cannot destroy the old library. */
     fun save(library: SavedLibrary) {
-        file.parentFile?.mkdirs()
-        val text = Json.write(
+        JsonFile.write(
+            file,
             mapOf(
                 "version" to VERSION.toLong(),
                 "folders" to library.folders,
                 "tracks" to library.tracks.map { it.toMap() },
             ),
         )
-        val temp = File(file.path + ".tmp")
-        temp.writeText(text, Charsets.UTF_8)
-        Files.move(temp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING)
     }
 
     private companion object {

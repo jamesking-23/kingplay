@@ -1,0 +1,97 @@
+package com.kingplay.desktop.userdata
+
+import com.kingplay.core.model.RepeatMode
+
+data class DesktopPlaylist(
+    val id: Long,
+    val name: String,
+    val createdAtMs: Long,
+    /** Track ids in order. An id can be missing from the library (file moved); it is kept and skipped when shown. */
+    val trackIds: List<Long>,
+)
+
+data class PlayStat(val count: Int, val lastPlayedMs: Long)
+
+data class SavedQueue(
+    val trackIds: List<Long>,
+    val index: Int,
+    val positionMs: Long,
+    val shuffle: Boolean,
+    val repeat: RepeatMode,
+)
+
+/**
+ * Everything the person made inside KingPlay on this PC. Kept apart from the scanned library,
+ * so a rescan never touches it.
+ */
+data class UserData(
+    val playlists: List<DesktopPlaylist> = emptyList(),
+    val favorites: Set<Long> = emptySet(),
+    val stats: Map<Long, PlayStat> = emptyMap(),
+    val queue: SavedQueue? = null,
+    val nextPlaylistId: Long = 1,
+) {
+    fun playlist(id: Long): DesktopPlaylist? = playlists.firstOrNull { it.id == id }
+
+    fun isFavorite(trackId: Long): Boolean = trackId in favorites
+
+    /** Creates a playlist; a blank name becomes "New playlist" and a taken name gets " (2)", " (3)"… */
+    fun createPlaylist(name: String, now: Long, trackIds: List<Long> = emptyList()): Pair<UserData, Long> {
+        val unique = uniqueName(name.trim().ifEmpty { DEFAULT_NAME }, taken = playlists.map { it.name })
+        val playlist = DesktopPlaylist(nextPlaylistId, unique, now, trackIds)
+        return copy(playlists = playlists + playlist, nextPlaylistId = nextPlaylistId + 1) to playlist.id
+    }
+
+    fun renamePlaylist(id: Long, name: String): UserData {
+        val clean = name.trim()
+        if (clean.isEmpty()) return this
+        val others = playlists.filter { it.id != id }.map { it.name }
+        return updatePlaylist(id) { it.copy(name = uniqueName(clean, others)) }
+    }
+
+    fun deletePlaylist(id: Long): UserData = copy(playlists = playlists.filter { it.id != id })
+
+    fun addToPlaylist(id: Long, trackIds: List<Long>): UserData =
+        updatePlaylist(id) { it.copy(trackIds = it.trackIds + trackIds) }
+
+    fun removeFromPlaylist(id: Long, position: Int): UserData = updatePlaylist(id) {
+        if (position !in it.trackIds.indices) {
+            it
+        } else {
+            it.copy(trackIds = it.trackIds.filterIndexed { i, _ -> i != position })
+        }
+    }
+
+    fun moveInPlaylist(id: Long, from: Int, to: Int): UserData = updatePlaylist(id) {
+        if (from !in it.trackIds.indices || to !in it.trackIds.indices) {
+            it
+        } else {
+            it.copy(trackIds = it.trackIds.toMutableList().apply { add(to, removeAt(from)) })
+        }
+    }
+
+    fun toggleFavorite(trackId: Long): UserData =
+        copy(favorites = if (trackId in favorites) favorites - trackId else favorites + trackId)
+
+    fun recordPlay(trackId: Long, now: Long): UserData {
+        val old = stats[trackId]
+        return copy(stats = stats + (trackId to PlayStat((old?.count ?: 0) + 1, now)))
+    }
+
+    fun withQueue(queue: SavedQueue?): UserData = copy(queue = queue)
+
+    private fun updatePlaylist(id: Long, change: (DesktopPlaylist) -> DesktopPlaylist): UserData =
+        copy(playlists = playlists.map { if (it.id == id) change(it) else it })
+
+    companion object {
+        const val DEFAULT_NAME = "New playlist"
+
+        fun uniqueName(wanted: String, taken: List<String>): String {
+            val lower = taken.map { it.lowercase() }.toSet()
+            if (wanted.lowercase() !in lower) return wanted
+            var n = 2
+            while ("$wanted ($n)".lowercase() in lower) n++
+            return "$wanted ($n)"
+        }
+    }
+}

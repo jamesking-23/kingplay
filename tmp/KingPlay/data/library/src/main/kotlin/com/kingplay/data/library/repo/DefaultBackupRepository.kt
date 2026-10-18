@@ -12,6 +12,8 @@ import com.kingplay.core.model.backup.BackupPreset
 import com.kingplay.core.model.backup.BackupTrack
 import com.kingplay.core.model.backup.RestoreResult
 import com.kingplay.core.model.backup.RestoreSummary
+import com.kingplay.core.model.playlist.PathRow
+import com.kingplay.core.model.playlist.TrackPathIndex
 import com.kingplay.core.model.repository.BackupRepository
 import com.kingplay.core.model.repository.EqRepository
 import com.kingplay.core.model.repository.LibraryFolderSettings
@@ -19,11 +21,9 @@ import com.kingplay.core.model.repository.LibraryRepository
 import com.kingplay.core.model.repository.LyricsStore
 import com.kingplay.core.model.repository.PlaylistRepository
 import com.kingplay.core.model.repository.SettingsRepository
-import com.kingplay.data.library.playlist.PathRow
-import com.kingplay.data.library.playlist.TrackPathIndex
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.flow.first
 
 /**
  * Backs up what the user made: playlists, favorites, saved EQ presets, excluded folders, imported lyrics and settings.

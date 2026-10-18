@@ -3,12 +3,12 @@ package com.kingplay.desktop
 import com.kingplay.core.model.MediaRef
 import com.kingplay.core.model.RepeatMode
 import com.kingplay.desktop.queue.PlayQueue
-import kotlin.random.Random
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.random.Random
 
 private fun refs(n: Int) = List(n) { MediaRef.Audio(it.toLong() + 1) }
 

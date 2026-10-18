@@ -63,7 +63,7 @@ class ControllerTest {
         engine = engine,
         lookup = { library[it] },
         scope = CoroutineScope(Dispatchers.Unconfined + Job()),
-        onFinished = { finished += it.id },
+        onCounted = { finished += it.id },
     )
 
     private fun refs(vararg ids: Long) = ids.map { MediaRef.Audio(it) }
@@ -89,7 +89,7 @@ class ControllerTest {
         assertTrue(engine.loaded.isEmpty())
     }
 
-    @Test fun songEndingAdvancesAndCountsAsFinished() {
+    @Test fun songEndingAdvancesAndCountsAsPlayed() {
         controller.playMedia(refs(1, 2))
         engine.bus.tryEmit(EngineEvent.Ended)
         assertEquals(listOf("C:/music/1.mp3", "C:/music/2.mp3"), engine.loaded)
@@ -201,5 +201,88 @@ class ControllerTest {
         assertTrue(controller.state.value.shuffleEnabled)
         assertEquals(RepeatMode.ALL, controller.state.value.repeatMode)
         assertEquals("Song 1", controller.state.value.title)
+    }
+
+    @Test fun aPlayIsCountedOnceAfterHalfTheSong() {
+        controller.playMedia(refs(1))
+        engine.bus.tryEmit(EngineEvent.Position(50_000))
+        assertTrue(finished.isEmpty())
+        engine.bus.tryEmit(EngineEvent.Position(100_000))
+        engine.bus.tryEmit(EngineEvent.Position(120_000))
+        engine.bus.tryEmit(EngineEvent.Ended)
+        assertEquals(listOf(1L), finished)
+    }
+
+    @Test fun longSongsCountAfterFourMinutes() {
+        library[1] = track(1, durationMs = 3_600_000)
+        controller.playMedia(refs(1))
+        engine.bus.tryEmit(EngineEvent.Position(239_000))
+        assertTrue(finished.isEmpty())
+        engine.bus.tryEmit(EngineEvent.Position(240_000))
+        assertEquals(listOf(1L), finished)
+    }
+
+    @Test fun skippingEarlyDoesNotCount() {
+        controller.playMedia(refs(1, 2))
+        engine.bus.tryEmit(EngineEvent.Position(10_000))
+        controller.skipToNext()
+        assertTrue(finished.isEmpty())
+    }
+
+    @Test fun repeatOneCountsEveryLap() {
+        controller.playMedia(refs(1))
+        controller.setRepeatMode(RepeatMode.ONE)
+        engine.bus.tryEmit(EngineEvent.Ended)
+        engine.bus.tryEmit(EngineEvent.Ended)
+        assertEquals(listOf(1L, 1L), finished)
+    }
+
+    @Test fun restoreShowsTheSongWithoutLoadingIt() {
+        controller.restore(refs(1, 2, 3), index = 1, positionMs = 42_000, shuffle = false, repeat = RepeatMode.ALL)
+        assertTrue(engine.loaded.isEmpty())
+        val s = controller.state.value
+        assertEquals("Song 2", s.title)
+        assertEquals(42_000, s.positionMs)
+        assertEquals(RepeatMode.ALL, s.repeatMode)
+        assertFalse(s.isPlaying)
+    }
+
+    @Test fun firstPlayAfterRestoreLoadsAndSeeksToTheSavedPosition() {
+        controller.restore(refs(1, 2), index = 1, positionMs = 42_000, shuffle = false, repeat = RepeatMode.OFF)
+        controller.togglePlayPause()
+        assertEquals(listOf("C:/music/2.mp3"), engine.loaded)
+        assertEquals(-1L, engine.lastSeek)
+        engine.bus.tryEmit(EngineEvent.State(isPlaying = true, isBuffering = false))
+        assertEquals(42_000, engine.lastSeek)
+        engine.lastSeek = -1
+        engine.bus.tryEmit(EngineEvent.State(isPlaying = true, isBuffering = false))
+        assertEquals(-1L, engine.lastSeek)
+    }
+
+    @Test fun skippingAfterRestoreForgetsTheSavedPosition() {
+        controller.restore(refs(1, 2, 3), index = 0, positionMs = 42_000, shuffle = false, repeat = RepeatMode.OFF)
+        controller.skipToNext()
+        engine.bus.tryEmit(EngineEvent.State(isPlaying = true, isBuffering = false))
+        assertEquals(-1L, engine.lastSeek)
+    }
+
+    @Test fun snapshotRoundTripsThroughRestore() {
+        controller.playMedia(refs(1, 2, 3), startIndex = 2)
+        controller.setRepeatMode(RepeatMode.ONE)
+        engine.bus.tryEmit(EngineEvent.Position(9_000))
+        val snap = controller.snapshot()!!
+        assertEquals(listOf(1L, 2L, 3L), snap.trackIds)
+        assertEquals(2, snap.index)
+        assertEquals(9_000, snap.positionMs)
+        assertEquals(RepeatMode.ONE, snap.repeat)
+    }
+
+    @Test fun snapshotOfAnEmptyQueueIsNull() {
+        assertNull(controller.snapshot())
+    }
+
+    @Test fun restoreOfNothingIsIgnored() {
+        controller.restore(emptyList(), 0, 0, false, RepeatMode.OFF)
+        assertFalse(controller.state.value.hasMedia)
     }
 }

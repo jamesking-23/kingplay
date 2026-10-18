@@ -16,6 +16,7 @@ import com.kingplay.desktop.library.JAudioTaggerReader
 import com.kingplay.desktop.library.LibraryStore
 import com.kingplay.desktop.library.TrackScanner
 import com.kingplay.desktop.ui.App
+import com.kingplay.desktop.userdata.UserDataStore
 import java.io.File
 
 fun main() = application {
@@ -25,6 +26,7 @@ fun main() = application {
         DesktopAppState(
             scope = scope,
             store = LibraryStore(File(DesktopAppState.dataDirectory(), "library.json")),
+            userStore = UserDataStore(File(DesktopAppState.dataDirectory(), "user.json")),
             scanner = TrackScanner(JAudioTaggerReader()),
             engine = engine,
         ).also { it.start() }
@@ -32,6 +34,7 @@ fun main() = application {
 
     Window(
         onCloseRequest = {
+            app.flush()
             engine?.release()
             exitApplication()
         },

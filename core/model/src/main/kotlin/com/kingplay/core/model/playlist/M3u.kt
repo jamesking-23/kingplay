@@ -1,4 +1,4 @@
-package com.kingplay.data.library.playlist
+package com.kingplay.core.model.playlist
 
 import java.net.URLDecoder
 import java.util.Locale

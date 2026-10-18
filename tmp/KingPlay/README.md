@@ -140,7 +140,10 @@ Compose Multiplatform Desktop, Windows first. Module `:desktop`; it reuses `:cor
 - **Library:** pick folders; `TrackScanner` walks them (never following links), reads tags with jaudiotagger and keeps unchanged files without re-reading. Ids come from the file path, so they survive rescans. Saved in `%APPDATA%\KingPlay\library.json` (written atomically; a damaged file just triggers a rescan).
 - **UI:** Songs (with search), Albums, Artists, Folders; now-playing bar with seek, volume, shuffle, repeat; Windows media keys.
 - **Build and run:** `gradle :desktop:run`. Installer: `gradle :desktop:packageMsi`.
-- Not yet on desktop: playlists, favorites and play counts (the scanner keeps them, nothing sets them), lyrics, EQ and effects, video, cover art, queue view, backup import from the Android app, tray and mini player, saved queue.
+- **Your data (step 3b):** playlists, favorites, play counts and the queue live in `%APPDATA%\KingPlay\user.json`, apart from the scanned library, so rescans and removing a folder never touch them. A play counts after half the song (or 4 minutes) or when it ends. The queue is saved every few seconds and on close; on the next start it comes back paused and the first play seeks to where you were.
+- **Playlists:** create, rename, delete, add from the song menu, remove, export and import `.m3u`; smart lists (Favorites, Most played, Recently played, Recently added).
+- **Import from the Android app:** Library page -> Import Android backup. Playlists and favorites are matched by folder and file name (only unambiguous matches); existing playlist names are skipped; nothing is overwritten. The M3U and path-matching code moved from `:data:library` to `:core:model` so both apps share it.
+- Not yet on desktop: lyrics, EQ and effects, video, cover art, drag to reorder the queue and playlists, tray and mini player, settings (theme), backup export, imported lyrics and EQ presets from a backup.
 
 ## Known limits (by design, tracked for later steps)
 - Tag editing is not built yet. ReplayGain is read from the file while it plays; the library columns for it stay null.

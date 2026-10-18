@@ -1,5 +1,6 @@
 package com.kingplay.desktop
 
+import com.kingplay.core.model.RepeatMode
 import com.kingplay.core.model.UnknownNames
 import com.kingplay.desktop.library.LibraryIndex
 import com.kingplay.desktop.library.LibraryStore
@@ -14,15 +15,14 @@ import com.kingplay.desktop.library.stableId
 import com.kingplay.desktop.ui.folderLabel
 import com.kingplay.desktop.ui.formatTime
 import com.kingplay.desktop.ui.nextRepeatMode
-import com.kingplay.core.model.RepeatMode
-import java.io.File
-import java.nio.file.Files
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
+import java.nio.file.Files
 
 class LibraryTest {
     private fun tempDir(): File = Files.createTempDirectory("kp-test").toFile().also { it.deleteOnExit() }

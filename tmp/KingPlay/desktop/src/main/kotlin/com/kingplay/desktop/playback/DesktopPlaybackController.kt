@@ -23,14 +23,19 @@ class DesktopPlaybackController(
     private val engine: AudioEngine,
     private val lookup: (Long) -> Track?,
     scope: CoroutineScope,
-    /** Called once per song that was played to its end or for a while, for play counts (wired in a later step). */
-    private val onFinished: (Track) -> Unit = {},
+    /** Called once per play of a song: after half of it (or 4 minutes) has played, or when it ends. */
+    private val onCounted: (Track) -> Unit = {},
 ) : PlaybackController {
 
     private val _state = MutableStateFlow(PlaybackState(isConnected = true))
     override val state: StateFlow<PlaybackState> = _state.asStateFlow()
 
     private var queue = PlayQueue()
+
+    /** False after [restore] until the person presses play: nothing is loaded into the engine before that. */
+    private var engineLoaded = false
+    private var resumeAtMs = 0L
+    private var counted = false
 
     init {
         scope.launch { engine.events.collect(::onEngineEvent) }
@@ -50,8 +55,41 @@ class DesktopPlaybackController(
 
     override fun play() {
         if (queue.current == null) return
-        engine.play()
+        if (!engineLoaded) {
+            val resume = resumeAtMs
+            loadCurrent(direction = 1, resumeAtMs = resume)
+        } else {
+            engine.play()
+        }
     }
+
+    /** Puts a saved queue back without starting it. The first play loads the song and seeks to [positionMs]. */
+    fun restore(refs: List<MediaRef>, index: Int, positionMs: Long, shuffle: Boolean, repeat: RepeatMode) {
+        val audio = refs.filterIsInstance<MediaRef.Audio>()
+        if (audio.isEmpty()) return
+        queue = PlayQueue(shuffle = false, repeat = repeat).replace(audio, index).withShuffle(shuffle)
+        engineLoaded = false
+        resumeAtMs = positionMs.coerceAtLeast(0)
+        val track = currentTrack()
+        publishQueue(track)
+        _state.update { it.copy(positionMs = resumeAtMs, durationMs = track?.durationMs ?: 0) }
+    }
+
+    /** What to save so [restore] can bring the queue back. */
+    fun snapshot(): QueueSnapshot? {
+        val ids = queue.items.filterIsInstance<MediaRef.Audio>().map { it.id }
+        if (ids.isEmpty()) return null
+        val position = if (engineLoaded) _state.value.positionMs else resumeAtMs
+        return QueueSnapshot(ids, queue.index, position, queue.shuffle, queue.repeat)
+    }
+
+    data class QueueSnapshot(
+        val trackIds: List<Long>,
+        val index: Int,
+        val positionMs: Long,
+        val shuffle: Boolean,
+        val repeat: RepeatMode,
+    )
 
     override fun pause() = engine.pause()
 
@@ -140,18 +178,40 @@ class DesktopPlaybackController(
     private fun onEngineEvent(event: EngineEvent) {
         when (event) {
             is EngineEvent.State -> {
-                if (event.isPlaying) failuresInARow = 0
+                if (event.isPlaying) {
+                    failuresInARow = 0
+                    if (pendingSeekMs > 0) {
+                        engine.seekTo(pendingSeekMs)
+                        pendingSeekMs = 0
+                    }
+                }
                 _state.update { it.copy(isPlaying = event.isPlaying, isBuffering = event.isBuffering) }
             }
-            is EngineEvent.Position -> _state.update { it.copy(positionMs = event.ms) }
+            is EngineEvent.Position -> {
+                _state.update { it.copy(positionMs = event.ms) }
+                countIfDue(event.ms)
+            }
             is EngineEvent.Duration -> _state.update { it.copy(durationMs = event.ms) }
             is EngineEvent.Failed -> onFailed(event.message)
             EngineEvent.Ended -> onEnded()
         }
     }
 
+    private fun countIfDue(positionMs: Long) {
+        val duration = _state.value.durationMs
+        if (!counted && duration > 0 && positionMs >= minOf(duration / 2, COUNT_AFTER_MS)) countNow()
+    }
+
+    private fun countNow() {
+        if (counted) return
+        counted = true
+        currentTrack()?.let(onCounted)
+    }
+
+    private var pendingSeekMs = 0L
+
     private fun onEnded() {
-        currentTrack()?.let(onFinished)
+        countNow()
         val next = queue.nextIndex(auto = true)
         if (next == null) {
             _state.update { it.copy(isPlaying = false, positionMs = 0) }
@@ -173,12 +233,16 @@ class DesktopPlaybackController(
     private var failuresInARow = 0
 
     /** Loads the current item; items that are gone from the library are skipped in [direction]. */
-    private fun loadCurrent(direction: Int) {
+    private fun loadCurrent(direction: Int, resumeAtMs: Long = 0) {
         var attempts = 0
         while (attempts < queue.items.size) {
             val track = currentTrack()
             if (track != null) {
                 publishQueue(track)
+                engineLoaded = true
+                counted = false
+                pendingSeekMs = resumeAtMs
+                this.resumeAtMs = 0
                 engine.load(track.uri)
                 return
             }
@@ -222,6 +286,7 @@ class DesktopPlaybackController(
 
     private companion object {
         const val RESTART_AFTER_MS = 3_000L
+        const val COUNT_AFTER_MS = 240_000L
         const val MISSING_MESSAGE = "These songs are no longer in your library"
     }
 }
