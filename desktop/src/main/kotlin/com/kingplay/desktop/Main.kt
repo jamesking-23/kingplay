@@ -1,5 +1,6 @@
 package com.kingplay.desktop
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -20,6 +21,8 @@ import androidx.compose.ui.window.rememberWindowState
 import com.kingplay.core.model.repository.PlaybackState
 import com.kingplay.desktop.cover.CoverRepository
 import com.kingplay.desktop.engine.VlcjAudioEngine
+import com.kingplay.desktop.input.MediaKeyAction
+import com.kingplay.desktop.input.WindowsMediaKeys
 import com.kingplay.desktop.library.JAudioTaggerReader
 import com.kingplay.desktop.library.LibraryStore
 import com.kingplay.desktop.library.TrackScanner
@@ -59,6 +62,20 @@ fun main() = application {
     val settings by app.settings.collectAsState()
     val idle = remember { MutableStateFlow(PlaybackState()) }
     val playback by (app.controller?.state ?: idle).collectAsState()
+    LaunchedEffect(app) {
+        val keysOn = app.settings.value.globalMediaKeys
+        if (keysOn) {
+            WindowsMediaKeys { action ->
+                val controller = app.controller
+                when (action) {
+                    MediaKeyAction.PlayPause -> controller?.togglePlayPause()
+                    MediaKeyAction.Next -> controller?.skipToNext()
+                    MediaKeyAction.Previous -> controller?.skipToPrevious()
+                    MediaKeyAction.Stop -> controller?.pause()
+                }
+            }.start()
+        }
+    }
     val quit = {
         app.flush()
         engine?.release()

@@ -87,6 +87,21 @@ fun SettingsPage(
             )
             Text(TRAY_LABEL, modifier = Modifier.weight(1f))
         }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Switch(
+                checked = settings.globalMediaKeys,
+                onCheckedChange = { on -> onChange { it.copy(globalMediaKeys = on) } },
+                modifier = Modifier.semantics { contentDescription = KEYS_LABEL },
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(KEYS_LABEL)
+                Text(
+                    "Takes effect the next time KingPlay starts. A key another program already uses is left to it.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         OutlinedButton(onClick = onOpenMini) { Text("Open mini player") }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -131,3 +146,5 @@ internal fun exportBackup(app: DesktopAppState, onNotice: (String) -> Unit) {
 private const val APP_VERSION = "1.0.0"
 
 private const val TRAY_LABEL = "Keep playing in the tray when the window is closed"
+
+private const val KEYS_LABEL = "Use the keyboard's media keys even when KingPlay is in the background"

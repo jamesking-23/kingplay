@@ -22,6 +22,7 @@ palette = "1.0.0"
 glance = "1.1.1"
 composeMultiplatform = "1.7.1"
 vlcj = "4.8.3"
+jna = "5.14.0"
 jaudiotagger = "3.0.1"
 detekt = "1.23.7"
 ktlint = "12.1.2"
@@ -99,6 +100,7 @@ coil-base = { group = "io.coil-kt", name = "coil", version.ref = "coil" }
 # Desktop (step 3a)
 kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "coroutines" }
 vlcj = { group = "uk.co.caprica", name = "vlcj", version.ref = "vlcj" }
+jna = { group = "net.java.dev.jna", name = "jna", version.ref = "jna" }
 jaudiotagger = { group = "net.jthink", name = "jaudiotagger", version.ref = "jaudiotagger" }
 
 # Test

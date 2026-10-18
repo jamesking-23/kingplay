@@ -17,6 +17,7 @@ dependencies {
     implementation(compose.materialIconsExtended)
     implementation(libs.kotlinx.coroutines.swing)
     implementation(libs.vlcj)
+    implementation(libs.jna)
     implementation(libs.jaudiotagger)
 
     testImplementation(libs.junit)

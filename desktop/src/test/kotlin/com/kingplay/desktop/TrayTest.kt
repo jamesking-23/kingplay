@@ -1,6 +1,10 @@
 package com.kingplay.desktop
 
 import com.kingplay.core.model.repository.PlaybackState
+import com.kingplay.desktop.input.MediaKeyAction
+import com.kingplay.desktop.input.MediaKeyCodes
+import com.kingplay.desktop.input.actionForHotKeyId
+import com.kingplay.desktop.input.mediaKeyAction
 import com.kingplay.desktop.settings.DesktopSettings
 import com.kingplay.desktop.settings.SettingsStore
 import com.kingplay.desktop.ui.CloseAction
@@ -66,5 +70,32 @@ class ReorderTest {
         val moved = data.moveInPlaylist(id, 0, 3)
         assertEquals(listOf(11L, 12L, 13L, 10L), moved.playlist(id)!!.trackIds)
         assertEquals(data, data.moveInPlaylist(id, 0, 9))
+    }
+}
+
+class MediaKeysTest {
+    @Test fun keyCodesMapToActions() {
+        assertEquals(MediaKeyAction.PlayPause, mediaKeyAction(0xB3))
+        assertEquals(MediaKeyAction.Next, mediaKeyAction(0xB0))
+        assertEquals(MediaKeyAction.Previous, mediaKeyAction(0xB1))
+        assertEquals(MediaKeyAction.Stop, mediaKeyAction(0xB2))
+        assertEquals(null, mediaKeyAction(0x41))
+    }
+
+    @Test fun everyRegisteredKeyHasAnActionAndIdsRoundTrip() {
+        for (code in MediaKeyCodes.ALL) {
+            assertTrue(actionForHotKeyId(code.toLong()) != null)
+        }
+        assertEquals(4, MediaKeyCodes.ALL.toSet().size)
+        assertEquals(null, actionForHotKeyId(-1))
+        assertEquals(null, actionForHotKeyId(Long.MAX_VALUE))
+    }
+
+    @Test fun mediaKeySettingDefaultsOnAndIsRemembered() {
+        val file = File(Files.createTempDirectory("kp-keys").toFile(), "s.json")
+        val store = SettingsStore(file)
+        assertTrue(store.load().globalMediaKeys)
+        store.save(DesktopSettings(globalMediaKeys = false))
+        assertFalse(store.load().globalMediaKeys)
     }
 }

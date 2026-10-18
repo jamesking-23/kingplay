@@ -15,6 +15,7 @@ data class DesktopSettings(
     val eqPreampDb: Float = 0f,
     val eqGainsDb: List<Float> = FLAT_BANDS,
     val closeToTray: Boolean = false,
+    val globalMediaKeys: Boolean = true,
 ) {
     fun withVolume(percent: Int): DesktopSettings = copy(volumePercent = percent.coerceIn(0, MAX_VOLUME))
 
@@ -38,6 +39,7 @@ class SettingsStore(private val file: File) {
             eqPreampDb = clampGain((root["eqPreampDb"] as? Number)?.toFloat() ?: 0f),
             eqGainsDb = gains(root["eqGainsDb"]),
             closeToTray = root["closeToTray"] as? Boolean ?: false,
+            globalMediaKeys = root["globalMediaKeys"] as? Boolean ?: true,
         )
     }
 
@@ -51,6 +53,7 @@ class SettingsStore(private val file: File) {
             "eqPreampDb" to settings.eqPreampDb,
             "eqGainsDb" to settings.eqGainsDb,
             "closeToTray" to settings.closeToTray,
+            "globalMediaKeys" to settings.globalMediaKeys,
         ),
     )
 
