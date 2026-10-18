@@ -144,6 +144,23 @@ class DesktopAppState(
 
     fun exportBackup(): String = BackupExport.build(_index.value, _user.value, now())
 
+    /**
+     * Plays songs opened from outside the library (Explorer "Open with", a double-click). Songs that are not in the
+     * library are added to this session's list so they can play, but are not saved into the library.
+     */
+    fun openAudioFiles(paths: List<String>) {
+        scope.launch {
+            val known = _index.value.tracks.associateBy { it.uri }
+            val tracks = withContext(Dispatchers.IO) {
+                paths.mapNotNull { path -> known[path] ?: scanner.scanFile(File(path)) }
+            }
+            if (tracks.isEmpty()) return@launch
+            val unseen = tracks.filter { _index.value[it.id] == null }
+            if (unseen.isNotEmpty()) _index.value = LibraryIndex(_index.value.tracks + unseen)
+            controller?.playMedia(tracks.map { MediaRef.Audio(it.id) }, 0)
+        }
+    }
+
     /** Remembers where a video was left (or forgets it when it was finished). Pauses music when a video starts. */
     fun saveVideoProgress(video: VideoFile, positionMs: Long, durationMs: Long) =
         updateUser { it.withVideoProgress(video.id, positionMs, durationMs) }

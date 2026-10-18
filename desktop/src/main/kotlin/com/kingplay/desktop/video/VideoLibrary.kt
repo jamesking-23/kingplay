@@ -30,6 +30,20 @@ fun videoTitle(fileName: String): String {
     return if (dot > 0) fileName.substring(0, dot) else fileName
 }
 
+/** A single video opened from outside the library folders. Null when it is not a readable video file. */
+fun videoFileFor(file: File): VideoFile? {
+    if (!file.isFile || !isVideoFile(file.name)) return null
+    val path = file.absolutePath
+    return VideoFile(
+        id = stableId("video:$path"),
+        path = path,
+        title = videoTitle(file.name),
+        folder = file.absoluteFile.parent.orEmpty(),
+        sizeBytes = file.length(),
+        modifiedMs = file.lastModified(),
+    )
+}
+
 object VideoScanner {
     private const val MAX_DEPTH = 32
 

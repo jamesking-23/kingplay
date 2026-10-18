@@ -23,6 +23,9 @@ import com.kingplay.desktop.cover.CoverRepository
 import com.kingplay.desktop.engine.VlcjAudioEngine
 import com.kingplay.desktop.input.MediaKeyAction
 import com.kingplay.desktop.input.WindowsMediaKeys
+import com.kingplay.desktop.launch.LaunchRequest
+import com.kingplay.desktop.launch.SingleInstance
+import com.kingplay.desktop.launch.parseLaunchFiles
 import com.kingplay.desktop.library.JAudioTaggerReader
 import com.kingplay.desktop.library.LibraryStore
 import com.kingplay.desktop.library.TrackScanner
@@ -36,11 +39,26 @@ import com.kingplay.desktop.ui.trayIconPainter
 import com.kingplay.desktop.ui.trayTooltip
 import com.kingplay.desktop.userdata.UserDataStore
 import com.kingplay.desktop.video.VideoFile
+import com.kingplay.desktop.video.videoFileFor
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.awt.SystemTray
 import java.io.File
 
-fun main() = application {
+fun main(args: Array<String>) {
+    val inbox = Channel<LaunchRequest?>(Channel.UNLIMITED)
+    val first = parseLaunchFiles(args.toList())
+    val single = SingleInstance(SingleInstance.DEFAULT_PORT)
+    val carryOn = single.acquireOrForward(first.all) { paths ->
+        // null means "just bring the window forward"
+        inbox.trySend(parseLaunchFiles(paths).takeUnless { it.isEmpty })
+    }
+    if (!carryOn) return
+    if (!first.isEmpty) inbox.trySend(first)
+    runApp(inbox)
+}
+
+private fun runApp(inbox: Channel<LaunchRequest?>) = application {
     val scope = rememberCoroutineScope()
     val engine = remember { VlcjAudioEngine.createOrNull() }
     val covers = remember { CoverRepository() }
@@ -62,6 +80,18 @@ fun main() = application {
     val settings by app.settings.collectAsState()
     val idle = remember { MutableStateFlow(PlaybackState()) }
     val playback by (app.controller?.state ?: idle).collectAsState()
+    LaunchedEffect(app) {
+        for (request in inbox) {
+            mainVisible = true
+            request?.let {
+                app.openAudioFiles(it.audio)
+                it.videos.firstNotNullOfOrNull { path -> videoFileFor(File(path)) }?.let { video ->
+                    app.pauseMusicForVideo()
+                    playingVideo = video to 0L
+                }
+            }
+        }
+    }
     LaunchedEffect(app) {
         val keysOn = app.settings.value.globalMediaKeys
         if (keysOn) {

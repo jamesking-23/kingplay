@@ -68,6 +68,10 @@ class TrackScanner(
         return found.values.toList()
     }
 
+    /** One file opened from outside the library folders. Null when it is not an audio file. */
+    fun scanFile(file: File): Track? =
+        if (file.isFile && isAudioFile(file.name)) trackFor(file, file.lastModified(), emptyMap()) else null
+
     private fun trackFor(file: File, modifiedMs: Long, previous: Map<String, Track>): Track {
         val path = file.absolutePath
         previous[path]?.takeIf { it.dateModifiedMs == modifiedMs }?.let { return it }
