@@ -25,6 +25,7 @@ rootProject.name = "KingPlay"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 include(":app")
+include(":desktop")
 include(":core:common")
 include(":core:model")
 include(":core:designsystem")

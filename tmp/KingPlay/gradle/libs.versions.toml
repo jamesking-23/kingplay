@@ -20,6 +20,9 @@ hiltWork = "1.2.0"
 paging = "3.3.5"
 palette = "1.0.0"
 glance = "1.1.1"
+composeMultiplatform = "1.7.1"
+vlcj = "4.8.3"
+jaudiotagger = "3.0.1"
 detekt = "1.23.7"
 ktlint = "12.1.2"
 junit = "4.13.2"
@@ -93,6 +96,11 @@ androidx-test-core = { group = "androidx.test", name = "core-ktx", version = "1.
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 coil-base = { group = "io.coil-kt", name = "coil", version.ref = "coil" }
 
+# Desktop (step 3a)
+kotlinx-coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "coroutines" }
+vlcj = { group = "uk.co.caprica", name = "vlcj", version.ref = "vlcj" }
+jaudiotagger = { group = "net.jthink", name = "jaudiotagger", version.ref = "jaudiotagger" }
+
 # Test
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
@@ -106,6 +114,7 @@ android-library = { id = "com.android.library", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

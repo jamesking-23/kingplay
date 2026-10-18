@@ -134,6 +134,14 @@ Android Auto and the widget arrived in step 2i (below).
 - `.github/workflows/ci.yml` runs detekt, lint, unit tests and a debug build. The repo ships no Gradle wrapper yet, so CI installs Gradle 8.10.2; commit a wrapper (`gradle wrapper --gradle-version 8.10.2`) and switch the steps to `./gradlew`.
 - Security note: `PlaybackService` is exported (Android Auto and Assistant need that) and any app can browse the library tree. The data is local only, but restricting callers to a package allow-list is a sensible hardening step before release.
 
+## PC version (step 3a)
+Compose Multiplatform Desktop, Windows first. Module `:desktop`; it reuses `:core:model` (tracks, `PlaybackController`, JSON codec) and does not touch the Android modules.
+- **Playback:** `VlcjAudioEngine` drives libVLC, so **64-bit VLC must be installed** (videolan.org). If it is missing the app says so instead of crashing. The queue rules (`PlayQueue`) and `DesktopPlaybackController` are plain Kotlin behind an `AudioEngine` interface and are unit-tested with a fake engine.
+- **Library:** pick folders; `TrackScanner` walks them (never following links), reads tags with jaudiotagger and keeps unchanged files without re-reading. Ids come from the file path, so they survive rescans. Saved in `%APPDATA%\KingPlay\library.json` (written atomically; a damaged file just triggers a rescan).
+- **UI:** Songs (with search), Albums, Artists, Folders; now-playing bar with seek, volume, shuffle, repeat; Windows media keys.
+- **Build and run:** `gradle :desktop:run`. Installer: `gradle :desktop:packageMsi`.
+- Not yet on desktop: playlists, favorites and play counts (the scanner keeps them, nothing sets them), lyrics, EQ and effects, video, cover art, queue view, backup import from the Android app, tray and mini player, saved queue.
+
 ## Known limits (by design, tracked for later steps)
 - Tag editing is not built yet. ReplayGain is read from the file while it plays; the library columns for it stay null.
 - Subtitle files next to a video are not found automatically (scoped storage); pick the file with the system picker.
