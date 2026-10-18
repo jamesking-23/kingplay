@@ -20,4 +20,18 @@
     <string name="mode_light">Light</string>
     <string name="mode_dark">Dark</string>
     <string name="mode_amoled">AMOLED black</string>
+    <string name="tab_library">Library</string>
+    <string name="tab_design">Design system</string>
+    <string name="library_title">Library</string>
+    <string name="library_idle">Library is up to date</string>
+    <string name="library_permission_needed">Allow access to your music and videos to build your library</string>
+    <string name="library_failed">The last scan failed. It will retry automatically.</string>
+    <string name="library_scanning_audio">Indexing music: %1$d of %2$d</string>
+    <string name="library_scanning_video">Indexing videos: %1$d of %2$d</string>
+    <string name="library_reading_details">Reading audio details: %1$d of %2$d</string>
+    <string name="library_counts">%1$d songs · %2$d albums · %3$d artists · %4$d videos</string>
+    <string name="library_grant">Allow access</string>
+    <string name="library_rescan">Rescan</string>
+    <string name="library_full_rescan">Full rescan</string>
+    <string name="library_recent">Recently added</string>
 </resources>

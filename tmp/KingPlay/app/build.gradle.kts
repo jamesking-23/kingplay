@@ -35,8 +35,13 @@ dependencies {
     implementation(projects.core.model)
     implementation(projects.core.designsystem)
     implementation(projects.core.ui)
+    implementation(projects.core.database)
+    implementation(projects.data.library)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
+    implementation(libs.androidx.hilt.navigation.compose)
 
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
