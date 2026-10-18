@@ -5,6 +5,7 @@ import com.kingplay.core.model.backup.BackupFormatException
 import com.kingplay.core.model.playlist.PathRow
 import com.kingplay.core.model.playlist.TrackPathIndex
 import com.kingplay.desktop.library.LibraryIndex
+import com.kingplay.desktop.settings.clampGain
 
 data class ImportSummary(
     val playlistsAdded: Int,
@@ -14,6 +15,8 @@ data class ImportSummary(
     val favoritesMatched: Int,
     val favoritesTotal: Int,
     val lyricsAdded: Int = 0,
+    val presetsAdded: Int = 0,
+    val statsMatched: Int = 0,
 )
 
 sealed interface ImportOutcome {
@@ -25,7 +28,8 @@ sealed interface ImportOutcome {
 /**
  * Brings playlists and favorites from an Android KingPlay backup into this PC's data. Songs are found again by
  * file name (the phone's paths never exist here), and only an unambiguous match is accepted.
- * It only adds: playlists whose name already exists are skipped, favorites are merged.
+ * It only adds: playlists whose name already exists are skipped, favorites are merged, equalizer presets and lyrics
+ * already here are kept, and play counts keep the larger number.
  */
 object BackupImport {
     fun import(text: String, library: LibraryIndex, current: UserData, now: Long): ImportOutcome {
@@ -61,9 +65,31 @@ object BackupImport {
         data = data.copy(favorites = data.favorites + favoriteIds)
         val newLyrics = backup.lyrics.filterKeys { it !in data.lyrics }
         data = data.copy(lyrics = data.lyrics + newLyrics)
+        val presetsBefore = data.eqPresets.size
+        for (preset in backup.presets) {
+            if (data.eqPresets.any { it.name.equals(preset.name.trim(), ignoreCase = true) }) continue
+            val gains = preset.bandGainsDb.map(::clampGain)
+            data = data.withEqPreset(UserEqPreset(preset.name, clampGain(preset.preampDb), gains))
+        }
+        var statsMatched = 0
+        for (stat in backup.playStats) {
+            val id = paths.match(stat.track.path) ?: continue
+            val old = data.stats[id]
+            // Largest wins, so importing the same file twice (or phone and PC both) never double counts.
+            val merged = PlayStat(
+                count = maxOf(old?.count ?: 0, stat.count),
+                lastPlayedMs = maxOf(old?.lastPlayedMs ?: 0, stat.lastPlayedMs),
+            )
+            data = data.copy(stats = data.stats + (id to merged))
+            statsMatched++
+        }
         return ImportOutcome.Done(
             data,
-            ImportSummary(added, skipped, matched, total, favoriteIds.size, backup.favorites.size, newLyrics.size),
+            ImportSummary(
+                added, skipped, matched, total, favoriteIds.size, backup.favorites.size, newLyrics.size,
+                presetsAdded = data.eqPresets.size - presetsBefore,
+                statsMatched = statsMatched,
+            ),
         )
     }
 }

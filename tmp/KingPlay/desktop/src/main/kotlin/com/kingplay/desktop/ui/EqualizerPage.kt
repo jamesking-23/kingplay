@@ -24,19 +24,31 @@ import androidx.compose.ui.unit.dp
 import com.kingplay.core.model.BuiltInEqPresets
 import com.kingplay.core.model.EqPreset
 import com.kingplay.desktop.settings.DesktopSettings
+import com.kingplay.desktop.settings.asUserPreset
 import com.kingplay.desktop.settings.flat
 import com.kingplay.desktop.settings.matchingPreset
+import com.kingplay.desktop.settings.matchingUserPreset
 import com.kingplay.desktop.settings.withBand
 import com.kingplay.desktop.settings.withPreamp
 import com.kingplay.desktop.settings.withPreset
+import com.kingplay.desktop.settings.withUserPreset
+import com.kingplay.desktop.userdata.UserEqPreset
 
 internal fun bandLabel(hz: Int): String = if (hz >= KILO) "${hz / KILO} kHz" else "$hz Hz"
 
 internal fun gainLabel(db: Float): String = "%+.1f dB".format(db)
 
 @Composable
-fun EqualizerPage(settings: DesktopSettings, onChange: ((DesktopSettings) -> DesktopSettings) -> Unit) {
+fun EqualizerPage(
+    settings: DesktopSettings,
+    savedPresets: List<UserEqPreset>,
+    onChange: ((DesktopSettings) -> DesktopSettings) -> Unit,
+    onSavePreset: (UserEqPreset) -> Unit,
+    onDeletePreset: (String) -> Unit,
+    onDialog: (NameDialogState) -> Unit,
+) {
     val current = settings.matchingPreset()
+    val currentSaved = settings.matchingUserPreset(savedPresets)
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -62,7 +74,22 @@ fun EqualizerPage(settings: DesktopSettings, onChange: ((DesktopSettings) -> Des
                 )
             }
         }
-        if (current == null) {
+        if (savedPresets.isNotEmpty()) {
+            Text("My presets", style = MaterialTheme.typography.labelLarge)
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                savedPresets.forEach { preset ->
+                    FilterChip(
+                        selected = currentSaved?.name == preset.name,
+                        onClick = { onChange { it.withUserPreset(preset).copy(eqEnabled = true) } },
+                        label = { Text(preset.name) },
+                    )
+                }
+            }
+        }
+        if (current == null && currentSaved == null) {
             Text("Custom", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         }
         GainSlider("Preamp", settings.eqPreampDb, enabled = settings.eqEnabled) { db -> onChange { it.withPreamp(db) } }
@@ -71,7 +98,19 @@ fun EqualizerPage(settings: DesktopSettings, onChange: ((DesktopSettings) -> Des
                 onChange { it.withBand(band, db) }
             }
         }
-        OutlinedButton(onClick = { onChange { it.flat() } }) { Text("Reset to flat") }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = { onChange { it.flat() } }) { Text("Reset to flat") }
+            OutlinedButton(onClick = {
+                onDialog(NameDialogState("Save preset", currentSaved?.name.orEmpty(), "Save") { name ->
+                    onSavePreset(settings.asUserPreset(name))
+                })
+            }) { Text("Save as preset") }
+            if (currentSaved != null) {
+                OutlinedButton(onClick = { onDeletePreset(currentSaved.name) }) {
+                    Text("Delete \"${currentSaved.name}\"")
+                }
+            }
+        }
         Text(
             "The sound engine's bands sit close to, not exactly on, these frequencies, so presets are approximate.",
             style = MaterialTheme.typography.bodySmall,

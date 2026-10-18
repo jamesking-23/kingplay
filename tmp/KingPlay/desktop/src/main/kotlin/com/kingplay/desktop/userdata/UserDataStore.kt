@@ -1,7 +1,9 @@
 package com.kingplay.desktop.userdata
 
+import com.kingplay.core.model.EqPreset
 import com.kingplay.core.model.RepeatMode
 import com.kingplay.desktop.library.JsonFile
+import com.kingplay.desktop.settings.clampGain
 import java.io.File
 
 class UserDataStore(private val file: File) {
@@ -27,6 +29,9 @@ class UserDataStore(private val file: File) {
                 mapOf("id" to id, "count" to s.count.toLong(), "lastPlayedMs" to s.lastPlayedMs)
             },
             "lyrics" to data.lyrics,
+            "eqPresets" to data.eqPresets.map {
+                mapOf("name" to it.name, "preampDb" to it.preampDb, "gainsDb" to it.gainsDb)
+            },
             "queue" to data.queue?.let {
                 mapOf(
                     "tracks" to it.trackIds,
@@ -76,9 +81,19 @@ class UserDataStore(private val file: File) {
                 // Never reuse an id even if the saved counter is missing or stale.
                 lyrics = (root["lyrics"] as? Map<*, *>).orEmpty()
                     .mapNotNull { (k, v) -> if (k is String && v is String) k to v else null }.toMap(),
+                eqPresets = eqPresets(root["eqPresets"]),
                 nextPlaylistId = maxOf((root["nextPlaylistId"] as? Number)?.toLong() ?: 1, highest + 1),
             )
         }
+
+        /** Only complete presets (a name and exactly ten numbers) survive; values are kept inside the slider range. */
+        private fun eqPresets(value: Any?): List<UserEqPreset> = list(value).mapNotNull { raw ->
+            val m = raw as? Map<*, *> ?: return@mapNotNull null
+            val name = (m["name"] as? String)?.trim()?.ifEmpty { null } ?: return@mapNotNull null
+            val gains = list(m["gainsDb"]).map { (it as? Number)?.toFloat() }
+            if (gains.size != EqPreset.BAND_COUNT || gains.any { it == null }) return@mapNotNull null
+            UserEqPreset(name, clampGain((m["preampDb"] as? Number)?.toFloat() ?: 0f), gains.map { clampGain(it!!) })
+        }.distinctBy { it.name.lowercase() }.take(UserData.MAX_EQ_PRESETS)
 
         private fun list(value: Any?): List<Any?> = (value as? List<*>).orEmpty()
 

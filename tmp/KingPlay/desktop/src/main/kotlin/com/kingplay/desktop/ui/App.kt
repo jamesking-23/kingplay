@@ -308,7 +308,14 @@ private fun PageContent(
             importedKeys = user.lyrics.keys,
             onNotice = onNotice,
         )
-        Page.Equalizer -> EqualizerPage(settings, app::updateEqualizer)
+        Page.Equalizer -> EqualizerPage(
+            settings = settings,
+            savedPresets = user.eqPresets,
+            onChange = app::updateEqualizer,
+            onSavePreset = { preset -> app.updateUser { it.withEqPreset(preset) } },
+            onDeletePreset = { name -> app.updateUser { it.withoutEqPreset(name) } },
+            onDialog = onDialog,
+        )
         Page.Library -> LibraryPage(
             folders = folders,
             onAdd = { chooseFolder()?.let(app::addFolder) },

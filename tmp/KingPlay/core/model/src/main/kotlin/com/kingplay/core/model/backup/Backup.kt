@@ -10,6 +10,9 @@ data class BackupTrack(val path: String, val title: String, val artist: String)
 
 data class BackupPlaylist(val name: String, val createdAtMs: Long, val tracks: List<BackupTrack>)
 
+/** How often a song was played and when last; written by the PC app. The phone ignores it. */
+data class BackupPlayStat(val track: BackupTrack, val count: Int, val lastPlayedMs: Long)
+
 data class BackupPreset(val name: String, val preampDb: Float, val bandGainsDb: List<Float>)
 
 data class BackupData(
@@ -23,6 +26,7 @@ data class BackupData(
     val lyrics: Map<String, String>,
     /** Which app wrote the file. A desktop backup carries no phone settings, so restoring it leaves them alone. */
     val source: String? = null,
+    val playStats: List<BackupPlayStat> = emptyList(),
 )
 
 class BackupFormatException(message: String, cause: Throwable? = null) : Exception(message, cause)
@@ -69,7 +73,20 @@ object BackupCodec {
             },
             "excludedFolders" to data.excludedFolders,
             "lyrics" to data.lyrics,
-        ).also { if (data.source != null) it["source"] = data.source },
+        ).also {
+            if (data.source != null) it["source"] = data.source
+            if (data.playStats.isNotEmpty()) {
+                it["playStats"] = data.playStats.map { stat ->
+                    linkedMapOf(
+                        "path" to stat.track.path,
+                        "title" to stat.track.title,
+                        "artist" to stat.track.artist,
+                        "count" to stat.count,
+                        "lastPlayedMs" to stat.lastPlayedMs,
+                    )
+                }
+            }
+        },
     )
 
     private fun track(t: BackupTrack) = linkedMapOf("path" to t.path, "title" to t.title, "artist" to t.artist)
@@ -98,6 +115,14 @@ object BackupCodec {
                 lyrics = (root["lyrics"] as? Map<*, *> ?: emptyMap<Any, Any>())
                     .entries.associate { (k, v) -> (k as String) to (v as? String ?: throw bad()) },
                 source = root["source"] as? String,
+                playStats = root.list("playStats").map {
+                    val m = it.asMap()
+                    BackupPlayStat(
+                        trackOf(m),
+                        ((m["count"] as? Number)?.toInt() ?: 0).coerceAtLeast(0),
+                        (m["lastPlayedMs"] as? Number)?.toLong() ?: 0,
+                    )
+                },
             )
         } catch (e: ClassCastException) {
             throw BackupFormatException("The backup is damaged", e)

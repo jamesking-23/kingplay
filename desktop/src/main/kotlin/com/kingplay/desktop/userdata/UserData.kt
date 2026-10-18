@@ -1,5 +1,6 @@
 package com.kingplay.desktop.userdata
 
+import com.kingplay.core.model.EqPreset
 import com.kingplay.core.model.RepeatMode
 
 data class DesktopPlaylist(
@@ -9,6 +10,9 @@ data class DesktopPlaylist(
     /** Track ids in order. An id can be missing from the library (file moved); it is kept and skipped when shown. */
     val trackIds: List<Long>,
 )
+
+/** An equalizer curve the person saved under a name. Always ten band gains. */
+data class UserEqPreset(val name: String, val preampDb: Float, val gainsDb: List<Float>)
 
 data class PlayStat(val count: Int, val lastPlayedMs: Long)
 
@@ -32,7 +36,19 @@ data class UserData(
     val nextPlaylistId: Long = 1,
     /** Lyrics the person imported, by lyrics key (artist and title). They win over embedded and sidecar lyrics. */
     val lyrics: Map<String, String> = emptyMap(),
+    val eqPresets: List<UserEqPreset> = emptyList(),
 ) {
+    /** Saves (or replaces, ignoring letter case) a named equalizer curve. Blank names and the limit are refused. */
+    fun withEqPreset(preset: UserEqPreset): UserData {
+        val name = preset.name.trim()
+        if (name.isEmpty() || preset.gainsDb.size != EQ_BANDS) return this
+        val rest = eqPresets.filterNot { it.name.equals(name, ignoreCase = true) }
+        if (rest.size >= MAX_EQ_PRESETS) return this
+        return copy(eqPresets = rest + preset.copy(name = name))
+    }
+
+    fun withoutEqPreset(name: String): UserData = copy(eqPresets = eqPresets.filterNot { it.name.equals(name, true) })
+
     fun playlist(id: Long): DesktopPlaylist? = playlists.firstOrNull { it.id == id }
 
     fun isFavorite(trackId: Long): Boolean = trackId in favorites
@@ -91,6 +107,8 @@ data class UserData(
 
     companion object {
         const val DEFAULT_NAME = "New playlist"
+        const val MAX_EQ_PRESETS = 30
+        private const val EQ_BANDS = EqPreset.BAND_COUNT
 
         fun uniqueName(wanted: String, taken: List<String>): String {
             val lower = taken.map { it.lowercase() }.toSet()

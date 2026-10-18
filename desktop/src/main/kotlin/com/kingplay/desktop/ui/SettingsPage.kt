@@ -24,6 +24,7 @@ import com.kingplay.core.model.settings.AppThemeMode
 import com.kingplay.desktop.DesktopAppState
 import com.kingplay.desktop.settings.DesktopSettings
 import com.kingplay.desktop.userdata.ImportOutcome
+import com.kingplay.desktop.userdata.importNotice
 
 internal fun themeLabel(mode: AppThemeMode): String = when (mode) {
     AppThemeMode.SYSTEM -> "Match Windows"
@@ -117,12 +118,7 @@ internal fun importBackup(app: DesktopAppState, onNotice: (String) -> Unit) {
     when (val outcome = app.importBackup(text)) {
         is ImportOutcome.Invalid -> onNotice("That file is not a KingPlay backup: ${outcome.reason}")
         is ImportOutcome.Done -> {
-            val s = outcome.summary
-            onNotice(
-                "Added ${s.playlistsAdded} playlists (${s.playlistsSkipped} already existed). " +
-                    "Found ${s.tracksMatched} of ${s.tracksTotal} playlist songs and " +
-                    "${s.favoritesMatched} of ${s.favoritesTotal} favorites.",
-            )
+            onNotice(importNotice(outcome.summary))
         }
     }
 }
