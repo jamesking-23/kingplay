@@ -39,6 +39,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -123,6 +124,8 @@ fun VideoWindow(
         }
     }
 
+    val nextNow by rememberUpdatedState(onNext)
+    val progressNow by rememberUpdatedState(onProgress)
     LaunchedEffect(component) {
         var polls = 0
         var finished = false
@@ -133,11 +136,11 @@ fun VideoWindow(
             playing = player.status().isPlaying
             if (!finished && player.status().state() == State.ENDED) {
                 finished = true
-                onNext?.invoke()
+                nextNow?.invoke()
             }
             if (++polls >= SAVE_EVERY_POLLS && length > 0) {
                 polls = 0
-                onProgress(position, length)
+                progressNow(position, length)
             }
         }
     }

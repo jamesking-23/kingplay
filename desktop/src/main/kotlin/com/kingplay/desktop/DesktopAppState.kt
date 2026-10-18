@@ -101,7 +101,8 @@ class DesktopAppState(
             _user.value = user
             controller?.setVolume(_settings.value.volumePercent)
             applyEqualizer(_settings.value)
-            restoreQueue(user)
+            // A file opened from Explorer while loading wins over the saved queue.
+            if (controller?.state?.value?.hasMedia != true) restoreQueue(user)
             launch { writeUserDataLoop() }
             launch { saveQueueLoop() }
             if (saved.folders.isNotEmpty()) rescan()

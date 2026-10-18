@@ -13,6 +13,7 @@ object JsonFile {
         return runCatching { Json.parse(file.readText(Charsets.UTF_8)) as? Map<*, *> }.getOrNull()
     }
 
+    @Synchronized
     fun write(file: File, value: Map<String, Any?>) {
         file.parentFile?.mkdirs()
         val temp = File(file.path + ".tmp")

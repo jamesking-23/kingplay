@@ -9,10 +9,12 @@ import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -29,7 +31,9 @@ val REORDER_ROW_HEIGHT = 56.dp
 /** What a row needs to be reorderable: where it is, how many rows there are, and what to do on a drop. */
 class ReorderSpec(val position: Int, val count: Int, val onMove: (from: Int, to: Int) -> Unit)
 
-class DragState(private val spec: ReorderSpec, private val rowPx: Float) {
+class DragState(private val latest: State<ReorderSpec>, private val rowPx: Float) {
+    private val spec get() = latest.value
+
     var dragPx by mutableFloatStateOf(0f)
     var dragging by mutableStateOf(false)
 
@@ -55,7 +59,9 @@ class DragState(private val spec: ReorderSpec, private val rowPx: Float) {
 @Composable
 fun rememberDragState(spec: ReorderSpec): DragState {
     val rowPx = with(LocalDensity.current) { REORDER_ROW_HEIGHT.toPx() }
-    return remember(spec.position, spec.count) { DragState(spec, rowPx) }
+    // The row always reads the newest spec, so a callback captured before an earlier move is never used.
+    val latest = rememberUpdatedState(spec)
+    return remember(rowPx) { DragState(latest, rowPx) }
 }
 
 /** The grip at the end of a row. Dragging moves the row; "Move up/down" in the row menu does it by keyboard. */

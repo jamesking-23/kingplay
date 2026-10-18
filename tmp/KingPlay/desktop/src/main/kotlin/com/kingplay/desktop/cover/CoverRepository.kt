@@ -3,6 +3,7 @@ package com.kingplay.desktop.cover
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import com.kingplay.core.model.Track
+import com.kingplay.core.model.UnknownNames
 import org.jaudiotagger.audio.AudioFileIO
 import org.jetbrains.skia.Image
 import org.jetbrains.skia.Rect
@@ -25,12 +26,16 @@ class CoverRepository(private val thumbPx: Int = THUMB_PX) {
 
     /** Blocking: call from a background dispatcher. */
     fun load(track: Track): ImageBitmap? {
-        cache[track.albumId]?.let { return it }
-        if (misses.contains(track.albumId)) return null
+        val key = coverKey(track)
+        cache[key]?.let { return it }
+        if (misses.contains(key)) return null
         val bitmap = runCatching { bytesFor(track)?.let(::decode) }.getOrNull()
-        if (bitmap != null) cache[track.albumId] = bitmap else misses[track.albumId] = true
+        if (bitmap != null) cache[key] = bitmap else misses[key] = true
         return bitmap
     }
+
+    /** Songs without an album tag all share one album id, so they are told apart by song instead. */
+    private fun coverKey(track: Track): Long = if (track.albumTitle == UnknownNames.ALBUM) track.id else track.albumId
 
     private fun bytesFor(track: Track): ByteArray? {
         embedded(File(track.uri))?.let { return it }

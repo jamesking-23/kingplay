@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import java.io.File
 import javax.swing.JFileChooser
+import javax.swing.JOptionPane
 import javax.swing.filechooser.FileNameExtensionFilter
 
 class NameDialogState(
@@ -89,10 +90,16 @@ fun chooseTextFile(title: String, description: String, vararg extensions: String
 fun saveTextFile(title: String, suggestedName: String, text: String): String? {
     val chooser = JFileChooser().apply {
         dialogTitle = title
-        selectedFile = File(suggestedName)
+        selectedFile = File(suggestedName.replace(Regex("[\\\\/:*?\"<>|]"), "_"))
     }
     if (chooser.showSaveDialog(null) != JFileChooser.APPROVE_OPTION) return null
     val file = chooser.selectedFile
+    if (file.exists()) {
+        val answer = JOptionPane.showConfirmDialog(
+            null, "${file.name} already exists. Replace it?", title, JOptionPane.YES_NO_OPTION,
+        )
+        if (answer != JOptionPane.YES_OPTION) return null
+    }
     return runCatching { file.writeText(text, Charsets.UTF_8) }.map { file.name }.getOrNull()
 }
 

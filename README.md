@@ -217,3 +217,12 @@ is saved for it yet. The phone app ignores the field.
 
 The Videos page has a **Play all** button. It plays the list in order: the video window gets Previous and Next buttons,
 and the next video starts by itself when one ends. Saved, named video playlists are not built.
+
+## Second review pass (step 4j)
+
+Fixed after a second independent read of the never-compiled desktop code: reorder using an old move callback in
+playlists with missing songs; settings and data saves colliding on the same temp file (writes are now serialized); the
+saved queue replacing a file opened from Explorer at start-up; video auto-advance using a stale callback; the library
+being re-sorted on every playback tick (now remembered); songs without an album tag sharing one cover; and the export
+dialog suggesting invalid file names and overwriting without asking. Not fixed: file dialogs are still unparented, and
+songs opened from Explorer are not kept across a library rescan.

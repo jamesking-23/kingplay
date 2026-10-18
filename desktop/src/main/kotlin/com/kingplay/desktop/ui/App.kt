@@ -299,7 +299,8 @@ private fun PageContent(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
             )
-            SongList(index.search(query).sortedForList(), currentId, app.controller, actions)
+            val shown = remember(index, query) { index.search(query).sortedForList() }
+            SongList(shown, currentId, app.controller, actions)
         }
         Page.Albums -> AlbumList(
             index.albums,
@@ -347,7 +348,7 @@ private fun PageContent(
         )
         is Page.AlbumDetail -> Detail(
             title = page.title,
-            tracks = index.albumTracks(page.id),
+            tracks = remember(index, page.id) { index.albumTracks(page.id) },
             currentId = currentId,
             app = app,
             actions = actions,
@@ -355,7 +356,7 @@ private fun PageContent(
         )
         is Page.ArtistDetail -> Detail(
             title = page.name,
-            tracks = index.artistTracks(page.id),
+            tracks = remember(index, page.id) { index.artistTracks(page.id) },
             currentId = currentId,
             app = app,
             actions = actions,
@@ -363,7 +364,7 @@ private fun PageContent(
         )
         is Page.Smart -> Detail(
             title = page.kind.title,
-            tracks = smartTracks(page.kind, index, user),
+            tracks = remember(index, user, page.kind) { smartTracks(page.kind, index, user) },
             currentId = currentId,
             app = app,
             actions = actions,
