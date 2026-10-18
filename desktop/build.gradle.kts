@@ -29,7 +29,8 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Exe)
             packageName = "KingPlay"
-            packageVersion = "0.1.0"
+            // Windows installers need a major version of at least 1. Keep APP_VERSION in ui/SettingsPage.kt equal to this.
+            packageVersion = "1.0.0"
             description = "KingPlay music player"
             vendor = "KingPlay"
             windows {

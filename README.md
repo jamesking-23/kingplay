@@ -139,7 +139,7 @@ Compose Multiplatform Desktop, Windows first. Module `:desktop`; it reuses `:cor
 - **Playback:** `VlcjAudioEngine` drives libVLC, so **64-bit VLC must be installed** (videolan.org). If it is missing the app says so instead of crashing. The queue rules (`PlayQueue`) and `DesktopPlaybackController` are plain Kotlin behind an `AudioEngine` interface and are unit-tested with a fake engine.
 - **Library:** pick folders; `TrackScanner` walks them (never following links), reads tags with jaudiotagger and keeps unchanged files without re-reading. Ids come from the file path, so they survive rescans. Saved in `%APPDATA%\KingPlay\library.json` (written atomically; a damaged file just triggers a rescan).
 - **UI:** Songs (with search), Albums, Artists, Folders; now-playing bar with seek, volume, shuffle, repeat; Windows media keys.
-- **Build and run:** `gradle :desktop:run`. Installer: `gradle :desktop:packageMsi`.
+- **Build and run:** `gradle :desktop:run`. Installer: `gradle :desktop:packageMsi` (or `packageExe`); the file lands in `desktop/build/compose/binaries/main/`.
 - **Your data (step 3b):** playlists, favorites, play counts and the queue live in `%APPDATA%\KingPlay\user.json`, apart from the scanned library, so rescans and removing a folder never touch them. A play counts after half the song (or 4 minutes) or when it ends. The queue is saved every few seconds and on close; on the next start it comes back paused and the first play seeks to where you were.
 - **Playlists:** create, rename, delete, add from the song menu, remove, export and import `.m3u`; smart lists (Favorites, Most played, Recently played, Recently added).
 - **Import from the Android app:** Library page -> Import Android backup. Playlists and favorites are matched by folder and file name (only unambiguous matches); existing playlist names are skipped; nothing is overwritten. The M3U and path-matching code moved from `:data:library` to `:core:model` so both apps share it.
@@ -149,6 +149,14 @@ Compose Multiplatform Desktop, Windows first. Module `:desktop`; it reuses `:cor
 - **Tray and mini player (step 3e):** a KingPlay icon in the Windows notification area. Its tooltip shows the current song; clicking it brings the window back; the right-click menu has Show, Mini player, Play/Pause, Next, Previous and Quit. Settings → Window has "Keep playing in the tray when the window is closed" (off by default, so the close button still quits). The mini player is a small always-on-top window with cover, title, progress and transport buttons, opened from the tray menu or Settings. Windows may hide new tray icons under the "^" overflow arrow until you drag them out.
 - **Reordering (step 3f):** in the Queue and inside a playlist, drag a row by the grip at its right end, or use ⋮ → Move up / Move down (the keyboard-friendly way). Playlist order is saved straight away. Rows are a fixed height so the drop position is exact; songs missing from the library are skipped when counting rows.
 - Not yet on desktop: video, media keys when no KingPlay window is focused, saved EQ presets from a backup, play counts in the backup.
+
+## Windows build and CI (step 3g)
+
+- `.github/workflows/desktop.yml` runs on Windows for changes under `desktop/` or `core/model/`: shared and desktop tests, then the MSI and EXE installers, uploaded as the build artifact "KingPlay-windows-installers".
+- To publish: push a tag such as `desktop-v1.0.0`; the same workflow attaches both installers to a GitHub release.
+- The installers are **not code-signed**, so Windows SmartScreen shows "unknown publisher" (More info → Run anyway). Signing needs a certificate you buy; it is not set up.
+- The installer does not include VLC. Users still need 64-bit VLC; the app says so on first run if it is missing.
+- Version: change `packageVersion` in `desktop/build.gradle.kts` and `APP_VERSION` in `ui/SettingsPage.kt` together (Windows needs a major version of 1 or more). Never change `upgradeUuid`.
 
 ## Known limits (by design, tracked for later steps)
 - Tag editing is not built yet. ReplayGain is read from the file while it plays; the library columns for it stay null.

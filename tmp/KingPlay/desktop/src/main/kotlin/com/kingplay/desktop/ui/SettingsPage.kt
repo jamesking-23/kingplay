@@ -132,6 +132,6 @@ internal fun exportBackup(app: DesktopAppState, onNotice: (String) -> Unit) {
     onNotice(if (saved != null) "Saved $saved" else "The backup was not saved.")
 }
 
-private const val APP_VERSION = "0.1.0"
+private const val APP_VERSION = "1.0.0"
 
 private const val TRAY_LABEL = "Keep playing in the tray when the window is closed"
