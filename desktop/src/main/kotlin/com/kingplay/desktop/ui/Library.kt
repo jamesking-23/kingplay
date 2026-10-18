@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -63,6 +64,8 @@ fun SongList(
     modifier: Modifier = Modifier,
     /** When set, each row's menu offers "Remove from this list" and calls this with the row's position. */
     onRemoveAt: ((Int) -> Unit)? = null,
+    /** When set, rows get a drag handle and "Move up/down"; called with the shown positions. */
+    onMove: ((from: Int, to: Int) -> Unit)? = null,
     header: (@Composable () -> Unit)? = null,
 ) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
@@ -76,6 +79,7 @@ fun SongList(
                 onPlay = { controller?.playMedia(tracks.map { MediaRef.Audio(it.id) }, position) },
                 canPlay = controller != null,
                 onRemove = onRemoveAt?.let { remove -> { remove(position) } },
+                reorder = onMove?.let { move -> ReorderSpec(position, tracks.size, move) },
             )
         }
     }
@@ -90,11 +94,17 @@ private fun SongRow(
     onPlay: () -> Unit,
     canPlay: Boolean,
     onRemove: (() -> Unit)?,
+    reorder: ReorderSpec? = null,
 ) {
+    val drag = reorder?.let { rememberDragState(it) }
     val description = "${track.title}, ${track.artistName}, ${track.albumTitle}"
     var menuOpen by remember { mutableStateOf(false) }
+    val rowSize = if (reorder != null) Modifier.height(REORDER_ROW_HEIGHT) else Modifier.heightIn(min = 56.dp)
     Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(start = 16.dp, end = 4.dp),
+        modifier = (drag?.rowModifier ?: Modifier)
+            .fillMaxWidth()
+            .then(rowSize)
+            .padding(start = 16.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
@@ -166,6 +176,21 @@ private fun SongRow(
                     menuOpen = false
                     actions.newPlaylistWith(track)
                 })
+                if (reorder != null) {
+                    HorizontalDivider()
+                    stepTarget(reorder.position, -1, reorder.count)?.let { to ->
+                        DropdownMenuItem(text = { Text("Move up") }, onClick = {
+                            menuOpen = false
+                            reorder.onMove(reorder.position, to)
+                        })
+                    }
+                    stepTarget(reorder.position, 1, reorder.count)?.let { to ->
+                        DropdownMenuItem(text = { Text("Move down") }, onClick = {
+                            menuOpen = false
+                            reorder.onMove(reorder.position, to)
+                        })
+                    }
+                }
                 if (onRemove != null) {
                     HorizontalDivider()
                     DropdownMenuItem(text = { Text("Remove from this list") }, onClick = {
@@ -175,6 +200,7 @@ private fun SongRow(
                 }
             }
         }
+        if (drag != null) ReorderHandle(drag, "Drag to move ${track.title}")
     }
 }
 

@@ -3,11 +3,13 @@ package com.kingplay.desktop.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -25,11 +27,14 @@ import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Lyrics
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -483,6 +488,7 @@ private fun PlaylistDetail(
         controller = app.controller,
         actions = actions,
         onRemoveAt = { shown -> app.updateUser { it.removeFromPlaylist(id, positions[shown]) } },
+        onMove = { from, to -> app.updateUser { it.moveInPlaylist(id, positions[from], positions[to]) } },
         header = {
             DetailHeader(playlist.name, onBack) {
                 Row(
@@ -554,8 +560,14 @@ private fun QueuePage(
             itemsIndexed(items, key = { position, id -> "$position-$id" }) { position, id ->
                 val track = index[id]
                 val current = position == playback.currentIndex
+                val spec = ReorderSpec(position, items.size) { from, to -> controller?.moveInQueue(from, to) }
+                val drag = rememberDragState(spec)
+                var rowMenu by remember { mutableStateOf(false) }
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp),
+                    modifier = drag.rowModifier
+                        .fillMaxWidth()
+                        .height(REORDER_ROW_HEIGHT)
+                        .padding(start = 16.dp, end = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(
@@ -584,9 +596,32 @@ private fun QueuePage(
                             maxLines = 1,
                         )
                     }
+                    Box {
+                        IconButton(onClick = { rowMenu = true }) {
+                            Icon(
+                                Icons.Filled.MoreVert,
+                                contentDescription = "More actions for ${track?.title ?: "song"}",
+                            )
+                        }
+                        DropdownMenu(expanded = rowMenu, onDismissRequest = { rowMenu = false }) {
+                            stepTarget(position, -1, items.size)?.let { to ->
+                                DropdownMenuItem(text = { Text("Move up") }, onClick = {
+                                    rowMenu = false
+                                    controller?.moveInQueue(position, to)
+                                })
+                            }
+                            stepTarget(position, 1, items.size)?.let { to ->
+                                DropdownMenuItem(text = { Text("Move down") }, onClick = {
+                                    rowMenu = false
+                                    controller?.moveInQueue(position, to)
+                                })
+                            }
+                        }
+                    }
                     IconButton(onClick = { controller?.removeFromQueue(position) }) {
                         Icon(Icons.Filled.Close, contentDescription = "Remove ${track?.title ?: "song"} from queue")
                     }
+                    ReorderHandle(drag, "Drag to move ${track?.title ?: "song"}")
                 }
             }
         }
