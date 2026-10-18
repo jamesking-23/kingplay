@@ -124,7 +124,8 @@ class AudioEngineBinder @Inject constructor(
     }
 
     private fun refreshReplayGain(tracks: Tracks) {
-        replayGain = readReplayGain(tracks)
+        // Odd tags must never stop playback: with unreadable metadata the song just plays without ReplayGain.
+        replayGain = runCatching { readReplayGain(tracks) }.getOrNull()
         pushConfig()
     }
 
@@ -160,16 +161,16 @@ class AudioEngineBinder @Inject constructor(
         return fade * sleepVolume(sleepTimer.state.value, SystemClock.elapsedRealtime())
     }
 
-    private fun readReplayGain(tracks: Tracks) = replayGainFromTags(
-        buildList {
-            for (group in tracks.groups) {
-                if (group.type != C.TRACK_TYPE_AUDIO || !group.isSelected) continue
-                for (index in 0 until group.length) {
-                    group.getTrackFormat(index).metadata?.let { addAll(it.toNamedValues()) }
-                }
+    private fun readReplayGain(tracks: Tracks): ReplayGain? {
+        val all = ArrayList<Pair<String, String>>()
+        for (group in tracks.groups) {
+            if (group.type != C.TRACK_TYPE_AUDIO || !group.isSelected) continue
+            for (index in 0 until group.length) {
+                group.getTrackFormat(index).metadata?.let { all.addAll(it.toNamedValues()) }
             }
-        },
-    )
+        }
+        return replayGainFromTags(all)
+    }
 
     private companion object {
         const val FADE_TICK_MS = 100L

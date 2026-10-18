@@ -56,13 +56,16 @@ class LyricsBinder @Inject constructor(
             lyrics.publish(LyricsState.Loading)
             return
         }
-        val tags = buildList {
+        // Malformed lyric tags must never stop playback: treat them as "no lyrics".
+        val tags = runCatching {
+            val all = ArrayList<Pair<String, String>>()
             for (group in audioGroups) {
                 for (index in 0 until group.length) {
-                    group.getTrackFormat(index).metadata?.let { addAll(it.toLyricTags()) }
+                    group.getTrackFormat(index).metadata?.let { all.addAll(it.toLyricTags()) }
                 }
             }
-        }
+            all
+        }.getOrDefault(emptyList())
         val found = pickLyrics(tags)
         val result = if (found == null || mediaId == null) LyricsState.None else LyricsState.Available(mediaId, found)
         lyrics.publish(result)

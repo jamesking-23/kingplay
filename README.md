@@ -240,3 +240,14 @@ KKINGG Corporation. All rights reserved.", the version, and a chevron that opens
 Privacy Policy and Third-Party Software Acknowledgements, with Help and Feedback links below. The text and links live
 in `core/model/.../about/AboutInfo.kt`, shared by both apps. The licence and privacy texts are plain-language drafts
 and should be reviewed before a public release.
+
+## Playback crash fix (step 4m)
+
+Songs with tags (almost all of them) crashed the Android app the moment they started: inside `buildList { }`,
+`get(index)` resolved to the list being built instead of the track `Metadata`, so the ReplayGain reader threw
+`IndexOutOfBoundsException` on the main thread. Lyrics had the same bug. Both now read metadata outside any
+`buildList`, and tag reading is wrapped so bad metadata can only mean "no ReplayGain / no lyrics", never a crash.
+
+Found with a new emulator test (`app/src/androidTest`, workflow **Emulator smoke**): it adds MP3, M4A, FLAC, OGG
+and WAV files (cover art + ReplayGain tags) to MediaStore, launches the app, waits for the real scanner, then plays
+each through `PlaybackService` and fails on any crash or player error. Run it from the Actions tab.
