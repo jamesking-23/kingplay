@@ -11,6 +11,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import com.kingplay.core.model.settings.AppUiTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -237,6 +242,28 @@ private fun SwitchRow(
 @Composable
 private fun AppearanceSection(settings: AppSettings, onEvent: (SettingsEvent) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
+        Text(stringResource(R.string.settings_ui_theme), style = MaterialTheme.typography.titleSmall)
+        Text(
+            stringResource(R.string.settings_ui_theme_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
+            UiThemeCard(
+                title = stringResource(R.string.settings_ui_king_art),
+                description = stringResource(R.string.settings_ui_king_art_desc),
+                selected = settings.uiTheme == AppUiTheme.KING_ART,
+                onClick = { onEvent(SettingsEvent.SetUiTheme(AppUiTheme.KING_ART)) },
+                modifier = Modifier.weight(1f),
+            )
+            UiThemeCard(
+                title = stringResource(R.string.settings_ui_kk),
+                description = stringResource(R.string.settings_ui_kk_desc),
+                selected = settings.uiTheme == AppUiTheme.KK_UI,
+                onClick = { onEvent(SettingsEvent.SetUiTheme(AppUiTheme.KK_UI)) },
+                modifier = Modifier.weight(1f),
+            )
+        }
         Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleSmall)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
             items(AppThemeMode.entries) { mode ->
@@ -246,6 +273,13 @@ private fun AppearanceSection(settings: AppSettings, onEvent: (SettingsEvent) ->
                     label = { Text(stringResource(modeLabel(mode))) },
                 )
             }
+        }
+        if (settings.uiTheme == AppUiTheme.KING_ART) {
+            Text(
+                stringResource(R.string.settings_ui_accent_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         Text(stringResource(R.string.settings_accent), style = MaterialTheme.typography.titleSmall)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
@@ -281,6 +315,30 @@ private fun AppearanceSection(settings: AppSettings, onEvent: (SettingsEvent) ->
 }
 
 private val SWATCH_SIZE = 18.dp
+
+/** One selectable design. Selection is announced by TalkBack and drawn as a thicker outline, not by colour alone. */
+@Composable
+private fun UiThemeCard(
+    title: String,
+    description: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = MaterialTheme.colorScheme
+    Surface(
+        modifier = modifier.selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
+        shape = MaterialTheme.shapes.medium,
+        color = if (selected) colors.primaryContainer else colors.surfaceContainer,
+        contentColor = if (selected) colors.onPrimaryContainer else colors.onSurface,
+        border = BorderStroke(if (selected) 2.dp else 1.dp, if (selected) colors.onSurface else colors.outlineVariant),
+    ) {
+        Column(Modifier.padding(KpTheme.spacing.md), verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.xs)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(description, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
 
 private fun modeLabel(mode: AppThemeMode): Int = when (mode) {
     AppThemeMode.SYSTEM -> R.string.settings_theme_system

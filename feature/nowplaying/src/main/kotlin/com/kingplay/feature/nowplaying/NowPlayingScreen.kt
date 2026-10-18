@@ -51,6 +51,9 @@ import com.kingplay.core.designsystem.component.KpEmptyState
 import com.kingplay.core.designsystem.component.KpIconButton
 import com.kingplay.core.designsystem.component.rememberHapticClick
 import com.kingplay.core.designsystem.theme.KpIcons
+import androidx.compose.foundation.shape.CircleShape
+import com.kingplay.core.designsystem.component.VinylDisc
+import com.kingplay.core.designsystem.theme.UiStyle
 import com.kingplay.core.designsystem.theme.KpTheme
 import com.kingplay.core.model.RepeatMode
 import com.kingplay.core.model.navigation.AppNavigator
@@ -163,14 +166,28 @@ private fun PlayerBody(
     val spacing = KpTheme.spacing
     BoxWithConstraints(modifier = Modifier.fillMaxSize().padding(horizontal = spacing.xl)) {
         val landscape = maxWidth > maxHeight
+        val kingArt = KpTheme.uiStyle == UiStyle.KING_ART
         val artwork: @Composable (Modifier) -> Unit = { artModifier ->
-            ArtworkImage(
-                audioUri = state.track?.uri,
-                cacheKey = state.track?.let { "album:${it.albumId}" }.orEmpty(),
-                sizePx = ArtworkSize.FULL,
-                shape = MaterialTheme.shapes.extraLarge,
-                modifier = artModifier,
-            )
+            if (kingArt) {
+                // King Art: the cover becomes a picture-disc record that spins while the song plays.
+                VinylDisc(spinning = state.playback.isPlaying, modifier = artModifier) {
+                    ArtworkImage(
+                        audioUri = state.track?.uri,
+                        cacheKey = state.track?.let { "album:${it.albumId}" }.orEmpty(),
+                        sizePx = ArtworkSize.FULL,
+                        shape = CircleShape,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            } else {
+                ArtworkImage(
+                    audioUri = state.track?.uri,
+                    cacheKey = state.track?.let { "album:${it.albumId}" }.orEmpty(),
+                    sizePx = ArtworkSize.FULL,
+                    shape = MaterialTheme.shapes.extraLarge,
+                    modifier = artModifier,
+                )
+            }
         }
         val stage: @Composable (Modifier) -> Unit = { stageModifier ->
             Stage(

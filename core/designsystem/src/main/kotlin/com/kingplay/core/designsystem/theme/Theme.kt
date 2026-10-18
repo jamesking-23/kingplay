@@ -19,12 +19,16 @@ import androidx.core.view.WindowCompat
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK, AMOLED }
 
+/** The design language: [KING_ART] hand-drawn paper (default) or [KK_UI] the original Material look. */
+enum class UiStyle { KING_ART, KK_UI }
+
 data class ThemeConfig(
     val mode: ThemeMode = ThemeMode.SYSTEM,
     val useDynamicColor: Boolean = true,
     val accent: AccentTheme = AccentTheme.VIOLET,
     val density: LayoutDensity = LayoutDensity.COMFORTABLE,
     val lowPowerVisuals: Boolean = false,
+    val uiStyle: UiStyle = UiStyle.KING_ART,
 )
 
 object KpTheme {
@@ -33,6 +37,9 @@ object KpTheme {
 
     val lowPowerVisuals: Boolean
         @Composable get() = LocalLowPowerVisuals.current
+
+    val uiStyle: UiStyle
+        @Composable get() = LocalUiStyle.current
 }
 
 @Composable
@@ -47,9 +54,12 @@ fun KingPlayTheme(
         ThemeMode.DARK, ThemeMode.AMOLED -> true
     }
     val context = LocalContext.current
-    val dynamic = config.useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val kingArt = config.uiStyle == UiStyle.KING_ART
+    // King Art has its own palette, so wallpaper colours and accents only apply to kk-ui.
+    val dynamic = !kingArt && config.useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     val base: ColorScheme = when {
+        kingArt -> kingArtColorScheme(dark)
         dynamic && dark -> dynamicDarkColorScheme(context)
         dynamic -> dynamicLightColorScheme(context)
         dark -> darkAccentScheme(config.accent)
@@ -68,13 +78,14 @@ fun KingPlayTheme(
     }
 
     CompositionLocalProvider(
+        LocalUiStyle provides config.uiStyle,
         LocalSpacing provides if (config.density == LayoutDensity.COMPACT) CompactSpacing else ComfortableSpacing,
         LocalLowPowerVisuals provides effectiveLowPower(config.lowPowerVisuals, context.animatorScale()),
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = KingPlayTypography,
-            shapes = KingPlayShapes,
+            typography = if (kingArt) KingArtTypography else KingPlayTypography,
+            shapes = if (kingArt) KingArtShapes else KingPlayShapes,
             content = content,
         )
     }

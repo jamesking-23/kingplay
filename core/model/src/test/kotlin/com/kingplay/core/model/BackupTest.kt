@@ -67,7 +67,7 @@ class BackupTest {
     private val song = BackupTrack("/storage/emulated/0/Music/A/one.mp3", "One", "Artist")
     private val data = BackupData(
         createdAtMs = 1_700_000_000_000L,
-        settings = AppSettings(AppThemeMode.AMOLED, AppAccent.EMBER, dynamicColor = false, lowPowerVisuals = true),
+        settings = AppSettings(AppThemeMode.AMOLED, AppAccent.EMBER, dynamicColor = false, lowPowerVisuals = true, uiTheme = com.kingplay.core.model.settings.AppUiTheme.KK_UI),
         playlists = listOf(BackupPlaylist("Gym \"mix\"", 5L, listOf(song, song.copy(title = "Two")))),
         favorites = listOf(song),
         presets = listOf(BackupPreset("Mine", 1.5f, List(EqPreset.BAND_COUNT) { it * 0.5f })),

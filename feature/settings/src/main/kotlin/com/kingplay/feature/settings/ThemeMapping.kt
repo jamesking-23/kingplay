@@ -6,12 +6,19 @@ import com.kingplay.core.designsystem.theme.ThemeMode
 import com.kingplay.core.model.settings.AppAccent
 import com.kingplay.core.model.settings.AppSettings
 import com.kingplay.core.model.settings.AppThemeMode
+import com.kingplay.core.model.settings.AppUiTheme
+import com.kingplay.core.designsystem.theme.UiStyle
 
 fun AppThemeMode.toTheme(): ThemeMode = when (this) {
     AppThemeMode.SYSTEM -> ThemeMode.SYSTEM
     AppThemeMode.LIGHT -> ThemeMode.LIGHT
     AppThemeMode.DARK -> ThemeMode.DARK
     AppThemeMode.AMOLED -> ThemeMode.AMOLED
+}
+
+fun AppUiTheme.toStyle(): UiStyle = when (this) {
+    AppUiTheme.KING_ART -> UiStyle.KING_ART
+    AppUiTheme.KK_UI -> UiStyle.KK_UI
 }
 
 fun AppAccent.toTheme(): AccentTheme = when (this) {
@@ -27,4 +34,5 @@ fun AppSettings.toThemeConfig(): ThemeConfig = ThemeConfig(
     useDynamicColor = dynamicColor,
     accent = accent.toTheme(),
     lowPowerVisuals = lowPowerVisuals,
+    uiStyle = uiTheme.toStyle(),
 )

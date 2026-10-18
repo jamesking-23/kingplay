@@ -12,6 +12,7 @@ import com.kingplay.core.model.repository.SettingsRepository
 import com.kingplay.core.model.settings.AppAccent
 import com.kingplay.core.model.settings.AppSettings
 import com.kingplay.core.model.settings.AppThemeMode
+import com.kingplay.core.model.settings.AppUiTheme
 import com.kingplay.core.ui.MviViewModel
 import com.kingplay.core.ui.NoEffect
 import com.kingplay.core.ui.UiEvent
@@ -50,6 +51,8 @@ data class SettingsState(
 
 sealed interface SettingsEvent : UiEvent {
     data class SetThemeMode(val mode: AppThemeMode) : SettingsEvent
+
+    data class SetUiTheme(val uiTheme: AppUiTheme) : SettingsEvent
 
     data class SetAccent(val accent: AppAccent) : SettingsEvent
 
@@ -91,6 +94,7 @@ class SettingsViewModel @Inject constructor(
     override fun onEvent(event: SettingsEvent) {
         when (event) {
             is SettingsEvent.SetThemeMode -> update { it.copy(themeMode = event.mode) }
+            is SettingsEvent.SetUiTheme -> update { it.copy(uiTheme = event.uiTheme) }
             is SettingsEvent.SetAccent -> update { it.copy(accent = event.accent) }
             is SettingsEvent.SetDynamicColor -> update { it.copy(dynamicColor = event.enabled) }
             is SettingsEvent.SetLowPower -> update { it.copy(lowPowerVisuals = event.enabled) }

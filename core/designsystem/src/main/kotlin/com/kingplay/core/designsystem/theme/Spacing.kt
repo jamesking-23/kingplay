@@ -36,3 +36,5 @@ val LocalSpacing = staticCompositionLocalOf { ComfortableSpacing }
 
 /** Visuals-heavy effects (shimmer, blur, particles) check this to save battery and RAM. */
 val LocalLowPowerVisuals = staticCompositionLocalOf { false }
+
+val LocalUiStyle = staticCompositionLocalOf { UiStyle.KING_ART }

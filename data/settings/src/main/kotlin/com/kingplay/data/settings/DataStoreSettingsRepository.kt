@@ -26,8 +26,12 @@ private object Keys {
     val ACCENT = stringPreferencesKey("accent")
     val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
     val LOW_POWER = booleanPreferencesKey("low_power_visuals")
+    val UI_THEME = stringPreferencesKey("ui_theme")
     val ANALYTICS_CONSENT = booleanPreferencesKey("analytics_consent")
 }
+
+private fun Preferences.stored() =
+    StoredSettings(this[Keys.THEME_MODE], this[Keys.ACCENT], this[Keys.DYNAMIC_COLOR], this[Keys.LOW_POWER], this[Keys.UI_THEME])
 
 @Singleton
 class DataStoreSettingsRepository @Inject constructor(
@@ -37,18 +41,18 @@ class DataStoreSettingsRepository @Inject constructor(
 
     override val settings: Flow<AppSettings> = store.data
         .map { p ->
-            StoredSettings(p[Keys.THEME_MODE], p[Keys.ACCENT], p[Keys.DYNAMIC_COLOR], p[Keys.LOW_POWER]).toSettings()
+            p.stored().toSettings()
         }
         .distinctUntilChanged()
 
     override suspend fun update(transform: (AppSettings) -> AppSettings) {
         store.edit { p ->
-            val current = StoredSettings(p[Keys.THEME_MODE], p[Keys.ACCENT], p[Keys.DYNAMIC_COLOR], p[Keys.LOW_POWER])
-            val next = transform(current.toSettings()).toStored()
+            val next = transform(p.stored().toSettings()).toStored()
             p[Keys.THEME_MODE] = next.themeMode!!
             p[Keys.ACCENT] = next.accent!!
             p[Keys.DYNAMIC_COLOR] = next.dynamicColor!!
             p[Keys.LOW_POWER] = next.lowPowerVisuals!!
+            p[Keys.UI_THEME] = next.uiTheme!!
         }
     }
 }

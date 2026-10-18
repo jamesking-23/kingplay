@@ -4,6 +4,7 @@ import com.kingplay.core.model.EqPreset
 import com.kingplay.core.model.settings.AppAccent
 import com.kingplay.core.model.settings.AppSettings
 import com.kingplay.core.model.settings.AppThemeMode
+import com.kingplay.core.model.settings.AppUiTheme
 
 /** A song as the backup remembers it: where it was, and enough to double-check a match. */
 data class BackupTrack(val path: String, val title: String, val artist: String)
@@ -67,6 +68,7 @@ object BackupCodec {
                 "accent" to data.settings.accent.name,
                 "dynamicColor" to data.settings.dynamicColor,
                 "lowPowerVisuals" to data.settings.lowPowerVisuals,
+                "uiTheme" to data.settings.uiTheme.name,
             ),
             "playlists" to data.playlists.map {
                 linkedMapOf("name" to it.name, "createdAtMs" to it.createdAtMs, "tracks" to it.tracks.map(::track))
@@ -181,6 +183,7 @@ object BackupCodec {
             accent = enumOrNull<AppAccent>(m["accent"]) ?: defaults.accent,
             dynamicColor = m["dynamicColor"] as? Boolean ?: defaults.dynamicColor,
             lowPowerVisuals = m["lowPowerVisuals"] as? Boolean ?: defaults.lowPowerVisuals,
+            uiTheme = enumOrNull<AppUiTheme>(m["uiTheme"]) ?: defaults.uiTheme,
         )
     }
 
