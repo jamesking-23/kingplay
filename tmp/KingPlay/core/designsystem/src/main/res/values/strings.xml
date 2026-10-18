@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="kp_accent_violet">Violet</string>
+    <string name="kp_accent_ocean">Ocean</string>
+    <string name="kp_accent_ember">Ember</string>
+    <string name="kp_accent_emerald">Emerald</string>
+    <string name="kp_loading">Loading</string>
+    <string name="kp_error_title">Something went wrong</string>
+    <string name="kp_retry">Try again</string>
+</resources>

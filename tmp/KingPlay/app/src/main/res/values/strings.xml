@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KingPlay</string>
+    <string name="gallery_title">KingPlay design system</string>
+    <string name="gallery_theme_mode">Theme</string>
+    <string name="gallery_accent">Accent (when Material You is off)</string>
+    <string name="gallery_dynamic">Material You dynamic color</string>
+    <string name="gallery_low_power">Low-power visuals</string>
+    <string name="gallery_buttons">Buttons</string>
+    <string name="gallery_states">Loading, empty and error states</string>
+    <string name="gallery_filled">Filled</string>
+    <string name="gallery_tonal">Tonal</string>
+    <string name="gallery_outlined">Outlined</string>
+    <string name="gallery_text">Text</string>
+    <string name="gallery_search">Search</string>
+    <string name="gallery_empty_title">Nothing here yet</string>
+    <string name="gallery_empty_message">Your music and videos will show up once the library is scanned.</string>
+    <string name="gallery_error_message">We couldn\'t load this. Check your connection and try again.</string>
+    <string name="mode_system">System</string>
+    <string name="mode_light">Light</string>
+    <string name="mode_dark">Dark</string>
+    <string name="mode_amoled">AMOLED black</string>
+</resources>
