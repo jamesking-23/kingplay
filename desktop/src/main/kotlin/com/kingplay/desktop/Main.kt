@@ -2,6 +2,7 @@ package com.kingplay.desktop
 
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -26,10 +27,12 @@ import com.kingplay.desktop.settings.SettingsStore
 import com.kingplay.desktop.ui.App
 import com.kingplay.desktop.ui.CloseAction
 import com.kingplay.desktop.ui.MiniPlayer
+import com.kingplay.desktop.ui.VideoWindow
 import com.kingplay.desktop.ui.closeAction
 import com.kingplay.desktop.ui.trayIconPainter
 import com.kingplay.desktop.ui.trayTooltip
 import com.kingplay.desktop.userdata.UserDataStore
+import com.kingplay.desktop.video.VideoFile
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.awt.SystemTray
 import java.io.File
@@ -51,6 +54,7 @@ fun main() = application {
 
     var mainVisible by remember { mutableStateOf(true) }
     var miniVisible by remember { mutableStateOf(false) }
+    var playingVideo by remember { mutableStateOf<Pair<VideoFile, Long>?>(null) }
     val trayAvailable = remember { SystemTray.isSupported() }
     val settings by app.settings.collectAsState()
     val idle = remember { MutableStateFlow(PlaybackState()) }
@@ -97,6 +101,18 @@ fun main() = application {
         }
     }
 
+    playingVideo?.let { (video, startMs) ->
+        key(video.id) {
+            VideoWindow(
+                video = video,
+                startMs = startMs,
+                settings = settings,
+                onProgress = { position, duration -> app.saveVideoProgress(video, position, duration) },
+                onClose = { playingVideo = null },
+            )
+        }
+    }
+
     Window(
         visible = mainVisible,
         onCloseRequest = {
@@ -121,6 +137,14 @@ fun main() = application {
             }
         },
     ) {
-        App(app, covers, onOpenMini = { miniVisible = true })
+        App(
+            app,
+            covers,
+            onOpenMini = { miniVisible = true },
+            onPlayVideo = { video, startMs ->
+                app.pauseMusicForVideo()
+                playingVideo = video to startMs
+            },
+        )
     }
 }

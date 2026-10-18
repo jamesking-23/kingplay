@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
@@ -75,6 +76,7 @@ import com.kingplay.desktop.userdata.mostPlayed
 import com.kingplay.desktop.userdata.playlistTracks
 import com.kingplay.desktop.userdata.recentlyAdded
 import com.kingplay.desktop.userdata.recentlyPlayed
+import com.kingplay.desktop.video.VideoFile
 import kotlinx.coroutines.flow.MutableStateFlow
 
 private enum class SmartKind(val title: String) {
@@ -99,6 +101,8 @@ private sealed interface Page {
 
     data object Equalizer : Page
 
+    data object Videos : Page
+
     data object Library : Page
 
     data object Settings : Page
@@ -120,12 +124,18 @@ private fun smartTracks(kind: SmartKind, index: LibraryIndex, user: UserData): L
 }
 
 @Composable
-fun App(app: DesktopAppState, covers: CoverRepository, onOpenMini: () -> Unit) {
+fun App(
+    app: DesktopAppState,
+    covers: CoverRepository,
+    onOpenMini: () -> Unit,
+    onPlayVideo: (VideoFile, startMs: Long) -> Unit,
+) {
     val index by app.index.collectAsState()
     val folders by app.folders.collectAsState()
     val scan by app.scan.collectAsState()
     val user by app.userData.collectAsState()
     val settings by app.settings.collectAsState()
+    val videos by app.videos.collectAsState()
     val idle = remember { MutableStateFlow(PlaybackState()) }
     val playback by (app.controller?.state ?: idle).collectAsState()
 
@@ -182,6 +192,8 @@ fun App(app: DesktopAppState, covers: CoverRepository, onOpenMini: () -> Unit) {
                                     onDialog = { nameDialog = it },
                                     onNotice = { notice = it },
                                     onOpenMini = onOpenMini,
+                                    videos = videos,
+                                    onPlayVideo = onPlayVideo,
                                 )
                             }
                         }
@@ -227,6 +239,7 @@ private fun Rail(page: Page, onPage: (Page) -> Unit) {
         RailItem("Queue", Icons.AutoMirrored.Filled.QueueMusic, page is Page.Queue) { onPage(Page.Queue) }
         RailItem("Lyrics", Icons.Filled.Lyrics, page is Page.Lyrics) { onPage(Page.Lyrics) }
         RailItem("Equalizer", Icons.Filled.Equalizer, page is Page.Equalizer) { onPage(Page.Equalizer) }
+        RailItem("Videos", Icons.Filled.Movie, page is Page.Videos) { onPage(Page.Videos) }
         RailItem("Library", Icons.Filled.Folder, page is Page.Library) { onPage(Page.Library) }
         RailItem("Settings", Icons.Filled.Settings, page is Page.Settings) { onPage(Page.Settings) }
     }
@@ -274,6 +287,8 @@ private fun PageContent(
     onDialog: (NameDialogState) -> Unit,
     onNotice: (String) -> Unit,
     onOpenMini: () -> Unit,
+    videos: List<VideoFile>,
+    onPlayVideo: (VideoFile, startMs: Long) -> Unit,
 ) {
     when (page) {
         Page.Songs -> {
@@ -316,6 +331,7 @@ private fun PageContent(
             onDeletePreset = { name -> app.updateUser { it.withoutEqPreset(name) } },
             onDialog = onDialog,
         )
+        Page.Videos -> VideosPage(videos, user.videoProgress, onPlayVideo)
         Page.Library -> LibraryPage(
             folders = folders,
             onAdd = { chooseFolder()?.let(app::addFolder) },

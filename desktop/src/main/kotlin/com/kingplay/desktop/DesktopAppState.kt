@@ -27,6 +27,8 @@ import com.kingplay.desktop.userdata.SavedQueue
 import com.kingplay.desktop.userdata.UserData
 import com.kingplay.desktop.userdata.UserDataStore
 import com.kingplay.desktop.userdata.restorableQueue
+import com.kingplay.desktop.video.VideoFile
+import com.kingplay.desktop.video.VideoScanner
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -60,6 +62,9 @@ class DesktopAppState(
 ) {
     private val _index = MutableStateFlow(LibraryIndex.Empty)
     val index: StateFlow<LibraryIndex> = _index.asStateFlow()
+
+    private val _videos = MutableStateFlow<List<VideoFile>>(emptyList())
+    val videos: StateFlow<List<VideoFile>> = _videos.asStateFlow()
 
     private val _folders = MutableStateFlow<List<String>>(emptyList())
     val folders: StateFlow<List<String>> = _folders.asStateFlow()
@@ -138,6 +143,14 @@ class DesktopAppState(
     }
 
     fun exportBackup(): String = BackupExport.build(_index.value, _user.value, now())
+
+    /** Remembers where a video was left (or forgets it when it was finished). Pauses music when a video starts. */
+    fun saveVideoProgress(video: VideoFile, positionMs: Long, durationMs: Long) =
+        updateUser { it.withVideoProgress(video.id, positionMs, durationMs) }
+
+    fun pauseMusicForVideo() {
+        controller?.pause()
+    }
 
     // ---- the person's own data -------------------------------------------------------------------------
 
@@ -255,6 +268,7 @@ class DesktopAppState(
                     scanner.scan(roots, previous) { found -> _scan.value = ScanStatus.Scanning(found) }
                 }
                 _index.value = LibraryIndex(tracks)
+                _videos.value = withContext(Dispatchers.IO) { VideoScanner.scan(roots) }
                 withContext(Dispatchers.IO) { runCatching { store.save(SavedLibrary(roots, tracks)) } }
                 _scan.value = ScanStatus.Idle
             }

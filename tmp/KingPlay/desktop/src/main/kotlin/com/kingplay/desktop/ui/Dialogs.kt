@@ -106,3 +106,12 @@ fun chooseLyricsFile(): File? {
     }
     return if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) chooser.selectedFile else null
 }
+
+/** Lets the person pick a subtitle file for the video that is playing. Returns null when cancelled. */
+fun chooseSubtitleFile(): File? {
+    val chooser = JFileChooser().apply {
+        dialogTitle = "Choose a subtitle file"
+        fileFilter = FileNameExtensionFilter("Subtitles", "srt", "ass", "ssa", "sub", "vtt")
+    }
+    return if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) chooser.selectedFile else null
+}

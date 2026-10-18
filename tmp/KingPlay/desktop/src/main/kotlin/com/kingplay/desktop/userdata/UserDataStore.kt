@@ -4,6 +4,7 @@ import com.kingplay.core.model.EqPreset
 import com.kingplay.core.model.RepeatMode
 import com.kingplay.desktop.library.JsonFile
 import com.kingplay.desktop.settings.clampGain
+import com.kingplay.desktop.video.VideoProgress
 import java.io.File
 
 class UserDataStore(private val file: File) {
@@ -29,6 +30,9 @@ class UserDataStore(private val file: File) {
                 mapOf("id" to id, "count" to s.count.toLong(), "lastPlayedMs" to s.lastPlayedMs)
             },
             "lyrics" to data.lyrics,
+            "videoProgress" to data.videoProgress.map { (id, p) ->
+                mapOf("id" to id, "positionMs" to p.positionMs, "durationMs" to p.durationMs)
+            },
             "eqPresets" to data.eqPresets.map {
                 mapOf("name" to it.name, "preampDb" to it.preampDb, "gainsDb" to it.gainsDb)
             },
@@ -82,6 +86,7 @@ class UserDataStore(private val file: File) {
                 lyrics = (root["lyrics"] as? Map<*, *>).orEmpty()
                     .mapNotNull { (k, v) -> if (k is String && v is String) k to v else null }.toMap(),
                 eqPresets = eqPresets(root["eqPresets"]),
+                videoProgress = videoProgress(root["videoProgress"]),
                 nextPlaylistId = maxOf((root["nextPlaylistId"] as? Number)?.toLong() ?: 1, highest + 1),
             )
         }
@@ -94,6 +99,14 @@ class UserDataStore(private val file: File) {
             if (gains.size != EqPreset.BAND_COUNT || gains.any { it == null }) return@mapNotNull null
             UserEqPreset(name, clampGain((m["preampDb"] as? Number)?.toFloat() ?: 0f), gains.map { clampGain(it!!) })
         }.distinctBy { it.name.lowercase() }.take(UserData.MAX_EQ_PRESETS)
+
+        private fun videoProgress(value: Any?): Map<Long, VideoProgress> = list(value).mapNotNull { raw ->
+            val m = raw as? Map<*, *> ?: return@mapNotNull null
+            val id = (m["id"] as? Number)?.toLong() ?: return@mapNotNull null
+            val position = (m["positionMs"] as? Number)?.toLong() ?: return@mapNotNull null
+            val duration = (m["durationMs"] as? Number)?.toLong() ?: return@mapNotNull null
+            id to VideoProgress(position.coerceAtLeast(0), duration.coerceAtLeast(0))
+        }.toMap()
 
         private fun list(value: Any?): List<Any?> = (value as? List<*>).orEmpty()
 

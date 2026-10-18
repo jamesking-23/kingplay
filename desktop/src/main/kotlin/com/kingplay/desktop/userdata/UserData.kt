@@ -2,6 +2,8 @@ package com.kingplay.desktop.userdata
 
 import com.kingplay.core.model.EqPreset
 import com.kingplay.core.model.RepeatMode
+import com.kingplay.desktop.video.VideoProgress
+import com.kingplay.desktop.video.resumePositionMs
 
 data class DesktopPlaylist(
     val id: Long,
@@ -37,6 +39,8 @@ data class UserData(
     /** Lyrics the person imported, by lyrics key (artist and title). They win over embedded and sidecar lyrics. */
     val lyrics: Map<String, String> = emptyMap(),
     val eqPresets: List<UserEqPreset> = emptyList(),
+    /** Where each video was left, by video id. Finished or barely started videos are not kept. */
+    val videoProgress: Map<Long, VideoProgress> = emptyMap(),
 ) {
     /** Saves (or replaces, ignoring letter case) a named equalizer curve. Blank names and the limit are refused. */
     fun withEqPreset(preset: UserEqPreset): UserData {
@@ -45,6 +49,15 @@ data class UserData(
         val rest = eqPresets.filterNot { it.name.equals(name, ignoreCase = true) }
         if (rest.size >= MAX_EQ_PRESETS) return this
         return copy(eqPresets = rest + preset.copy(name = name))
+    }
+
+    fun withVideoProgress(id: Long, positionMs: Long, durationMs: Long): UserData {
+        val progress = VideoProgress(positionMs.coerceAtLeast(0), durationMs.coerceAtLeast(0))
+        return if (resumePositionMs(progress) > 0) {
+            copy(videoProgress = videoProgress + (id to progress))
+        } else {
+            copy(videoProgress = videoProgress - id)
+        }
     }
 
     fun withoutEqPreset(name: String): UserData = copy(eqPresets = eqPresets.filterNot { it.name.equals(name, true) })
