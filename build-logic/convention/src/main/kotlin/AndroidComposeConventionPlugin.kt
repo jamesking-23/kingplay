@@ -2,14 +2,14 @@ import com.android.build.api.dsl.CommonExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.dependencies
-import org.gradle.kotlin.dsl.getByType
 
 class AndroidComposeConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             pluginManager.apply("org.jetbrains.kotlin.plugin.compose")
 
-            extensions.getByType<CommonExtension<*, *, *, *, *, *>>().apply {
+            // Looked up by name: Gradle cannot find an extension by a type that has wildcards.
+            (extensions.getByName("android") as CommonExtension<*, *, *, *, *, *>).apply {
                 buildFeatures {
                     compose = true
                 }
