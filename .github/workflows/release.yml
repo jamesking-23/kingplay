@@ -67,7 +67,7 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      - run: find dist -type f -exec ls -la {} ;
+      - run: ls -R dist
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
