@@ -279,7 +279,8 @@ private fun TitleBlock(title: String, artist: String, album: String) {
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-        val secondary = listOf(artist, album).filter { it.isNotBlank() }.joinToString(" · ") { displayName(it) }
+        // map is inline, so the composable displayName may be called inside it; joinToString's lambda is not inline.
+        val secondary = listOf(artist, album).filter { it.isNotBlank() }.map { displayName(it) }.joinToString(" · ")
         if (secondary.isNotEmpty()) {
             Text(
                 text = secondary,
