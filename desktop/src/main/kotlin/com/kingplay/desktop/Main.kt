@@ -195,8 +195,8 @@ private fun runApp(inbox: Channel<LaunchRequest?>) = application {
             } else {
                 when (event.key) {
                     Key.MediaPlayPause -> controller.togglePlayPause().let { true }
-                    Key.MediaNextTrack -> controller.skipToNext().let { true }
-                    Key.MediaPreviousTrack -> controller.skipToPrevious().let { true }
+                    Key.MediaNext -> controller.skipToNext().let { true }
+                    Key.MediaPrevious -> controller.skipToPrevious().let { true }
                     else -> false
                 }
             }

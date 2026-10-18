@@ -83,7 +83,6 @@ class VlcjAudioEngine private constructor(
             equalizer.setAmp(band, if (enabled) bandGainsDb[band].coerceIn(-MAX_DB, MAX_DB) else 0f)
         }
         player.audio().setEqualizer(equalizer)
-        equalizer.release() // libVLC copies the settings, so this one is no longer needed
     }
 
     override fun release() {

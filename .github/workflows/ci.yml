@@ -38,9 +38,31 @@ jobs:
           fi
           exit $code
       - name: Unit tests
-        run: gradle testDebugUnitTest
+        shell: bash
+        run: |
+          set +e
+          gradle testDebugUnitTest 2>&1 | tee build.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            grep -nE "^e: |What went wrong|Could not |Unresolved|FAILED|error:" -A12 build.log | head -90 > errs.txt
+            [ -s errs.txt ] || tail -60 build.log > errs.txt
+            msg=$(sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g' errs.txt | cut -c1-7000)
+            echo "::error title=Gradle output::$msg"
+          fi
+          exit $code
       - name: Assemble
-        run: gradle :app:assembleDebug
+        shell: bash
+        run: |
+          set +e
+          gradle :app:assembleDebug 2>&1 | tee build.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            grep -nE "^e: |What went wrong|Could not |Unresolved|FAILED|error:" -A12 build.log | head -90 > errs.txt
+            [ -s errs.txt ] || tail -60 build.log > errs.txt
+            msg=$(sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g' errs.txt | cut -c1-7000)
+            echo "::error title=Gradle output::$msg"
+          fi
+          exit $code
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

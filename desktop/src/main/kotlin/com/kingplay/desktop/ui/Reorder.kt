@@ -38,6 +38,7 @@ class DragState(private val latest: State<ReorderSpec>, private val rowPx: Float
     var dragging by mutableStateOf(false)
 
     val rowModifier: Modifier
+        @Composable
         get() = Modifier
             .zIndex(if (dragging) 1f else 0f)
             .graphicsLayer { translationY = dragPx }
