@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      # The repo ships no wrapper yet; this installs Gradle itself. After `gradle wrapper` is committed, use ./gradlew.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.10.2
+      - name: Static analysis
+        run: gradle detekt lint -PwarningsAsErrors=true
+      - name: Unit tests
+        run: gradle testDebugUnitTest
+      - name: Assemble
+        run: gradle :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: reports
+          path: |
+            **/build/reports/
+            **/build/test-results/

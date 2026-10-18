@@ -128,6 +128,12 @@ Android Auto and the widget arrived in step 2i (below).
 - Limits: Auto browse lists show no cover art (the car cannot read our file URIs); music only; the widget shows audio, not video.
   Not compiled or run on a device, Desktop Head Unit or launcher: the Media3 and Glance calls were checked only against stand-in declarations.
 
+## Polish and accessibility (step 2j)
+- Song rows and the mini player are announced as buttons; the playing song is announced as "selected".
+- Decorative motion (visualizer, lyric glow, shimmer) is reduced by the in-app low-power switch **or** the system "remove animations" setting.
+- `.github/workflows/ci.yml` runs detekt, lint, unit tests and a debug build. The repo ships no Gradle wrapper yet, so CI installs Gradle 8.10.2; commit a wrapper (`gradle wrapper --gradle-version 8.10.2`) and switch the steps to `./gradlew`.
+- Security note: `PlaybackService` is exported (Android Auto and Assistant need that) and any app can browse the library tree. The data is local only, but restricting callers to a package allow-list is a sensible hardening step before release.
+
 ## Known limits (by design, tracked for later steps)
 - Tag editing is not built yet. ReplayGain is read from the file while it plays; the library columns for it stay null.
 - Subtitle files next to a video are not found automatically (scoped storage); pick the file with the system picker.

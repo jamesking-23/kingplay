@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -64,7 +65,7 @@ fun MiniPlayer(
                 Row(
                     modifier = Modifier
                         .weight(1f)
-                        .clickable(onClick = onOpen)
+                        .clickable(role = Role.Button, onClick = onOpen)
                         .semantics(mergeDescendants = true) { contentDescription = openDescription },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

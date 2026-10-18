@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -68,7 +69,7 @@ fun KingPlayTheme(
 
     CompositionLocalProvider(
         LocalSpacing provides if (config.density == LayoutDensity.COMPACT) CompactSpacing else ComfortableSpacing,
-        LocalLowPowerVisuals provides config.lowPowerVisuals,
+        LocalLowPowerVisuals provides effectiveLowPower(config.lowPowerVisuals, context.animatorScale()),
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
@@ -78,6 +79,11 @@ fun KingPlayTheme(
         )
     }
 }
+
+/** The system "remove animations" switch sets the animator scale to 0; honour it like the in-app low-power switch. */
+private fun Context.animatorScale(): Float =
+    runCatching { Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) }
+        .getOrDefault(1f)
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
