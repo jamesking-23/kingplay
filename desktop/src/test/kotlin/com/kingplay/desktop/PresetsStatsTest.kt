@@ -7,8 +7,10 @@ import com.kingplay.core.model.backup.BackupData
 import com.kingplay.core.model.backup.BackupPlayStat
 import com.kingplay.core.model.backup.BackupPreset
 import com.kingplay.core.model.backup.BackupTrack
+import com.kingplay.core.model.backup.BackupVideoProgress
 import com.kingplay.core.model.settings.AppSettings
 import com.kingplay.desktop.library.LibraryIndex
+import com.kingplay.desktop.library.stableId
 import com.kingplay.desktop.settings.DesktopSettings
 import com.kingplay.desktop.settings.asUserPreset
 import com.kingplay.desktop.settings.matchingUserPreset
@@ -23,6 +25,7 @@ import com.kingplay.desktop.userdata.UserData
 import com.kingplay.desktop.userdata.UserDataStore
 import com.kingplay.desktop.userdata.UserEqPreset
 import com.kingplay.desktop.userdata.importNotice
+import com.kingplay.desktop.video.VideoFile
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -136,5 +139,37 @@ class BackupPresetsStatsTest {
         assertTrue(!importNotice(base).contains("equalizer"))
         val full = importNotice(base.copy(presetsAdded = 2, lyricsAdded = 3, statsMatched = 4))
         assertTrue(full.contains("2 equalizer presets") && full.contains("3 songs") && full.contains("4 songs"))
+    }
+}
+
+class BackupVideoProgressTest {
+    private val library = LibraryIndex(emptyList())
+    private val path = "D:/Movies/film.mkv"
+    private val video = VideoFile(stableId("video:$path"), path, "film", "D:/Movies", 1, 1)
+    private val saved = UserData().withVideoProgress(video.id, 60_000, 600_000)
+
+    @Test fun exportListsProgressOnlyForVideosThatAreKnown() {
+        val data = saved.withVideoProgress(12345, 60_000, 600_000)
+        val back = BackupCodec.decode(BackupExport.build(library, data, now = 1, videos = listOf(video)))
+        assertEquals(listOf(BackupVideoProgress(path, 60_000, 600_000)), back.videoProgress)
+        assertTrue(!BackupExport.build(library, UserData(), now = 1).contains("videoProgress"))
+    }
+
+    @Test fun importRestoresOnlyForFilesThatExistAndKeepsPositionsAlreadyHere() {
+        val text = BackupExport.build(library, saved, now = 1, videos = listOf(video))
+        val done = BackupImport.import(text, library, UserData(), now = 2) { true } as ImportOutcome.Done
+        assertEquals(60_000L, done.data.videoProgress[video.id]?.positionMs)
+        assertEquals(1, done.summary.videosMatched)
+        val missing = BackupImport.import(text, library, UserData(), now = 2) { false } as ImportOutcome.Done
+        assertTrue(missing.data.videoProgress.isEmpty())
+        val mine = UserData().withVideoProgress(video.id, 120_000, 600_000)
+        val kept = BackupImport.import(text, library, mine, now = 2) { true } as ImportOutcome.Done
+        assertEquals(120_000L, kept.data.videoProgress[video.id]?.positionMs)
+        assertEquals(0, kept.summary.videosMatched)
+    }
+
+    @Test fun noticeMentionsVideos() {
+        val s = ImportSummary(1, 0, 2, 3, 4, 5, videosMatched = 2)
+        assertTrue(importNotice(s).contains("2 videos"))
     }
 }

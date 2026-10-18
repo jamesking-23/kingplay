@@ -13,6 +13,9 @@ data class BackupPlaylist(val name: String, val createdAtMs: Long, val tracks: L
 /** How often a song was played and when last; written by the PC app. The phone ignores it. */
 data class BackupPlayStat(val track: BackupTrack, val count: Int, val lastPlayedMs: Long)
 
+/** Where the PC app stopped a video, by full path. The phone ignores it. */
+data class BackupVideoProgress(val path: String, val positionMs: Long, val durationMs: Long)
+
 data class BackupPreset(val name: String, val preampDb: Float, val bandGainsDb: List<Float>)
 
 data class BackupData(
@@ -27,6 +30,7 @@ data class BackupData(
     /** Which app wrote the file. A desktop backup carries no phone settings, so restoring it leaves them alone. */
     val source: String? = null,
     val playStats: List<BackupPlayStat> = emptyList(),
+    val videoProgress: List<BackupVideoProgress> = emptyList(),
 )
 
 class BackupFormatException(message: String, cause: Throwable? = null) : Exception(message, cause)
@@ -86,6 +90,11 @@ object BackupCodec {
                     )
                 }
             }
+            if (data.videoProgress.isNotEmpty()) {
+                it["videoProgress"] = data.videoProgress.map { v ->
+                    linkedMapOf("path" to v.path, "positionMs" to v.positionMs, "durationMs" to v.durationMs)
+                }
+            }
         },
     )
 
@@ -121,6 +130,15 @@ object BackupCodec {
                         trackOf(m),
                         ((m["count"] as? Number)?.toInt() ?: 0).coerceAtLeast(0),
                         (m["lastPlayedMs"] as? Number)?.toLong() ?: 0,
+                    )
+                },
+                videoProgress = root.list("videoProgress").mapNotNull {
+                    val m = it.asMap()
+                    val path = m["path"] as? String ?: return@mapNotNull null
+                    BackupVideoProgress(
+                        path,
+                        ((m["positionMs"] as? Number)?.toLong() ?: 0).coerceAtLeast(0),
+                        ((m["durationMs"] as? Number)?.toLong() ?: 0).coerceAtLeast(0),
                     )
                 },
             )

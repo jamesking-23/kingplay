@@ -10,5 +10,6 @@ fun importNotice(s: ImportSummary): String {
     if (s.presetsAdded > 0) parts += "Added ${s.presetsAdded} equalizer presets."
     if (s.lyricsAdded > 0) parts += "Added lyrics for ${s.lyricsAdded} songs."
     if (s.statsMatched > 0) parts += "Restored play counts for ${s.statsMatched} songs."
+    if (s.videosMatched > 0) parts += "Restored where you stopped in ${s.videosMatched} videos."
     return parts.joinToString(" ")
 }

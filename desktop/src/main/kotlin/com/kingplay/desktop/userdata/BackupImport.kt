@@ -5,7 +5,9 @@ import com.kingplay.core.model.backup.BackupFormatException
 import com.kingplay.core.model.playlist.PathRow
 import com.kingplay.core.model.playlist.TrackPathIndex
 import com.kingplay.desktop.library.LibraryIndex
+import com.kingplay.desktop.library.stableId
 import com.kingplay.desktop.settings.clampGain
+import java.io.File
 
 data class ImportSummary(
     val playlistsAdded: Int,
@@ -17,6 +19,7 @@ data class ImportSummary(
     val lyricsAdded: Int = 0,
     val presetsAdded: Int = 0,
     val statsMatched: Int = 0,
+    val videosMatched: Int = 0,
 )
 
 sealed interface ImportOutcome {
@@ -32,7 +35,13 @@ sealed interface ImportOutcome {
  * already here are kept, and play counts keep the larger number.
  */
 object BackupImport {
-    fun import(text: String, library: LibraryIndex, current: UserData, now: Long): ImportOutcome {
+    fun import(
+        text: String,
+        library: LibraryIndex,
+        current: UserData,
+        now: Long,
+        videoExists: (String) -> Boolean = { File(it).isFile },
+    ): ImportOutcome {
         val backup = try {
             BackupCodec.decode(text)
         } catch (e: BackupFormatException) {
@@ -83,12 +92,22 @@ object BackupImport {
             data = data.copy(stats = data.stats + (id to merged))
             statsMatched++
         }
+        var videosMatched = 0
+        for (v in backup.videoProgress) {
+            // Only for videos that are really on this PC, and never over a position that is already here.
+            if (!videoExists(v.path)) continue
+            val id = stableId("video:${v.path}")
+            if (id in data.videoProgress) continue
+            data = data.withVideoProgress(id, v.positionMs, v.durationMs)
+            videosMatched++
+        }
         return ImportOutcome.Done(
             data,
             ImportSummary(
                 added, skipped, matched, total, favoriteIds.size, backup.favorites.size, newLyrics.size,
                 presetsAdded = data.eqPresets.size - presetsBefore,
                 statsMatched = statsMatched,
+                videosMatched = videosMatched,
             ),
         )
     }

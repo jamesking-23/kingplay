@@ -7,8 +7,10 @@ import com.kingplay.core.model.backup.BackupPlayStat
 import com.kingplay.core.model.backup.BackupPlaylist
 import com.kingplay.core.model.backup.BackupPreset
 import com.kingplay.core.model.backup.BackupTrack
+import com.kingplay.core.model.backup.BackupVideoProgress
 import com.kingplay.core.model.settings.AppSettings
 import com.kingplay.desktop.library.LibraryIndex
+import com.kingplay.desktop.video.VideoFile
 
 /**
  * Writes playlists and favorites in the same backup format the Android app reads, so they can go phone-ward.
@@ -17,7 +19,7 @@ import com.kingplay.desktop.library.LibraryIndex
  * desktop backup so restoring it does not touch the phone's settings.
  */
 object BackupExport {
-    fun build(library: LibraryIndex, data: UserData, now: Long): String {
+    fun build(library: LibraryIndex, data: UserData, now: Long, videos: List<VideoFile> = emptyList()): String {
         fun entry(track: Track) = BackupTrack(track.uri.replace('\\', '/'), track.title, track.artistName)
         return BackupCodec.encode(
             BackupData(
@@ -34,6 +36,10 @@ object BackupExport {
                 playStats = data.stats.mapNotNull { (id, stat) ->
                     val track = library[id]?.takeIf { stat.count > 0 } ?: return@mapNotNull null
                     BackupPlayStat(entry(track), stat.count, stat.lastPlayedMs)
+                },
+                videoProgress = videos.mapNotNull { video ->
+                    val p = data.videoProgress[video.id] ?: return@mapNotNull null
+                    BackupVideoProgress(video.path, p.positionMs, p.durationMs)
                 },
             ),
         )

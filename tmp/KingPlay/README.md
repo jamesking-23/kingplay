@@ -155,7 +155,7 @@ Compose Multiplatform Desktop, Windows first. Module `:desktop`; it reuses `:cor
 - **Video (step 4b):** the Videos page lists every video (mp4, mkv, avi, mov, wmv, webm, m4v, mpg, ts and a few more) found in your library folders, named after the file, with its folder and size. Clicking one pauses the music and opens a player window: play/pause, back and forward 10 seconds, seek bar, volume, full screen, and Subtitles and Audio strips (including "Add subtitle file…"; a subtitle file with the same name beside the video is picked up by VLC on its own). Where you stopped is remembered and offered as "Resume at …" (not for the first 5 seconds or the last 10). Keys: Space, left/right arrows, F, Esc, when the picture area does not have the keyboard focus.
 - **Media keys everywhere (step 4c):** the keyboard's play/pause, next, previous and stop keys work while KingPlay is in the background (Windows hot keys, through JNA). Settings → Window can turn this off; it takes effect on the next start. A key another program already registered (a browser, another player) stays with that program; the others still work. It cannot take a key from a program that registered it first.
 - **Open with / double-click (step 4e):** the installer registers mp3, flac, m4a, wav, ogg, opus, mp4 and mkv with KingPlay (Windows still asks before changing a default app; use right-click → Open with → Choose another app). Opened songs play at once and join the list for this session without being added to your library; an opened video opens the player. Only one KingPlay runs: a second launch hands its files to the first (over a port on this computer only, `47615`) and quits, which also keeps two copies from writing the same data files. If that port is used by another program, KingPlay starts normally.
-- Not yet on desktop: video progress in backups, video playlists.
+- Not yet on desktop: video playlists.
 
 ## Windows build and CI (step 3g)
 
@@ -206,3 +206,9 @@ the first move; video playback starting before the picture surface was visible; 
 opening a video (the window now just closes); media-key actions running off the UI thread; an equalizer object leaked
 on every slider tick; a native callback calling back into the player; the video Play button doing nothing after the
 video ended; and the audio engine being released before the app had fully stopped. None of this has been compiled.
+
+## Video progress in backups (step 4h)
+
+A desktop backup now also carries where you stopped in each video (`videoProgress`, by full file path; only written when
+there is some). Importing restores a position only if that video file exists at the same path on this PC and no position
+is saved for it yet. The phone app ignores the field.

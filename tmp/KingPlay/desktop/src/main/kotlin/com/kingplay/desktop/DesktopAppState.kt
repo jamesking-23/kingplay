@@ -142,7 +142,7 @@ class DesktopAppState(
         updateSettings { it.withVolume(percent) }
     }
 
-    fun exportBackup(): String = BackupExport.build(_index.value, _user.value, now())
+    fun exportBackup(): String = BackupExport.build(_index.value, _user.value, now(), videos.value)
 
     /**
      * Plays songs opened from outside the library (Explorer "Open with", a double-click). Songs that are not in the
