@@ -55,3 +55,11 @@ dependencies {
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
 }
+
+dependencies {
+    androidTestImplementation(libs.media3.session)
+    androidTestImplementation(libs.media3.exoplayer)
+    androidTestImplementation(libs.room.runtime)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.kotlinx.coroutines.android)
+}
