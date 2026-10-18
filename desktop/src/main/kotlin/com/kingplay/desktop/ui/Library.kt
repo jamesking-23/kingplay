@@ -94,13 +94,13 @@ private fun SongRow(
     val description = "${track.title}, ${track.artistName}, ${track.albumTitle}"
     var menuOpen by remember { mutableStateOf(false) }
     Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(start = 16.dp, end = 4.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(start = 16.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
             modifier = Modifier
                 .weight(1f)
-                .heightIn(min = 52.dp)
+                .heightIn(min = 56.dp)
                 .clickable(enabled = canPlay, role = Role.Button, onClick = onPlay)
                 .semantics(mergeDescendants = true) {
                     contentDescription = description
@@ -108,6 +108,7 @@ private fun SongRow(
                 },
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            CoverImage(track, COVER_ROW_SIZE, modifier = Modifier.padding(end = 12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = track.title,
@@ -178,12 +179,18 @@ private fun SongRow(
 }
 
 @Composable
-fun AlbumList(albums: List<Album>, onOpen: (Album) -> Unit, modifier: Modifier = Modifier) {
+fun AlbumList(
+    albums: List<Album>,
+    coverOf: (Album) -> Track?,
+    onOpen: (Album) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     LazyColumn(modifier = modifier.fillMaxSize()) {
         itemsIndexed(albums, key = { _, a -> a.id }) { _, album ->
             ListRow(
                 title = album.title,
                 subtitle = "${album.artistName} · ${album.trackCount} songs",
+                cover = coverOf(album),
                 onClick = { onOpen(album) },
             )
         }
@@ -204,26 +211,31 @@ fun ArtistList(artists: List<Artist>, onOpen: (Artist) -> Unit, modifier: Modifi
 }
 
 @Composable
-private fun ListRow(title: String, subtitle: String, onClick: () -> Unit) {
-    Column(
+private fun ListRow(title: String, subtitle: String, onClick: () -> Unit, cover: Track? = null) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 56.dp)
+            .heightIn(min = 64.dp)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .semantics(mergeDescendants = true) { contentDescription = "$title, $subtitle" },
-        verticalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(
-            subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        if (cover != null) CoverImage(cover, COVER_ROW_SIZE, modifier = Modifier.padding(end = 12.dp))
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
+
+private val COVER_ROW_SIZE = 44.dp
 
 @Composable
 fun EmptyLibrary(playerMissing: Boolean, onAddFolder: () -> Unit, modifier: Modifier = Modifier) {

@@ -11,10 +11,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.kingplay.desktop.cover.CoverRepository
 import com.kingplay.desktop.engine.VlcjAudioEngine
 import com.kingplay.desktop.library.JAudioTaggerReader
 import com.kingplay.desktop.library.LibraryStore
 import com.kingplay.desktop.library.TrackScanner
+import com.kingplay.desktop.settings.SettingsStore
 import com.kingplay.desktop.ui.App
 import com.kingplay.desktop.userdata.UserDataStore
 import java.io.File
@@ -22,11 +24,13 @@ import java.io.File
 fun main() = application {
     val scope = rememberCoroutineScope()
     val engine = remember { VlcjAudioEngine.createOrNull() }
+    val covers = remember { CoverRepository() }
     val app = remember {
         DesktopAppState(
             scope = scope,
             store = LibraryStore(File(DesktopAppState.dataDirectory(), "library.json")),
             userStore = UserDataStore(File(DesktopAppState.dataDirectory(), "user.json")),
+            settingsStore = SettingsStore(File(DesktopAppState.dataDirectory(), "settings.json")),
             scanner = TrackScanner(JAudioTaggerReader()),
             engine = engine,
         ).also { it.start() }
@@ -54,6 +58,6 @@ fun main() = application {
             }
         },
     ) {
-        App(app)
+        App(app, covers)
     }
 }

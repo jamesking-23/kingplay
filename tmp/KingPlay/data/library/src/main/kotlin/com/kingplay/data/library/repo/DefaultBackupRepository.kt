@@ -110,7 +110,8 @@ class DefaultBackupRepository @Inject constructor(
             lyricsAdded++
         }
 
-        settings.update { data.settings }
+        // A backup made on a PC has no phone settings in it, so keep the ones already here.
+        if (data.source != BackupCodec.SOURCE_DESKTOP) settings.update { data.settings }
         return RestoreResult.Done(
             RestoreSummary(added, skipped, matched, total, favoriteIds.size, presetsAdded, lyricsAdded),
         )

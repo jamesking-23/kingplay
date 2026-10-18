@@ -143,7 +143,9 @@ Compose Multiplatform Desktop, Windows first. Module `:desktop`; it reuses `:cor
 - **Your data (step 3b):** playlists, favorites, play counts and the queue live in `%APPDATA%\KingPlay\user.json`, apart from the scanned library, so rescans and removing a folder never touch them. A play counts after half the song (or 4 minutes) or when it ends. The queue is saved every few seconds and on close; on the next start it comes back paused and the first play seeks to where you were.
 - **Playlists:** create, rename, delete, add from the song menu, remove, export and import `.m3u`; smart lists (Favorites, Most played, Recently played, Recently added).
 - **Import from the Android app:** Library page -> Import Android backup. Playlists and favorites are matched by folder and file name (only unambiguous matches); existing playlist names are skipped; nothing is overwritten. The M3U and path-matching code moved from `:data:library` to `:core:model` so both apps share it.
-- Not yet on desktop: lyrics, EQ and effects, video, cover art, drag to reorder the queue and playlists, tray and mini player, settings (theme), backup export, imported lyrics and EQ presets from a backup.
+- **Look and feel (step 3c):** album covers from the song's embedded picture or `cover.jpg` / `folder.jpg` next to it (one per album, cached, decoded small); theme (match Windows, light, dark, black) and accent colour; the volume is remembered. Settings live in `%APPDATA%\KingPlay\settings.json`.
+- **Backup export:** Settings -> Export backup writes playlists and favorites in the Android backup format, marked as a desktop backup, so restoring it on the phone adds them without touching the phone's settings. The Android restore now checks that mark (`BackupData.source`).
+- Not yet on desktop: lyrics, EQ and effects, video, drag to reorder, tray and mini player, global media keys when the window is not focused, imported lyrics and EQ presets from a backup, play counts in the backup.
 
 ## Known limits (by design, tracked for later steps)
 - Tag editing is not built yet. ReplayGain is read from the file while it plays; the library columns for it stay null.

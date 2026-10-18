@@ -36,12 +36,20 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kingplay.core.model.RepeatMode
+import com.kingplay.core.model.Track
 import com.kingplay.core.model.repository.PlaybackState
 import com.kingplay.desktop.playback.DesktopPlaybackController
 
 @Composable
-fun NowPlayingBar(controller: DesktopPlaybackController, state: PlaybackState, modifier: Modifier = Modifier) {
-    var volume by remember { mutableFloatStateOf(DEFAULT_VOLUME) }
+fun NowPlayingBar(
+    controller: DesktopPlaybackController,
+    state: PlaybackState,
+    currentTrack: Track?,
+    initialVolumePercent: Int,
+    onVolumeChange: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var volume by remember { mutableFloatStateOf(initialVolumePercent.toFloat() / PERCENT) }
     var dragging by remember { mutableStateOf<Float?>(null) }
     val duration = state.durationMs.coerceAtLeast(1)
     val shownPosition = dragging ?: (state.positionMs.toFloat() / duration).coerceIn(0f, 1f)
@@ -70,6 +78,7 @@ fun NowPlayingBar(controller: DesktopPlaybackController, state: PlaybackState, m
                 Text(formatTime(state.durationMs), style = MaterialTheme.typography.labelMedium)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
+                CoverImage(currentTrack, COVER_SIZE, modifier = Modifier.padding(end = 12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = state.title ?: "Nothing playing",
@@ -132,7 +141,7 @@ fun NowPlayingBar(controller: DesktopPlaybackController, state: PlaybackState, m
                         value = volume,
                         onValueChange = {
                             volume = it
-                            controller.setVolume((it * PERCENT).toInt())
+                            onVolumeChange((it * PERCENT).toInt())
                         },
                         modifier = Modifier
                             .width(120.dp)
@@ -156,5 +165,5 @@ private fun ToggleIcon(icon: ImageVector, description: String, on: Boolean, onCl
     }
 }
 
-private const val DEFAULT_VOLUME = 0.8f
 private const val PERCENT = 100
+private val COVER_SIZE = 56.dp

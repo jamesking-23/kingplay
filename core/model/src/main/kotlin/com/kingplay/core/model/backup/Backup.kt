@@ -21,6 +21,8 @@ data class BackupData(
     val excludedFolders: List<String>,
     /** Imported lyrics by lyrics key. */
     val lyrics: Map<String, String>,
+    /** Which app wrote the file. A desktop backup carries no phone settings, so restoring it leaves them alone. */
+    val source: String? = null,
 )
 
 class BackupFormatException(message: String, cause: Throwable? = null) : Exception(message, cause)
@@ -45,9 +47,10 @@ sealed interface RestoreResult {
 object BackupCodec {
     const val FORMAT = "kingplay-backup"
     const val VERSION = 1
+    const val SOURCE_DESKTOP = "desktop"
 
     fun encode(data: BackupData): String = Json.write(
-        linkedMapOf(
+        linkedMapOf<String, Any?>(
             "format" to FORMAT,
             "version" to VERSION,
             "createdAtMs" to data.createdAtMs,
@@ -66,7 +69,7 @@ object BackupCodec {
             },
             "excludedFolders" to data.excludedFolders,
             "lyrics" to data.lyrics,
-        ),
+        ).also { if (data.source != null) it["source"] = data.source },
     )
 
     private fun track(t: BackupTrack) = linkedMapOf("path" to t.path, "title" to t.title, "artist" to t.artist)
@@ -94,6 +97,7 @@ object BackupCodec {
                 excludedFolders = root.list("excludedFolders").map { it as? String ?: throw bad() },
                 lyrics = (root["lyrics"] as? Map<*, *> ?: emptyMap<Any, Any>())
                     .entries.associate { (k, v) -> (k as String) to (v as? String ?: throw bad()) },
+                source = root["source"] as? String,
             )
         } catch (e: ClassCastException) {
             throw BackupFormatException("The backup is damaged", e)

@@ -13,6 +13,9 @@ import com.kingplay.desktop.library.LibraryStore
 import com.kingplay.desktop.library.SavedLibrary
 import com.kingplay.desktop.library.TrackScanner
 import com.kingplay.desktop.playback.DesktopPlaybackController
+import com.kingplay.desktop.settings.DesktopSettings
+import com.kingplay.desktop.settings.SettingsStore
+import com.kingplay.desktop.userdata.BackupExport
 import com.kingplay.desktop.userdata.BackupImport
 import com.kingplay.desktop.userdata.ImportOutcome
 import com.kingplay.desktop.userdata.SavedQueue
@@ -45,6 +48,7 @@ class DesktopAppState(
     private val scope: CoroutineScope,
     private val store: LibraryStore,
     private val userStore: UserDataStore,
+    private val settingsStore: SettingsStore,
     private val scanner: TrackScanner,
     engine: AudioEngine?,
     private val now: () -> Long = System::currentTimeMillis,
@@ -57,6 +61,9 @@ class DesktopAppState(
 
     private val _scan = MutableStateFlow<ScanStatus>(ScanStatus.Idle)
     val scan: StateFlow<ScanStatus> = _scan.asStateFlow()
+
+    private val _settings = MutableStateFlow(settingsStore.load())
+    val settings: StateFlow<DesktopSettings> = _settings.asStateFlow()
 
     private val _user = MutableStateFlow(UserData())
     val userData: StateFlow<UserData> = _user.asStateFlow()
@@ -82,6 +89,7 @@ class DesktopAppState(
             _folders.value = saved.folders
             _index.value = LibraryIndex(saved.tracks)
             _user.value = user
+            controller?.setVolume(_settings.value.volumePercent)
             restoreQueue(user)
             launch { writeUserDataLoop() }
             launch { saveQueueLoop() }
@@ -99,6 +107,21 @@ class DesktopAppState(
             repeat = saved.repeat,
         )
     }
+
+    // ---- settings --------------------------------------------------------------------------------------
+
+    fun updateSettings(change: (DesktopSettings) -> DesktopSettings) {
+        _settings.update(change)
+        val snapshot = _settings.value
+        scope.launch(Dispatchers.IO) { runCatching { settingsStore.save(snapshot) } }
+    }
+
+    fun setVolume(percent: Int) {
+        controller?.setVolume(percent)
+        updateSettings { it.withVolume(percent) }
+    }
+
+    fun exportBackup(): String = BackupExport.build(_index.value, _user.value, now())
 
     // ---- the person's own data -------------------------------------------------------------------------
 

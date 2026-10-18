@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -35,6 +36,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,9 +54,10 @@ import com.kingplay.core.model.Track
 import com.kingplay.core.model.repository.PlaybackState
 import com.kingplay.desktop.DesktopAppState
 import com.kingplay.desktop.ScanStatus
+import com.kingplay.desktop.cover.CoverRepository
 import com.kingplay.desktop.library.LibraryIndex
 import com.kingplay.desktop.library.sortedForList
-import com.kingplay.desktop.userdata.ImportOutcome
+import com.kingplay.desktop.settings.DesktopSettings
 import com.kingplay.desktop.userdata.UserData
 import com.kingplay.desktop.userdata.favoriteTracks
 import com.kingplay.desktop.userdata.mostPlayed
@@ -83,6 +86,8 @@ private sealed interface Page {
 
     data object Library : Page
 
+    data object Settings : Page
+
     data class AlbumDetail(val id: Long, val title: String) : Page
 
     data class ArtistDetail(val id: Long, val name: String) : Page
@@ -100,11 +105,12 @@ private fun smartTracks(kind: SmartKind, index: LibraryIndex, user: UserData): L
 }
 
 @Composable
-fun App(app: DesktopAppState) {
+fun App(app: DesktopAppState, covers: CoverRepository) {
     val index by app.index.collectAsState()
     val folders by app.folders.collectAsState()
     val scan by app.scan.collectAsState()
     val user by app.userData.collectAsState()
+    val settings by app.settings.collectAsState()
     val idle = remember { MutableStateFlow(PlaybackState()) }
     val playback by (app.controller?.state ?: idle).collectAsState()
 
@@ -126,46 +132,57 @@ fun App(app: DesktopAppState) {
         },
     )
 
-    KingPlayDesktopTheme {
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Row(modifier = Modifier.weight(1f)) {
-                    Rail(page) { page = it }
-                    Column(modifier = Modifier.weight(1f)) {
-                        if (scan is ScanStatus.Scanning) {
-                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                            Text(
-                                "Reading your music… ${(scan as ScanStatus.Scanning).found} songs found",
-                                style = MaterialTheme.typography.labelMedium,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                            )
-                        }
-                        notice?.let { Notice(it) { notice = null } }
-                        if (index.tracks.isEmpty() && folders.isEmpty() && page !is Page.Library) {
-                            EmptyLibrary(app.playerMissing, onAddFolder = { chooseFolder()?.let(app::addFolder) })
-                        } else {
-                            PageContent(
-                                page = page,
-                                onPage = { page = it },
-                                app = app,
-                                index = index,
-                                folders = folders,
-                                user = user,
-                                playback = playback,
-                                currentId = currentId,
-                                actions = actions,
-                                query = query,
-                                onQuery = { query = it },
-                                onDialog = { nameDialog = it },
-                                onNotice = { notice = it },
-                            )
+    KingPlayDesktopTheme(settings) {
+        CompositionLocalProvider(LocalCovers provides covers) {
+            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(modifier = Modifier.weight(1f)) {
+                        Rail(page) { page = it }
+                        Column(modifier = Modifier.weight(1f)) {
+                            if (scan is ScanStatus.Scanning) {
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                                Text(
+                                    "Reading your music… ${(scan as ScanStatus.Scanning).found} songs found",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                                )
+                            }
+                            notice?.let { Notice(it) { notice = null } }
+                            if (index.tracks.isEmpty() && folders.isEmpty() && page !is Page.Library) {
+                                EmptyLibrary(app.playerMissing, onAddFolder = { chooseFolder()?.let(app::addFolder) })
+                            } else {
+                                PageContent(
+                                    page = page,
+                                    onPage = { page = it },
+                                    app = app,
+                                    index = index,
+                                    folders = folders,
+                                    user = user,
+                                    playback = playback,
+                                    settings = settings,
+                                    currentId = currentId,
+                                    actions = actions,
+                                    query = query,
+                                    onQuery = { query = it },
+                                    onDialog = { nameDialog = it },
+                                    onNotice = { notice = it },
+                                )
+                            }
                         }
                     }
+                    app.controller?.let {
+                        NowPlayingBar(
+                            controller = it,
+                            state = playback,
+                            currentTrack = currentId?.let(index::get),
+                            initialVolumePercent = settings.volumePercent,
+                            onVolumeChange = app::setVolume,
+                        )
+                    }
                 }
-                app.controller?.let { NowPlayingBar(it, playback) }
             }
+            nameDialog?.let { NameDialog(it) { nameDialog = null } }
         }
-        nameDialog?.let { NameDialog(it) { nameDialog = null } }
     }
 }
 
@@ -184,6 +201,7 @@ private fun Rail(page: Page, onPage: (Page) -> Unit) {
         ) { onPage(Page.Playlists) }
         RailItem("Queue", Icons.AutoMirrored.Filled.QueueMusic, page is Page.Queue) { onPage(Page.Queue) }
         RailItem("Library", Icons.Filled.Folder, page is Page.Library) { onPage(Page.Library) }
+        RailItem("Settings", Icons.Filled.Settings, page is Page.Settings) { onPage(Page.Settings) }
     }
 }
 
@@ -219,6 +237,7 @@ private fun PageContent(
     folders: List<String>,
     user: UserData,
     playback: PlaybackState,
+    settings: DesktopSettings,
     currentId: Long?,
     actions: SongActions,
     query: String,
@@ -237,7 +256,11 @@ private fun PageContent(
             )
             SongList(index.search(query).sortedForList(), currentId, app.controller, actions)
         }
-        Page.Albums -> AlbumList(index.albums, onOpen = { onPage(Page.AlbumDetail(it.id, it.title)) })
+        Page.Albums -> AlbumList(
+            index.albums,
+            coverOf = { index.firstTrackOfAlbum[it.id] },
+            onOpen = { onPage(Page.AlbumDetail(it.id, it.title)) },
+        )
         Page.Artists -> ArtistList(index.artists, onOpen = { onPage(Page.ArtistDetail(it.id, it.name)) })
         Page.Playlists -> PlaylistsPage(
             app = app,
@@ -253,7 +276,12 @@ private fun PageContent(
             onAdd = { chooseFolder()?.let(app::addFolder) },
             onRemove = app::removeFolder,
             onRescan = app::rescan,
+        )
+        Page.Settings -> SettingsPage(
+            settings = settings,
+            onChange = app::updateSettings,
             onImportBackup = { importBackup(app, onNotice) },
+            onExportBackup = { exportBackup(app, onNotice) },
         )
         is Page.AlbumDetail -> Detail(
             title = page.title,
@@ -537,7 +565,6 @@ private fun LibraryPage(
     onAdd: () -> Unit,
     onRemove: (String) -> Unit,
     onRescan: () -> Unit,
-    onImportBackup: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Music folders", style = MaterialTheme.typography.titleLarge)
@@ -564,30 +591,6 @@ private fun LibraryPage(
                     }
                 }
             }
-        }
-        HorizontalDivider()
-        Text("Bring your phone data", style = MaterialTheme.typography.titleMedium)
-        Text(
-            "In KingPlay on Android, open Settings → Back up, then choose that file here. " +
-                "Playlists and favorites are matched by file name, so copy your music over first.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        OutlinedButton(onClick = onImportBackup) { Text("Import Android backup") }
-    }
-}
-
-private fun importBackup(app: DesktopAppState, onNotice: (String) -> Unit) {
-    val (_, text) = chooseTextFile("Choose a KingPlay backup", "KingPlay backup", "json", "kingplay", "txt") ?: return
-    when (val outcome = app.importBackup(text)) {
-        is ImportOutcome.Invalid -> onNotice("That file is not a KingPlay backup: ${outcome.reason}")
-        is ImportOutcome.Done -> {
-            val s = outcome.summary
-            onNotice(
-                "Added ${s.playlistsAdded} playlists (${s.playlistsSkipped} already existed). " +
-                    "Found ${s.tracksMatched} of ${s.tracksTotal} playlist songs and " +
-                    "${s.favoritesMatched} of ${s.favoritesTotal} favorites.",
-            )
         }
     }
 }

@@ -12,6 +12,7 @@ import com.kingplay.core.model.settings.AppAccent
 import com.kingplay.core.model.settings.AppSettings
 import com.kingplay.core.model.settings.AppThemeMode
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -133,5 +134,13 @@ class BackupTest {
     fun lyricsKeysIgnoreCaseAndSpacing() {
         assertEquals(lyricsKey("The  Artist", " One "), lyricsKey("the artist", "ONE"))
         assertTrue(lyricsKey("a", "b") != lyricsKey("b", "a"))
+    }
+
+    @Test fun sourceIsKeptWhenPresentAndAbsentOtherwise() {
+        assertNull(BackupCodec.decode(BackupCodec.encode(data)).source)
+        val desktop = data.copy(source = BackupCodec.SOURCE_DESKTOP)
+        val text = BackupCodec.encode(desktop)
+        assertEquals(BackupCodec.SOURCE_DESKTOP, BackupCodec.decode(text).source)
+        assertEquals(desktop, BackupCodec.decode(text))
     }
 }

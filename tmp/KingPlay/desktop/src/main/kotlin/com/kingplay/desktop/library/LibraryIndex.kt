@@ -11,6 +11,11 @@ class LibraryIndex(val tracks: List<Track>) {
 
     operator fun get(id: Long): Track? = byId[id]
 
+    /** The first song of each album, used to look up the album's cover. */
+    val firstTrackOfAlbum: Map<Long, Track> by lazy {
+        tracks.groupBy { it.albumId }.mapValues { (_, group) -> group.first() }
+    }
+
     val albums: List<Album> by lazy {
         tracks.groupBy { it.albumId }.values.map { group ->
             val first = group.first()
