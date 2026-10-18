@@ -47,6 +47,8 @@ internal class ArtworkFetcher(
     }
 
     private companion object {
+        const val FRAME_TIME_US = 1_000_000L
+
         @Suppress("SwallowedException")
         fun thumbnail(context: Context, uri: Uri, sizePx: Int): Bitmap? {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
@@ -66,14 +68,23 @@ internal class ArtworkFetcher(
             val retriever = MediaMetadataRetriever()
             return try {
                 retriever.setDataSource(context, uri)
-                val bytes = retriever.embeddedPicture ?: return null
-                decodeSampled(bytes, sizePx)
+                val bytes = retriever.embeddedPicture
+                if (bytes != null) decodeSampled(bytes, sizePx) else videoFrame(retriever, sizePx)
             } catch (e: RuntimeException) {
                 // MediaMetadataRetriever throws plain RuntimeException for unreadable or unsupported files.
                 null
             } finally {
                 retriever.release()
             }
+        }
+
+        /** A still from a video file (null for audio). Used on Android 9 and older, which have no thumbnail loader. */
+        fun videoFrame(retriever: MediaMetadataRetriever, sizePx: Int): Bitmap? {
+            val frame = retriever.getFrameAtTime(FRAME_TIME_US, MediaMetadataRetriever.OPTION_CLOSEST_SYNC) ?: return null
+            val longest = maxOf(frame.width, frame.height)
+            if (longest <= sizePx) return frame
+            val scale = sizePx.toFloat() / longest
+            return Bitmap.createScaledBitmap(frame, (frame.width * scale).toInt(), (frame.height * scale).toInt(), true)
         }
 
         fun decodeSampled(bytes: ByteArray, sizePx: Int): Bitmap? {

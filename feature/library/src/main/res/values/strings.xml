@@ -12,6 +12,10 @@
     <string name="tab_genres">Genres</string>
     <string name="tab_folders">Folders</string>
     <string name="tab_playlists">Playlists</string>
+    <string name="tab_videos">Videos</string>
+    <string name="videos_empty_title">No videos yet</string>
+    <string name="videos_empty_message">Videos on this device appear here once the library scan finds them.</string>
+    <string name="video_resume_at">Continue at %1$s</string>
 
     <string name="library_added_next">Will play next</string>
     <string name="library_added_queue">Added to queue</string>

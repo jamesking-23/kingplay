@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="video_back">Close video</string>
+    <string name="video_missing_title">This video is not available</string>
+    <string name="video_missing_message">It may have been moved or deleted. Scan the library again to refresh the list.</string>
+    <string name="video_surface">Video. Double tap the left or right side to skip 10 seconds.</string>
+    <string name="video_show_controls">Show controls</string>
+    <string name="video_hide_controls">Hide controls</string>
+    <string name="video_play">Play</string>
+    <string name="video_pause">Pause</string>
+    <string name="video_next">Next video</string>
+    <string name="video_previous">Previous video</string>
+    <string name="video_seek">Seek</string>
+    <string name="video_position">%1$s of %2$s</string>
+    <string name="video_speed">Playback speed, %1$s</string>
+    <string name="video_resize_fit">Fit to screen</string>
+    <string name="video_resize_zoom">Zoom to fill</string>
+    <string name="video_resize_fill">Stretch</string>
+    <string name="video_resize_button">Picture size: %1$s. Tap to change.</string>
+    <string name="video_rotate">Rotate screen</string>
+    <string name="video_pip">Picture in picture</string>
+    <string name="video_lock">Lock controls</string>
+    <string name="video_unlock">Unlock controls</string>
+    <string name="video_locked_hint">Controls locked</string>
+    <string name="video_audio_tracks">Audio</string>
+    <string name="video_subtitles">Subtitles</string>
+    <string name="video_subtitles_off">Off</string>
+    <string name="video_subtitles_load">Load subtitle file…</string>
+    <string name="video_subtitles_unsupported">That file type is not supported. Use .srt, .vtt, .ass or .ttml.</string>
+    <string name="video_subtitle_size">Subtitle size</string>
+    <string name="video_size_small">Small</string>
+    <string name="video_size_normal">Normal</string>
+    <string name="video_size_large">Large</string>
+    <string name="video_size_huge">Huge</string>
+    <string name="video_track_fallback">Track</string>
+    <string name="video_no_audio_tracks">No other audio tracks</string>
+    <string name="video_skip_back">−10 s</string>
+    <string name="video_skip_forward">+10 s</string>
+    <string name="video_brightness">Brightness %1$d%%</string>
+    <string name="video_volume">Volume %1$d%%</string>
+    <string name="video_fast">2x</string>
+    <string name="video_close_sheet">Close</string>
+</resources>

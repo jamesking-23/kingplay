@@ -30,6 +30,7 @@ import com.kingplay.core.model.Playlist
 import com.kingplay.core.model.navigation.AppNavigator
 import com.kingplay.core.ui.component.MediaRow
 import com.kingplay.core.ui.displayName
+import com.kingplay.core.ui.format.formatDuration
 import com.kingplay.core.ui.joinWithDot
 import com.kingplay.core.ui.quantityString
 import com.kingplay.feature.library.R
@@ -222,3 +223,41 @@ private fun CreatePlaylistDialog(onDismiss: () -> Unit, onCreate: (String) -> Un
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.playlist_cancel)) } },
     )
 }
+
+@Composable
+fun VideosTab(navigator: AppNavigator, modifier: Modifier = Modifier, viewModel: VideosViewModel = hiltViewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    ListTab(
+        state = state,
+        onRetry = viewModel::retry,
+        emptyIcon = KpIcons.Movie,
+        emptyTitle = stringResource(R.string.videos_empty_title),
+        emptyMessage = stringResource(R.string.videos_empty_message),
+        key = { it.id },
+        modifier = modifier,
+    ) { video ->
+        val resume = if (video.resumePositionMs > 0) {
+            stringResource(R.string.video_resume_at, formatDuration(video.resumePositionMs))
+        } else {
+            null
+        }
+        val details = joinWithDot(formatDuration(video.durationMs), videoQuality(video.width, video.height))
+        MediaRow(
+            title = displayName(video.title),
+            subtitle = joinWithDot(details, resume),
+            artworkUri = video.uri,
+            artworkKey = "video:${video.id}",
+            leadingIcon = KpIcons.Movie,
+            onClick = { navigator.toVideo(video.id) },
+        )
+    }
+}
+
+/** "1080p", "4K"; empty when the size is unknown. */
+private fun videoQuality(width: Int, height: Int): String = when {
+    width <= 0 || height <= 0 -> ""
+    maxOf(width, height) >= UHD_LONG_SIDE -> "4K"
+    else -> "${minOf(width, height)}p"
+}
+
+private const val UHD_LONG_SIDE = 3_800

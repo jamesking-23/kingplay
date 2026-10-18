@@ -63,6 +63,73 @@ object KpIcons {
         }
     }
 
+    val Movie: ImageVector by lazy {
+        icon("Movie") {
+            path(
+                "M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 " +
+                    "2-.9 2-2V4h-4z",
+            )
+        }
+    }
+
+    val Subtitles: ImageVector by lazy {
+        icon("Subtitles") {
+            path(
+                "M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2" +
+                    "zm10 6H4v-2h10v2zm6 0h-4v-2h4v2zm0-4H10v-2h10v2z",
+            )
+        }
+    }
+
+    val AudioTrack: ImageVector by lazy {
+        icon("AudioTrack") {
+            path(
+                "M12 3v9.28c-.47-.17-.97-.28-1.5-.28C8.01 12 6 14.01 6 16.5S8.01 21 10.5 21c2.31 0 4.2-1.75" +
+                    " 4.45-4H15V6h4V3h-7z",
+            )
+        }
+    }
+
+    val PictureInPicture: ImageVector by lazy {
+        icon("PictureInPicture") {
+            path(
+                "M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 1.98 2 1.98h18c1.1 0 2-.88 2-1.98V5c0-1.1" +
+                    "-.9-2-2-2zm0 16.01H3V4.98h18v14.03z",
+            )
+        }
+    }
+
+    val Lock: ImageVector by lazy {
+        icon("Lock") {
+            path(
+                "M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9" +
+                    " 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.7" +
+                    "1 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z",
+            )
+        }
+    }
+
+    val ScreenRotation: ImageVector by lazy {
+        icon("ScreenRotation") {
+            path(
+                "M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1." +
+                    "33-1.32zm-6.25-.77c-.59-.59-1.54-.59-2.12 0L1.75 8.11c-.59.59-.59 1.54 0 2.12l12.02 12.02c" +
+                    ".59.59 1.54.59 2.12 0l6.36-6.36c.59-.59.59-1.54 0-2.12L10.23 1.75zm4.6 19.44L2.81 9.17l6.3" +
+                    "6-6.36 12.02 12.02-6.36 6.36zm-7.31.29C4.25 19.94 1.91 16.76 1.55 13H.05C.56 19.16 5.71 24" +
+                    " 12 24l.66-.03-3.81-3.81-1.33 1.32z",
+            )
+        }
+    }
+
+    val AspectRatio: ImageVector by lazy {
+        icon("AspectRatio") {
+            path(
+                "M19 12h-2v3h-3v2h5v-5zM7 9h3V7H5v5h2V9zm14-6H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2" +
+                    "-.9 2-2V5c0-1.1-.9-2-2-2zm0 16.01H3V4.99h18v14.02z",
+            )
+        }
+    }
+
     val QueueMusic: ImageVector by lazy {
         icon("QueueMusic") {
             path(

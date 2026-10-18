@@ -28,9 +28,12 @@ import com.kingplay.feature.library.detail.PlaylistDetailRoute
 import com.kingplay.feature.library.home.LibraryScreen
 import com.kingplay.feature.nowplaying.MiniPlayer
 import com.kingplay.feature.nowplaying.NowPlayingScreen
+import com.kingplay.feature.video.VideoArgs
+import com.kingplay.feature.video.ui.VideoPlayerScreen
 
 /**
- * The app's frame: one nav graph, and the mini player pinned above the system bar on every screen except Now Playing.
+ * The app's frame: one nav graph, and the mini player pinned above the system bar on every screen except the
+ * full-screen ones (Now Playing and the video player).
  * [settings] is whatever the settings route should show; until the settings step it is the design gallery.
  */
 @Composable
@@ -38,13 +41,14 @@ fun KingPlayRoot(settings: @Composable () -> Unit, modifier: Modifier = Modifier
     val navController = rememberNavController()
     val navigator = remember(navController) { AppNavigatorImpl(navController) }
     val backStack by navController.currentBackStackEntryAsState()
-    val onNowPlaying = backStack?.destination?.route == Routes.NOW_PLAYING
+    val route = backStack?.destination?.route
+    val fullScreen = route == Routes.NOW_PLAYING || route == Routes.VIDEO
 
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            if (!onNowPlaying) {
+            if (!fullScreen) {
                 Column(modifier = Modifier.navigationBarsPadding()) {
                     MiniPlayer(onOpen = navigator::toNowPlaying)
                 }
@@ -82,6 +86,10 @@ fun KingPlayRoot(settings: @Composable () -> Unit, modifier: Modifier = Modifier
                 route = Routes.FOLDER,
                 arguments = listOf(navArgument(DetailArgs.FOLDER_PATH) { type = NavType.StringType }),
             ) { FolderDetailRoute(navigator) }
+            composable(
+                route = Routes.VIDEO,
+                arguments = listOf(navArgument(VideoArgs.VIDEO_ID) { type = NavType.LongType }),
+            ) { VideoPlayerScreen(navigator) }
             composable(Routes.EQUALIZER) { EqualizerScreen(navigator) }
             composable(Routes.SETTINGS) { settings() }
         }

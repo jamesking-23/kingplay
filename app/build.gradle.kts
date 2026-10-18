@@ -41,6 +41,7 @@ dependencies {
     implementation(projects.feature.equalizer)
     implementation(projects.feature.library)
     implementation(projects.feature.nowplaying)
+    implementation(projects.feature.video)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.work.runtime.ktx)

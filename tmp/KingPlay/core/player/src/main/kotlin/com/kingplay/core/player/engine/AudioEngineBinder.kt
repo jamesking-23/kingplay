@@ -63,6 +63,7 @@ class AudioEngineBinder @Inject constructor(
         override fun onTracksChanged(tracks: Tracks) = refreshReplayGain(tracks)
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            applyPlaybackParameters()
             refreshReplayGain(player.currentTracks)
             updateVolume()
         }
@@ -87,9 +88,7 @@ class AudioEngineBinder @Inject constructor(
                 settingsRepository.settings
                     .map { it.effects.tempo to it.effects.pitchSemitones }
                     .distinctUntilChanged()
-                    .collect { (tempo, semitones) ->
-                        player.playbackParameters = PlaybackParameters(tempo, semitonesToPitch(semitones))
-                    }
+                    .collect { applyPlaybackParameters() }
             },
             scope.launch { sleepTimer.state.collect { updateVolume() } },
         )
@@ -102,6 +101,21 @@ class AudioEngineBinder @Inject constructor(
         fadeJob?.cancel()
         fadeJob = null
         player.removeListener(listener)
+    }
+
+    /**
+     * Music uses the tempo and pitch from the equalizer. Video always starts at normal speed and pitch; the video
+     * screen then changes speed itself, so the two never fight over it.
+     */
+    private fun applyPlaybackParameters() {
+        val effects = settingsRepository.settings.value.effects
+        val isAudio = MediaIds.parse(player.currentMediaItem?.mediaId) is MediaRef.Audio
+        val wanted = if (isAudio) {
+            PlaybackParameters(effects.tempo, semitonesToPitch(effects.pitchSemitones))
+        } else {
+            PlaybackParameters.DEFAULT
+        }
+        if (player.playbackParameters != wanted) player.playbackParameters = wanted
     }
 
     private fun pushConfig() {

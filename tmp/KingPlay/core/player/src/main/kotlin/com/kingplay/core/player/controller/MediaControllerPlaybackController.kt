@@ -43,6 +43,11 @@ class MediaControllerPlaybackController @Inject constructor(
     private val _state = MutableStateFlow(PlaybackState())
     override val state: StateFlow<PlaybackState> = _state.asStateFlow()
 
+    private val connectedPlayer = MutableStateFlow<Player?>(null)
+
+    /** The connected controller as a plain [Player], or null until connected. Used by the video screen. */
+    val player: StateFlow<Player?> = connectedPlayer.asStateFlow()
+
     private var controller: MediaController? = null
     private var connecting: ListenableFuture<MediaController>? = null
     private val pending = ArrayDeque<(MediaController) -> Unit>()
@@ -66,6 +71,7 @@ class MediaControllerPlaybackController @Inject constructor(
                     return@addListener
                 }
                 controller = connected
+                connectedPlayer.value = connected
                 connected.addListener(this)
                 while (pending.isNotEmpty()) pending.removeFirst().invoke(connected)
                 refresh()
@@ -76,7 +82,7 @@ class MediaControllerPlaybackController @Inject constructor(
     }
 
     /** Runs [command] now if connected, otherwise after the connection completes. */
-    private fun withController(command: (MediaController) -> Unit) {
+    internal fun withController(command: (MediaController) -> Unit) {
         mainScope.launch {
             val ready = controller
             if (ready != null) {

@@ -21,6 +21,7 @@ import com.kingplay.core.player.engine.AudioEngineBinder
 import com.kingplay.core.player.engine.LyricsBinder
 import com.kingplay.core.player.engine.SleepTimerBinder
 import com.kingplay.core.player.logic.MediaIds
+import com.kingplay.core.player.video.SubtitleExtras
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
@@ -145,10 +146,10 @@ class PlaybackService : MediaLibraryService() {
         val refs = items.map { MediaIds.parse(it.mediaId) }
         val audio = library.getTracks(refs.filterIsInstance<MediaRef.Audio>().map { it.id }).associateBy { it.id }
         val video = videos.getVideos(refs.filterIsInstance<MediaRef.Video>().map { it.id }).associateBy { it.id }
-        return refs.mapNotNull { ref ->
-            when (ref) {
+        return items.indices.mapNotNull { index ->
+            when (val ref = refs[index]) {
                 is MediaRef.Audio -> audio[ref.id]?.toMediaItem()
-                is MediaRef.Video -> video[ref.id]?.toMediaItem()
+                is MediaRef.Video -> video[ref.id]?.toMediaItem(SubtitleExtras.read(items[index]))
                 null -> null
             }
         }.toMutableList()

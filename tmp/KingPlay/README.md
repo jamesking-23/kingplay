@@ -22,6 +22,7 @@ Phase 1 (MVP) is built step by step; this drop is **step 2d: Library and Now Pla
   (`ArtworkImage`), the shared list row (`MediaRow`) and formatters.
 - `:feature:library` Library home (Songs, Albums, Artists, Genres, Folders, Playlists tabs) and the detail screens.
 - `:feature:nowplaying` Now Playing screen, queue sheet and the mini player.
+- `:feature:video` Video player screen: gestures, controls, speed, audio and subtitle tracks, picture-in-picture.
 - `:core:database` Room schema v1 (tracks, videos, playlists, queue, EQ presets, device profiles, FTS4 search), DAOs, mappers.
 - `:data:library` MediaStore scanner, Room-backed repositories, WorkManager scan worker, M3U import/export.
   Repository interfaces live in `:core:model` (`com.kingplay.core.model.repository`) so features never see Room.
@@ -89,12 +90,25 @@ Not built yet: crossfade and EQ (2e), Android Auto browse tree (2h).
 - Sleep timer: 5 to 90 minutes, end of this song, or after 3 songs. It fades out over the last 30 seconds, can be
   extended by 10 minutes, and stops exactly at the end of the song for "end of this song".
 
+## Video player (step 2g)
+- Library has a Videos tab (thumbnail, quality, resume point). Tapping a video opens the full-screen player.
+- Videos play in the same playback service as music. The queue is the other videos in the same folder, in natural order
+  ("Episode 2" before "Episode 10"), so next and previous move between episodes. Starting a video replaces the music queue.
+- Resume: the position is saved every 5 seconds and when you leave; it is ignored near the very start and end.
+- Gestures: tap shows or hides controls, double tap left or right skips 10 seconds, double tap in the middle pauses,
+  hold for 2x, swipe sideways to scrub, swipe up or down on the left for brightness and on the right for volume.
+  Every gesture also has a button. The lock button ignores all touches except the unlock button.
+- Speed 0.5x to 3x, picture size (fit, zoom, stretch), audio track and subtitle track pickers, subtitle size, rotate.
+- Subtitles: embedded tracks are listed. For a separate file use "Load subtitle file" (.srt, .vtt, .ass, .ttml).
+- Picture-in-picture: button, and automatic when you leave during playback on Android 12+.
+
 ## Known limits (by design, tracked for later steps)
 - Tag editing is not built yet. ReplayGain is read from the file while it plays; the library columns for it stay null.
-- External subtitle discovery is part of the video step (2g); `VideoItem.subtitleTracks` is empty for now.
+- Subtitle files next to a video are not found automatically (scoped storage); pick the file with the system picker.
+  A picked subtitle is not remembered after the app restarts, and adding one reloads the video at the same position.
 - Playlists refer to MediaStore ids. If Android rebuilds its media index, ids change; the backup step (2h) will relink by path.
 
-- No search screen yet (`SearchRepository` exists); no video library or player until 2g.
+- No search screen yet (`SearchRepository` exists).
 - Playlist rename and drag-to-reorder are not built yet; the queue can be reordered with Move up / Move down.
 - Settings is a placeholder (the design gallery with theme controls) until step 2h; theme choices are not persisted yet.
 - Genres and folders list songs only; an album grid view and per-tab sort options (other than Songs) come with polish in 2i.
@@ -106,6 +120,8 @@ Not built yet: crossfade and EQ (2e), Android Auto browse tree (2h).
 - The visualizer is drawn from the audio just before it reaches the speaker buffer, so on Bluetooth it can lead the sound
   by a fraction of a second.
 - The sleep timer lives in the playback service. It does not survive the app being killed.
+- Video: no subtitle delay control, no background audio for video (it pauses when you leave, except in picture-in-picture),
+  and no network streams.
 
 ## Rules
 - Feature modules never depend on each other; they use `AppNavigator`.

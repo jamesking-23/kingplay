@@ -49,6 +49,7 @@ import com.kingplay.feature.library.list.FoldersTab
 import com.kingplay.feature.library.list.GenresTab
 import com.kingplay.feature.library.list.PlaylistsTab
 import com.kingplay.feature.library.list.SongsTab
+import com.kingplay.feature.library.list.VideosTab
 import kotlinx.coroutines.launch
 
 private enum class LibraryTab(@StringRes val label: Int) {
@@ -58,6 +59,7 @@ private enum class LibraryTab(@StringRes val label: Int) {
     Genres(R.string.tab_genres),
     Folders(R.string.tab_folders),
     Playlists(R.string.tab_playlists),
+    Videos(R.string.tab_videos),
 }
 
 /** The home screen: scan status, then one swipeable tab per way of browsing the library. */
@@ -101,6 +103,7 @@ fun LibraryScreen(
                     LibraryTab.Genres -> GenresTab(navigator)
                     LibraryTab.Folders -> FoldersTab(navigator)
                     LibraryTab.Playlists -> PlaylistsTab(navigator)
+                    LibraryTab.Videos -> VideosTab(navigator)
                 }
             }
         }
