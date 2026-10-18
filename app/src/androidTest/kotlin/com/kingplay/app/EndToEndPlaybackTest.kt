@@ -17,18 +17,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
 import com.kingplay.core.database.KingPlayDatabase
-import kotlinx.coroutines.runBlocking
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import kotlin.math.PI
-import kotlin.math.sin
 
 /** Launch the real UI, let the real scanner find a MediaStore song, then play it via the service. */
 @RunWith(AndroidJUnit4::class)
@@ -40,64 +34,75 @@ class EndToEndPlaybackTest {
         Manifest.permission.READ_MEDIA_VIDEO,
     )
 
-    private fun wavBytes(): ByteArray {
-        val rate = 22050
-        val n = rate * 8
-        val b = ByteBuffer.allocate(44 + n * 2).order(ByteOrder.LITTLE_ENDIAN)
-        b.put("RIFF".toByteArray()).putInt(36 + n * 2).put("WAVE".toByteArray()).put("fmt ".toByteArray())
-        b.putInt(16).putShort(1).putShort(1).putInt(rate).putInt(rate * 2).putShort(2).putShort(16)
-        b.put("data".toByteArray()).putInt(n * 2)
-        for (i in 0 until n) b.putShort((sin(2 * PI * 440 * i / rate) * 8000).toInt().toShort())
-        return b.array()
-    }
+    private val files = listOf(
+        "smoke_mp3.mp3" to "audio/mpeg",
+        "smoke_m4a.m4a" to "audio/mp4",
+        "smoke_flac.flac" to "audio/flac",
+        "smoke_ogg.ogg" to "audio/ogg",
+        "smoke_wav.wav" to "audio/x-wav",
+    )
 
     @Test
-    fun scannedSongPlays() {
+    fun scannedSongsPlay() {
+        val inst = InstrumentationRegistry.getInstrumentation()
         val ctx = ApplicationProvider.getApplicationContext<Context>()
-        val values = ContentValues().apply {
-            put(MediaStore.Audio.Media.DISPLAY_NAME, "KingPlay Smoke.wav")
-            put(MediaStore.Audio.Media.MIME_TYPE, "audio/x-wav")
-            put(MediaStore.Audio.Media.TITLE, "KingPlay Smoke")
-            put(MediaStore.Audio.Media.ARTIST, "Tester")
-            put(MediaStore.Audio.Media.ALBUM, "Smoke Album")
-            put(MediaStore.Audio.Media.IS_MUSIC, 1)
-            put(MediaStore.Audio.Media.RELATIVE_PATH, "Music/KingPlaySmoke")
+        for ((name, mime) in files) {
+            val values = ContentValues().apply {
+                put(MediaStore.Audio.Media.DISPLAY_NAME, name)
+                put(MediaStore.Audio.Media.MIME_TYPE, mime)
+                put(MediaStore.Audio.Media.IS_MUSIC, 1)
+                put(MediaStore.Audio.Media.RELATIVE_PATH, "Music/KingPlaySmoke")
+            }
+            val uri = ctx.contentResolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values)!!
+            ctx.contentResolver.openOutputStream(uri)!!.use { out ->
+                inst.context.assets.open(name).use { it.copyTo(out) }
+            }
         }
-        val uri = ctx.contentResolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values)!!
-        ctx.contentResolver.openOutputStream(uri)!!.use { it.write(wavBytes()) }
 
         val scenario = ActivityScenario.launch(MainActivity::class.java)
 
         val db = Room.databaseBuilder(ctx, KingPlayDatabase::class.java, KingPlayDatabase.NAME).build()
-        var id: Long? = null
-        val deadline = System.currentTimeMillis() + 60_000
-        while (id == null && System.currentTimeMillis() < deadline) {
-            Thread.sleep(1000)
-            id = runBlocking { db.openHelper.readableDatabase.query("SELECT id FROM tracks WHERE title LIKE '%Smoke%' LIMIT 1").use { c -> if (c.moveToFirst()) c.getLong(0) else null } }
+        val ids = LinkedHashMap<String, Long>()
+        val deadline = System.currentTimeMillis() + 90_000
+        while (ids.size < files.size && System.currentTimeMillis() < deadline) {
+            Thread.sleep(1500)
+            for ((name, _) in files) {
+                if (name in ids) continue
+                db.openHelper.readableDatabase.query("SELECT id FROM tracks WHERE fileName = ?", arrayOf(name)).use { c ->
+                    if (c.moveToFirst()) ids[name] = c.getLong(0)
+                }
+            }
         }
         db.close()
-        assertTrue("scanner never added the song to the library", id != null)
+        val missing = files.map { it.first }.filter { it !in ids }
         Thread.sleep(3000) // let the UI settle; a crash here shows up in logcat
 
         val token = SessionToken(ctx, ComponentName(ctx, "com.kingplay.core.player.service.PlaybackService"))
         val c = MediaController.Builder(ctx, token).buildAsync().get(30, TimeUnit.SECONDS)
-        var error: PlaybackException? = null
-        val playing = CountDownLatch(1)
-        val inst = InstrumentationRegistry.getInstrumentation()
-        inst.runOnMainSync {
-            c.addListener(object : Player.Listener {
+        val report = StringBuilder()
+        for ((name, id) in ids) {
+            var error: PlaybackException? = null
+            val playing = CountDownLatch(1)
+            val listener = object : Player.Listener {
                 override fun onPlayerError(e: PlaybackException) { error = e; playing.countDown() }
                 override fun onIsPlayingChanged(isPlaying: Boolean) { if (isPlaying) playing.countDown() }
-            })
-            c.setMediaItem(MediaItem.Builder().setMediaId("a:$id").build())
-            c.prepare()
-            c.play()
+            }
+            inst.runOnMainSync {
+                c.addListener(listener)
+                c.setMediaItem(MediaItem.Builder().setMediaId("a:$id").build())
+                c.prepare()
+                c.play()
+            }
+            val ok = playing.await(20, TimeUnit.SECONDS)
+            val err = error
+            if (err != null) report.append("$name: ERROR ${err.errorCodeName} ${err.message} cause=${err.cause}\n")
+            else if (!ok) report.append("$name: never started\n")
+            Thread.sleep(1500)
+            inst.runOnMainSync { c.stop(); c.removeListener(listener) }
         }
-        val ok = playing.await(30, TimeUnit.SECONDS)
-        val err = error
         inst.runOnMainSync { c.release() }
         scenario.close()
-        assertNull("player error: ${err?.errorCodeName} ${err?.message} cause=${err?.cause}", err)
-        assertTrue("never started playing", ok)
+        assertTrue("not scanned: $missing", missing.isEmpty())
+        assertTrue("playback failures:\n$report", report.isEmpty())
     }
 }
