@@ -115,7 +115,7 @@ private fun smartTracks(kind: SmartKind, index: LibraryIndex, user: UserData): L
 }
 
 @Composable
-fun App(app: DesktopAppState, covers: CoverRepository) {
+fun App(app: DesktopAppState, covers: CoverRepository, onOpenMini: () -> Unit) {
     val index by app.index.collectAsState()
     val folders by app.folders.collectAsState()
     val scan by app.scan.collectAsState()
@@ -176,6 +176,7 @@ fun App(app: DesktopAppState, covers: CoverRepository) {
                                     onQuery = { query = it },
                                     onDialog = { nameDialog = it },
                                     onNotice = { notice = it },
+                                    onOpenMini = onOpenMini,
                                 )
                             }
                         }
@@ -267,6 +268,7 @@ private fun PageContent(
     onQuery: (String) -> Unit,
     onDialog: (NameDialogState) -> Unit,
     onNotice: (String) -> Unit,
+    onOpenMini: () -> Unit,
 ) {
     when (page) {
         Page.Songs -> {
@@ -313,6 +315,7 @@ private fun PageContent(
             onChange = app::updateSettings,
             onImportBackup = { importBackup(app, onNotice) },
             onExportBackup = { exportBackup(app, onNotice) },
+            onOpenMini = onOpenMini,
         )
         is Page.AlbumDetail -> Detail(
             title = page.title,

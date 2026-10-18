@@ -11,9 +11,13 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.kingplay.core.model.settings.AppAccent
 import com.kingplay.core.model.settings.AppThemeMode
@@ -41,6 +45,7 @@ fun SettingsPage(
     onChange: ((DesktopSettings) -> DesktopSettings) -> Unit,
     onImportBackup: () -> Unit,
     onExportBackup: () -> Unit,
+    onOpenMini: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -69,6 +74,19 @@ fun SettingsPage(
                 )
             }
         }
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+        Text("Window", style = MaterialTheme.typography.titleMedium)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Switch(
+                checked = settings.closeToTray,
+                onCheckedChange = { on -> onChange { it.copy(closeToTray = on) } },
+                modifier = Modifier.semantics { contentDescription = TRAY_LABEL },
+            )
+            Text(TRAY_LABEL, modifier = Modifier.weight(1f))
+        }
+        OutlinedButton(onClick = onOpenMini) { Text("Open mini player") }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -115,3 +133,5 @@ internal fun exportBackup(app: DesktopAppState, onNotice: (String) -> Unit) {
 }
 
 private const val APP_VERSION = "0.1.0"
+
+private const val TRAY_LABEL = "Keep playing in the tray when the window is closed"
