@@ -14,6 +14,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -30,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,14 +76,24 @@ fun LibraryScreen(
     val pager = rememberPagerState(pageCount = { tabs.size })
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
+    var searching by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
+        if (searching) {
+            SearchPanel(
+                navigator = navigator,
+                onClose = { searching = false },
+                modifier = Modifier.padding(padding).statusBarsPadding(),
+            )
+            return@Scaffold
+        }
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             LibraryHeader(
+                onSearch = { searching = true },
                 onSettings = navigator::toSettings,
                 onRescan = { full -> viewModel.onEvent(LibraryHomeEvent.Rescan(full)) },
             )
@@ -111,7 +123,7 @@ fun LibraryScreen(
 }
 
 @Composable
-private fun LibraryHeader(onSettings: () -> Unit, onRescan: (full: Boolean) -> Unit) {
+private fun LibraryHeader(onSearch: () -> Unit, onSettings: () -> Unit, onRescan: (full: Boolean) -> Unit) {
     var menuOpen by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
@@ -123,6 +135,11 @@ private fun LibraryHeader(onSettings: () -> Unit, onRescan: (full: Boolean) -> U
     ) {
         Text(stringResource(R.string.library_title), style = MaterialTheme.typography.headlineMedium)
         Row(verticalAlignment = Alignment.CenterVertically) {
+            KpIconButton(
+                icon = Icons.Default.Search,
+                contentDescription = stringResource(R.string.search_open),
+                onClick = onSearch,
+            )
             KpIconButton(
                 icon = Icons.Default.Settings,
                 contentDescription = stringResource(R.string.library_settings),

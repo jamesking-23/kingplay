@@ -14,6 +14,8 @@ class AppNavigatorImpl(private val navController: NavHostController) : AppNaviga
 
     override fun toPlaylist(playlistId: Long) = go(Routes.playlist(playlistId))
 
+    override fun toMostPlayed() = go(Routes.MOST_PLAYED)
+
     override fun toGenre(genre: String) = go(Routes.genre(genre))
 
     override fun toFolder(path: String) = go(Routes.folder(path))

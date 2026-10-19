@@ -10,6 +10,7 @@ object Routes {
     const val NOW_PLAYING = "nowplaying"
     const val SETTINGS = "settings"
     const val EQUALIZER = "equalizer"
+    const val MOST_PLAYED = "mostplayed"
     const val VIDEO = "video/{${VideoArgs.VIDEO_ID}}"
 
     const val ALBUM = "album/{${DetailArgs.ALBUM_ID}}"

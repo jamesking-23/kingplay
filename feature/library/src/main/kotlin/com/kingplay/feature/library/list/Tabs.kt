@@ -135,6 +135,12 @@ fun PlaylistsTab(
     var pendingDelete by remember { mutableStateOf<Playlist?>(null) }
 
     val newPlaylistButton: @Composable () -> Unit = {
+        MediaRow(
+            title = stringResource(R.string.most_played_title),
+            subtitle = stringResource(R.string.most_played_subtitle),
+            leadingIcon = KpIcons.MusicNote,
+            onClick = navigator::toMostPlayed,
+        )
         Box(modifier = Modifier.fillMaxWidth().padding(horizontal = KpTheme.spacing.lg)) {
             KpButton(
                 text = stringResource(R.string.playlist_new),

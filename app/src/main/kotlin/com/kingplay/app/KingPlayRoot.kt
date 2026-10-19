@@ -24,6 +24,7 @@ import com.kingplay.feature.library.detail.ArtistDetailRoute
 import com.kingplay.feature.library.detail.DetailArgs
 import com.kingplay.feature.library.detail.FolderDetailRoute
 import com.kingplay.feature.library.detail.GenreDetailRoute
+import com.kingplay.feature.library.detail.MostPlayedRoute
 import com.kingplay.feature.library.detail.PlaylistDetailRoute
 import com.kingplay.feature.library.home.LibraryScreen
 import com.kingplay.feature.nowplaying.MiniPlayer
@@ -78,6 +79,7 @@ fun KingPlayRoot(modifier: Modifier = Modifier) {
                 route = Routes.PLAYLIST,
                 arguments = listOf(navArgument(DetailArgs.PLAYLIST_ID) { type = NavType.LongType }),
             ) { PlaylistDetailRoute(navigator) }
+            composable(Routes.MOST_PLAYED) { MostPlayedRoute(navigator) }
             composable(
                 route = Routes.GENRE,
                 arguments = listOf(navArgument(DetailArgs.GENRE) { type = NavType.StringType }),

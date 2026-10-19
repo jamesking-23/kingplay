@@ -13,6 +13,8 @@ interface AppNavigator {
 
     fun toPlaylist(playlistId: Long)
 
+    fun toMostPlayed()
+
     fun toGenre(genre: String)
 
     fun toFolder(path: String)

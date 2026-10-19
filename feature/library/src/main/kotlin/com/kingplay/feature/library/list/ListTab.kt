@@ -27,7 +27,10 @@ fun <T> ListTab(
         onRetry = onRetry,
         modifier = modifier,
         empty = {
-            KpEmptyState(icon = emptyIcon, title = emptyTitle, message = emptyMessage)
+            androidx.compose.foundation.layout.Column {
+                header?.invoke()
+                KpEmptyState(icon = emptyIcon, title = emptyTitle, message = emptyMessage)
+            }
         },
     ) { items ->
         LazyColumn {

@@ -67,6 +67,7 @@ fun DetailScreen(
     modifier: Modifier = Modifier,
     extraContent: LazyListScope.() -> Unit = {},
     extraTrackMenu: (@Composable ColumnScope.(index: Int, dismiss: () -> Unit) -> Unit)? = null,
+    showPlayCounts: Boolean = false,
 ) {
     Scaffold(
         modifier = modifier,
@@ -104,6 +105,7 @@ fun DetailScreen(
                     onEvent = onEvent,
                     extraContent = extraContent,
                     extraTrackMenu = extraTrackMenu,
+                    showPlayCounts = showPlayCounts,
                 )
             }
         }
@@ -117,6 +119,7 @@ private fun TrackList(
     onEvent: (DetailEvent) -> Unit,
     extraContent: LazyListScope.() -> Unit,
     extraTrackMenu: (@Composable ColumnScope.(index: Int, dismiss: () -> Unit) -> Unit)?,
+    showPlayCounts: Boolean,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item(key = "header") { Header(state, tracks, onEvent) }
@@ -124,7 +127,16 @@ private fun TrackList(
         itemsIndexed(tracks, key = { index, track -> "${track.id}#$index" }) { index, track ->
             MediaRow(
                 title = track.title,
-                subtitle = joinWithDot(displayName(track.artistName), formatDuration(track.durationMs)),
+                subtitle = if (showPlayCounts) {
+                    joinWithDot("#${index + 1}", displayName(track.artistName))
+                } else {
+                    joinWithDot(displayName(track.artistName), formatDuration(track.durationMs))
+                },
+                trailingText = if (showPlayCounts) {
+                    quantityString(R.plurals.count_plays, track.playCount)
+                } else {
+                    null
+                },
                 artworkUri = track.uri,
                 artworkKey = "album:${track.albumId}",
                 highlighted = track.id == state.currentTrackId,

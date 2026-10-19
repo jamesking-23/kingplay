@@ -74,6 +74,18 @@
         <item quantity="one">%1$d album</item>
         <item quantity="other">%1$d albums</item>
     </plurals>
+    <plurals name="count_plays">
+        <item quantity="one">%1$d play</item>
+        <item quantity="other">%1$d plays</item>
+    </plurals>
+    <string name="most_played_title">Most played</string>
+    <string name="most_played_subtitle">Your top 100, most played first</string>
+    <string name="search_hint">Search songs, albums, artists</string>
+    <string name="search_open">Search</string>
+    <string name="search_close">Close search</string>
+    <string name="search_clear">Clear</string>
+    <string name="search_empty">No matches</string>
+    <string name="search_prompt">Type to search your library</string>
     <plurals name="count_items">
         <item quantity="one">%1$d item</item>
         <item quantity="other">%1$d items</item>

@@ -114,6 +114,22 @@ fun ArtistDetailRoute(navigator: AppNavigator, modifier: Modifier = Modifier) {
 }
 
 @Composable
+fun MostPlayedRoute(navigator: AppNavigator, modifier: Modifier = Modifier) {
+    val viewModel: MostPlayedViewModel = hiltViewModel()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    CollectEffects(viewModel.effects, snackbar)
+    DetailScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onBack = navigator::back,
+        snackbar = snackbar,
+        modifier = modifier,
+        showPlayCounts = true,
+    )
+}
+
+@Composable
 fun PlaylistDetailRoute(navigator: AppNavigator, modifier: Modifier = Modifier) {
     val viewModel: PlaylistDetailViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
