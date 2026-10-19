@@ -54,7 +54,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          gradle :app:assembleDebug 2>&1 | tee build.log
+          gradle :app:assembleDebug :app:assembleRelease 2>&1 | tee build.log
           code=${PIPESTATUS[0]}
           if [ "$code" -ne 0 ]; then
             grep -nE "^e: |What went wrong|Could not |Unresolved|FAILED|error:" -A12 build.log | head -90 > errs.txt
