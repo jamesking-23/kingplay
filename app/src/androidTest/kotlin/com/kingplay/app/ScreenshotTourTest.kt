@@ -94,8 +94,16 @@ class ScreenshotTourTest {
     /** Clicks the node matching [needle], scrolling the screen down to find it when it is off-screen. */
     private fun click(needle: String) {
         var node = find(root(), needle)
+        if (node == null) {
+            // Back to the top, then down in steps, so a card between two steps is never skipped.
+            repeat(8) {
+                findScrollable(root())?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)
+                Thread.sleep(250)
+            }
+            node = find(root(), needle)
+        }
         var tries = 0
-        while (node == null && tries++ < 8) {
+        while (node == null && tries++ < 10) {
             findScrollable(root())?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
             Thread.sleep(500)
             node = find(root(), needle)
@@ -185,6 +193,7 @@ class ScreenshotTourTest {
                 typeInto("smoke")
                 shot("11_search_results")
                 click("Close search")
+                Thread.sleep(1500)
             }
             step("playlists") {
                 click("Playlists")
@@ -211,9 +220,12 @@ class ScreenshotTourTest {
         fun design(label: String, key: String) {
             step("pick-$key") {
                 click("Settings")
-                click(label)
-                shot("2${key}_settings")
-                back()
+                try {
+                    click(label)
+                    shot("2${key}_settings")
+                } finally {
+                    back()
+                }
             }
             step("lib-$key") { shot("3${key}_library") }
             step("np-$key") {
