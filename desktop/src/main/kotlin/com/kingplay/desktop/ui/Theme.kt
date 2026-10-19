@@ -8,13 +8,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import com.kingplay.core.model.settings.AppThemeMode
+import com.kingplay.core.model.settings.AppUiTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import com.kingplay.desktop.settings.DesktopSettings
 
 @Composable
 fun KingPlayDesktopTheme(settings: DesktopSettings, content: @Composable () -> Unit) {
     val dark = isDark(settings.themeMode, isSystemInDarkTheme())
+    val kingArt = settings.uiTheme == AppUiTheme.KING_ART
     val primary = Color(accentArgb(settings.accent, dark))
-    val scheme = if (dark) {
+    val scheme = if (kingArt) {
+        kingArtColorScheme(dark, black = settings.themeMode == AppThemeMode.AMOLED)
+    } else if (dark) {
         val background = if (settings.themeMode == AppThemeMode.AMOLED) Color.Black else Color(DARK_BACKGROUND)
         darkColorScheme(
             primary = primary,
@@ -45,7 +50,14 @@ fun KingPlayDesktopTheme(settings: DesktopSettings, content: @Composable () -> U
             error = Color(0xFFBA1A1A),
         )
     }
-    MaterialTheme(colorScheme = scheme, content = content)
+    CompositionLocalProvider(LocalUiTheme provides settings.uiTheme) {
+        MaterialTheme(
+            colorScheme = scheme,
+            typography = if (kingArt) KingArtTypography else MaterialTheme.typography,
+            shapes = if (kingArt) KingArtShapes else MaterialTheme.shapes,
+            content = content,
+        )
+    }
 }
 
 private const val DARK_BACKGROUND = 0xFF111015

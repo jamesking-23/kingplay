@@ -21,10 +21,16 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.kingplay.core.model.settings.AppAccent
 import com.kingplay.core.model.settings.AppThemeMode
+import com.kingplay.core.model.settings.AppUiTheme
 import com.kingplay.desktop.DesktopAppState
 import com.kingplay.desktop.settings.DesktopSettings
 import com.kingplay.desktop.userdata.ImportOutcome
 import com.kingplay.desktop.userdata.importNotice
+
+internal fun uiThemeLabel(ui: AppUiTheme): String = when (ui) {
+    AppUiTheme.KING_ART -> "King Art (hand-drawn)"
+    AppUiTheme.KK_UI -> "kk-ui (classic)"
+}
 
 internal fun themeLabel(mode: AppThemeMode): String = when (mode) {
     AppThemeMode.SYSTEM -> "Match Windows"
@@ -54,7 +60,23 @@ fun SettingsPage(
     ) {
         Text("Settings", style = MaterialTheme.typography.titleLarge)
 
-        Text("Theme", style = MaterialTheme.typography.titleMedium)
+        Text("UI theme", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Switch designs like switching apps; your music and settings stay the same.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AppUiTheme.entries.forEach { ui ->
+                FilterChip(
+                    selected = settings.uiTheme == ui,
+                    onClick = { onChange { it.copy(uiTheme = ui) } },
+                    label = { Text(uiThemeLabel(ui)) },
+                )
+            }
+        }
+
+        Text("Light or dark", style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AppThemeMode.entries.forEach { mode ->
                 FilterChip(

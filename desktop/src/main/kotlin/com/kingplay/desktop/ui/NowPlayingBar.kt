@@ -78,7 +78,7 @@ fun NowPlayingBar(
                 Text(formatTime(state.durationMs), style = MaterialTheme.typography.labelMedium)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                CoverImage(currentTrack, COVER_SIZE, modifier = Modifier.padding(end = 12.dp))
+                PlayingCover(currentTrack, COVER_SIZE, state.isPlaying, modifier = Modifier.padding(end = 12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = state.title ?: "Nothing playing",

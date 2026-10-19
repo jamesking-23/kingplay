@@ -30,7 +30,12 @@ val LocalCovers = staticCompositionLocalOf<CoverRepository?> { null }
 
 /** The album cover for [track], or a music-note tile while it loads or when there is none. Decorative. */
 @Composable
-fun CoverImage(track: Track?, size: Dp, modifier: Modifier = Modifier) {
+fun CoverImage(
+    track: Track?,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(8.dp),
+) {
     val covers = LocalCovers.current
     val bitmap by produceState<ImageBitmap?>(initialValue = null, track?.albumId, covers) {
         value = if (track == null || covers == null) null else withContext(Dispatchers.IO) { covers.load(track) }
@@ -38,7 +43,7 @@ fun CoverImage(track: Track?, size: Dp, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(size)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
@@ -58,5 +63,17 @@ fun CoverImage(track: Track?, size: Dp, modifier: Modifier = Modifier) {
                 modifier = Modifier.size(size / 2),
             )
         }
+    }
+}
+
+/** The cover for the playing song: a spinning picture-disc in King Art, the plain cover in kk-ui. */
+@Composable
+fun PlayingCover(track: Track?, size: Dp, isPlaying: Boolean, modifier: Modifier = Modifier) {
+    if (LocalUiTheme.current == com.kingplay.core.model.settings.AppUiTheme.KING_ART) {
+        VinylDisc(spinning = isPlaying, modifier = modifier.size(size)) {
+            CoverImage(track, size, shape = androidx.compose.foundation.shape.CircleShape, modifier = Modifier.fillMaxSize())
+        }
+    } else {
+        CoverImage(track, size, modifier = modifier)
     }
 }

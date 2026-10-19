@@ -49,7 +49,7 @@ fun MiniPlayer(app: DesktopAppState, covers: CoverRepository, onOpenMain: () -> 
             Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        CoverImage(track, MINI_COVER, modifier = Modifier.padding(end = 12.dp))
+                        PlayingCover(track, MINI_COVER, state.isPlaying, modifier = Modifier.padding(end = 12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = state.title ?: "Nothing playing",

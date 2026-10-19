@@ -3,6 +3,7 @@ package com.kingplay.desktop.settings
 import com.kingplay.core.model.EqPreset
 import com.kingplay.core.model.settings.AppAccent
 import com.kingplay.core.model.settings.AppThemeMode
+import com.kingplay.core.model.settings.AppUiTheme
 import com.kingplay.desktop.library.JsonFile
 import java.io.File
 
@@ -16,6 +17,7 @@ data class DesktopSettings(
     val eqGainsDb: List<Float> = FLAT_BANDS,
     val closeToTray: Boolean = false,
     val globalMediaKeys: Boolean = true,
+    val uiTheme: AppUiTheme = AppUiTheme.KING_ART,
 ) {
     fun withVolume(percent: Int): DesktopSettings = copy(volumePercent = percent.coerceIn(0, MAX_VOLUME))
 
@@ -40,12 +42,14 @@ class SettingsStore(private val file: File) {
             eqGainsDb = gains(root["eqGainsDb"]),
             closeToTray = root["closeToTray"] as? Boolean ?: false,
             globalMediaKeys = root["globalMediaKeys"] as? Boolean ?: true,
+            uiTheme = enumOrNull<AppUiTheme>(root["uiTheme"]) ?: defaults.uiTheme,
         )
     }
 
     fun save(settings: DesktopSettings) = JsonFile.write(
         file,
         mapOf(
+            "uiTheme" to settings.uiTheme.name,
             "themeMode" to settings.themeMode.name,
             "accent" to settings.accent.name,
             "volumePercent" to settings.volumePercent.toLong(),
