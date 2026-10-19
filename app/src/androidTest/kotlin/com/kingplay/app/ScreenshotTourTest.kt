@@ -56,9 +56,14 @@ class ScreenshotTourTest {
 
     private fun shot(name: String) {
         Thread.sleep(1200)
-        val bmp = inst.uiAutomation.takeScreenshot() ?: return note("no screenshot $name")
-        File(out, "$name.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        note("shot $name")
+        val full = inst.uiAutomation.takeScreenshot() ?: return note("no screenshot $name")
+        val bmp = Bitmap.createScaledBitmap(full, full.width / 2, full.height / 2, true)
+        val bytes = java.io.ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.JPEG, 72, it) }.toByteArray()
+        val b64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+        val chunks = b64.chunked(3500)
+        // The app is uninstalled when the run ends, so the pictures travel through logcat and CI reassembles them.
+        chunks.forEachIndexed { i, c -> android.util.Log.i("KPSHOT", "$name ${i + 1} ${chunks.size} $c") }
+        note("shot $name ${bytes.size}B")
     }
 
     private fun step(name: String, block: () -> Unit) {
@@ -72,7 +77,7 @@ class ScreenshotTourTest {
 
     @Test
     fun tour() {
-        try { run() } finally { File(out, "notes.txt").writeText(log.toString()) }
+        try { run() } finally { android.util.Log.i("KPNOTE", log.toString().replace('\n', '|')) }
     }
 
     private fun run() {
