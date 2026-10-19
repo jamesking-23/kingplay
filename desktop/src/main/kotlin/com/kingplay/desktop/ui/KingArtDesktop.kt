@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
@@ -154,13 +156,45 @@ internal val KingArtTypography = Typography(
     labelSmall = base.labelSmall.hand(),
 )
 
-/** A rounded rectangle whose edge wobbles like a pencil line; seeded so it never shimmers. */
-data class SketchShape(val corner: Dp, val seed: Int, val wobble: Dp = 1.1.dp) : Shape {
-    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline {
-        val pts = with(density) {
-            Sketch.roundRect(size.width, size.height, corner.toPx(), seed, wobble.toPx(), 14.dp.toPx())
-        }
+/**
+ * A rounded rectangle whose edge wobbles like a pencil line. The wobble is seeded, so a given shape never shimmers
+ * or jumps when the screen redraws. (It is a [CornerBasedShape] because Material's `Shapes` only accepts those.)
+ */
+class SketchShape(
+    private val seed: Int,
+    topStart: CornerSize,
+    topEnd: CornerSize,
+    bottomEnd: CornerSize,
+    bottomStart: CornerSize,
+) : CornerBasedShape(topStart, topEnd, bottomEnd, bottomStart) {
+    constructor(corner: Dp, seed: Int) : this(seed, CornerSize(corner), CornerSize(corner), CornerSize(corner), CornerSize(corner))
+
+    override fun createOutline(
+        size: Size,
+        topStart: Float,
+        topEnd: Float,
+        bottomEnd: Float,
+        bottomStart: Float,
+        layoutDirection: LayoutDirection,
+    ): Outline {
+        val corner = maxOf(topStart, topEnd, bottomEnd, bottomStart)
+        val wobble = (minOf(size.width, size.height) * WOBBLE_FRACTION).coerceIn(MIN_WOBBLE, MAX_WOBBLE)
+        val pts = Sketch.roundRect(size.width, size.height, corner, seed, wobble, STEP)
         return Outline.Generic(closedSmoothPath(pts))
+    }
+
+    override fun copy(
+        topStart: CornerSize,
+        topEnd: CornerSize,
+        bottomEnd: CornerSize,
+        bottomStart: CornerSize,
+    ): CornerBasedShape = SketchShape(seed, topStart, topEnd, bottomEnd, bottomStart)
+
+    private companion object {
+        const val WOBBLE_FRACTION = 0.035f
+        const val MIN_WOBBLE = 1.5f
+        const val MAX_WOBBLE = 4f
+        const val STEP = 36f
     }
 }
 

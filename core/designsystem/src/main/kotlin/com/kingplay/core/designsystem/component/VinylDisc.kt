@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.kingplay.core.designsystem.theme.KpTheme
@@ -85,14 +86,13 @@ private fun DrawScope.drawDiscDetails(ink: Color, paper: Color, accent: Color) {
             lineTo(x0 + r * a, c.y + r)
             close()
         }
-        androidx.compose.ui.graphics.drawscope.clipPath(
-            androidx.compose.ui.graphics.Path().apply { addOval(androidx.compose.ui.geometry.Rect(c, r * 0.97f)) },
-        ) { drawPath(band, ink.copy(alpha = 0.16f - k * 0.04f)) }
+        clipPath(androidx.compose.ui.graphics.Path().apply { addOval(androidx.compose.ui.geometry.Rect(c, r * 0.97f)) }) { drawPath(band, ink.copy(alpha = 0.16f - k * 0.04f)) }
     }
 
     // Rim, drawn twice with a different wobble for a pencil look.
     for (pass in 0..1) {
-        drawPath(wobblyCircle(c, r * (0.985f - pass * 0.01f), seed = 5 + pass * 9, wobble = r * 0.006f), ink, style = Stroke(stroke * 1.7f))
+        val rim = wobblyCircle(c, r * (0.985f - pass * 0.01f), seed = 5 + pass * 9, wobble = r * 0.006f)
+        drawPath(rim, ink, style = Stroke(stroke * 1.7f))
     }
 
     // Paper label with a coloured centre and the spindle hole.
