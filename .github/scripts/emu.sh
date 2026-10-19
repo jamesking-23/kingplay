@@ -4,11 +4,12 @@ adb logcat -c
 timeout 420 gradle :app:connectedDebugAndroidTest --stacktrace 2>&1 | tee build.log
 rc=${PIPESTATUS[0]}
 adb logcat -d -v threadtime > logcat.txt
-rm -rf shots; mkdir -p shots; adb pull /sdcard/Android/data/com.kingplay.app.debug/files/shots/. shots/ >/dev/null 2>&1 || true
+rm -rf shots; mkdir -p shots; adb pull /sdcard/Android/data/com.kingplay.app.debug/files/shots/. shots/ > pull.txt 2>&1 || true
 {
   echo "rc=$rc"
   echo "---- test runner"
   grep -E "TestRunner|INSTRUMENTATION_|Instrumentation run failed|Process crashed" logcat.txt build.log | cut -c1-230 | head -30
+  echo "---- tour notes"; cat pull.txt | head -5; cat shots/notes.txt 2>/dev/null | head -30; ls shots 2>/dev/null | head -20
   echo "---- FATAL"
   grep -A24 "FATAL EXCEPTION" logcat.txt | cut -c34-220 | head -40
   echo "---- native"
