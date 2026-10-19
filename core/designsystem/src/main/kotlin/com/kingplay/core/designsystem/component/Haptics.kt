@@ -2,6 +2,7 @@ package com.kingplay.core.designsystem.component
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -52,7 +53,7 @@ private const val PULSE_MS = 28L
 private const val PULSE_GAP_MS = 45L
 
 /** A quick left-right shake of [trigger]'s change, so the button visibly "vibrates" along with the buzz. */
-fun androidx.compose.ui.Modifier.shakeOn(trigger: Any?): androidx.compose.ui.Modifier = androidx.compose.ui.composed {
+fun androidx.compose.ui.Modifier.shakeOn(trigger: Any?): androidx.compose.ui.Modifier = composed {
     val angle = remember { androidx.compose.animation.core.Animatable(0f) }
     val first = remember { androidx.compose.runtime.mutableStateOf(true) }
     androidx.compose.runtime.LaunchedEffect(trigger) {
