@@ -1,6 +1,9 @@
 #!/bin/bash
 exec </dev/null
 adb logcat -G 16M
+adb shell settings put global hide_error_dialogs 1
+adb shell settings put global window_animation_scale 0
+adb shell settings put global transition_animation_scale 0
 adb logcat -c
 timeout 420 gradle :app:connectedDebugAndroidTest --stacktrace 2>&1 | tee build.log
 rc=${PIPESTATUS[0]}
