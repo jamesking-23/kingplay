@@ -87,14 +87,16 @@ fun SettingsPage(
             }
         }
 
-        Text("Accent colour", style = MaterialTheme.typography.titleMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AppAccent.entries.forEach { accent ->
-                FilterChip(
-                    selected = settings.accent == accent,
-                    onClick = { onChange { it.copy(accent = accent) } },
-                    label = { Text(accentLabel(accent)) },
-                )
+        if (settings.uiTheme == AppUiTheme.KK_UI) {
+            Text("Accent colour", style = MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AppAccent.entries.forEach { accent ->
+                    FilterChip(
+                        selected = settings.accent == accent,
+                        onClick = { onChange { it.copy(accent = accent) } },
+                        label = { Text(accentLabel(accent)) },
+                    )
+                }
             }
         }
 

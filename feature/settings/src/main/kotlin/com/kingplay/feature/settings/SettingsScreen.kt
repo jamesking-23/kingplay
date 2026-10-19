@@ -281,30 +281,32 @@ private fun AppearanceSection(settings: AppSettings, onEvent: (SettingsEvent) ->
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Text(stringResource(R.string.settings_accent), style = MaterialTheme.typography.titleSmall)
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
-            items(AppAccent.entries) { accent ->
-                val theme = accent.toTheme()
-                FilterChip(
-                    selected = settings.accent == accent,
-                    onClick = { onEvent(SettingsEvent.SetAccent(accent)) },
-                    label = { Text(stringResource(theme.labelRes)) },
-                    leadingIcon = {
-                        Box(
-                            Modifier.size(SWATCH_SIZE).clip(CircleShape).background(theme.swatch),
-                        )
-                    },
-                )
+        if (settings.uiTheme == AppUiTheme.KK_UI) {
+            Text(stringResource(R.string.settings_accent), style = MaterialTheme.typography.titleSmall)
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
+                items(AppAccent.entries) { accent ->
+                    val theme = accent.toTheme()
+                    FilterChip(
+                        selected = settings.accent == accent,
+                        onClick = { onEvent(SettingsEvent.SetAccent(accent)) },
+                        label = { Text(stringResource(theme.labelRes)) },
+                        leadingIcon = {
+                            Box(
+                                Modifier.size(SWATCH_SIZE).clip(CircleShape).background(theme.swatch),
+                            )
+                        },
+                    )
+                }
             }
+            val dynamicSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+            SwitchRow(
+                title = stringResource(R.string.settings_dynamic),
+                hint = if (dynamicSupported) null else stringResource(R.string.settings_dynamic_unavailable),
+                checked = settings.dynamicColor && dynamicSupported,
+                onChange = { onEvent(SettingsEvent.SetDynamicColor(it)) },
+                enabled = dynamicSupported,
+            )
         }
-        val dynamicSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-        SwitchRow(
-            title = stringResource(R.string.settings_dynamic),
-            hint = if (dynamicSupported) null else stringResource(R.string.settings_dynamic_unavailable),
-            checked = settings.dynamicColor && dynamicSupported,
-            onChange = { onEvent(SettingsEvent.SetDynamicColor(it)) },
-            enabled = dynamicSupported,
-        )
         SwitchRow(
             title = stringResource(R.string.settings_low_power),
             hint = stringResource(R.string.settings_low_power_hint),
