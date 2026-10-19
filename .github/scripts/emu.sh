@@ -4,6 +4,7 @@ adb logcat -c
 timeout 420 gradle :app:connectedDebugAndroidTest --stacktrace 2>&1 | tee build.log
 rc=${PIPESTATUS[0]}
 adb logcat -d -v threadtime > logcat.txt
+rm -rf shots; mkdir -p shots; adb pull /sdcard/Android/data/com.kingplay.app.debug/files/shots/. shots/ >/dev/null 2>&1 || true
 {
   echo "rc=$rc"
   echo "---- test runner"

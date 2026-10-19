@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   push:
     paths: ['app/src/androidTest/**', '.github/workflows/emulator.yml', '.github/scripts/emu.sh']
+permissions:
+  contents: write
 jobs:
   smoke:
     runs-on: ubuntu-latest
@@ -24,3 +26,12 @@ jobs:
           target: google_apis
           disable-animations: true
           script: bash .github/scripts/emu.sh
+      - name: Publish screenshots
+        if: always()
+        run: |
+          [ -d shots ] && [ -n "$(ls -A shots 2>/dev/null)" ] || exit 0
+          rm -rf /tmp/shots && mkdir /tmp/shots && cp shots/* /tmp/shots/
+          cd /tmp/shots && git init -q && git checkout -q -b ci-screenshots
+          git config user.name ci && git config user.email ci@example.com
+          git add -A && git commit -qm "screenshots for ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" ci-screenshots
