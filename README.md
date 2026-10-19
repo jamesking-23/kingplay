@@ -251,3 +251,18 @@ Songs with tags (almost all of them) crashed the Android app the moment they sta
 Found with a new emulator test (`app/src/androidTest`, workflow **Emulator smoke**): it adds MP3, M4A, FLAC, OGG
 and WAV files (cover art + ReplayGain tags) to MediaStore, launches the app, waits for the real scanner, then plays
 each through `PlaybackService` and fails on any crash or player error. Run it from the Actions tab.
+
+## UI themes (step 5a/5b)
+
+Settings → **UI theme** switches the whole look, like changing apps while keeping the same music and settings:
+
+- **King Art** (default): hand-drawn paper. Caveat headings, Architects Daughter text, pencil-wobble outlines on every
+  Material shape, marker-yellow primary buttons, and a **picture-disc vinyl** for the playing cover (spins while
+  playing; stays still with low-power visuals).
+- **kk-ui**: the original Material design, with accent colours and (Android 12+) wallpaper colours.
+
+Both designs follow Light / Dark / System (and Black on OLED). The choice is stored (`uiTheme`), included in backups,
+and exists on Android and Windows. Shared pieces live in `core/model/.../theme/KingArt.kt` (palette + seeded wobble
+maths, unit-tested); each platform draws them. Fonts are bundled under the SIL Open Font License (`licenses/`).
+
+King Art's red text/icons are slightly deeper than the logo red so they stay readable on paper.
