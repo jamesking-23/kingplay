@@ -22,6 +22,8 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -64,12 +66,15 @@ class DesignGalleryTest {
             UiStyle.KING_ART to "art", UiStyle.KING_NEON to "neon", UiStyle.KING_GLASS to "glass",
             UiStyle.KING_CLASSIC to "classic", UiStyle.KK_UI to "kk",
         )
-        for ((style, key) in styles) for (dark in listOf(false, true)) {
-            rule.setContent {
-                KingPlayTheme(ThemeConfig(mode = if (dark) ThemeMode.DARK else ThemeMode.LIGHT, uiStyle = style, useDynamicColor = false)) {
-                    Sample(style)
-                }
+        var current by androidx.compose.runtime.mutableStateOf(styles[0].first to false)
+        rule.setContent {
+            val (style, dark) = current
+            KingPlayTheme(ThemeConfig(mode = if (dark) ThemeMode.DARK else ThemeMode.LIGHT, uiStyle = style, useDynamicColor = false)) {
+                Sample(style)
             }
+        }
+        for ((style, key) in styles) for (dark in listOf(false, true)) {
+            current = style to dark
             rule.waitForIdle()
             send("g_${key}_${if (dark) "dark" else "light"}")
         }
