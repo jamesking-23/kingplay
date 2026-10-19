@@ -74,11 +74,21 @@ class ScreenshotTourTest {
         return null
     }
 
+    /** The tallest scrollable node: the main vertical list, not a horizontal chip row. */
     private fun findScrollable(n: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
-        if (n == null) return null
-        if (n.isScrollable) return n
-        for (i in 0 until n.childCount) findScrollable(n.getChild(i))?.let { return it }
-        return null
+        var best: AccessibilityNodeInfo? = null
+        var bestHeight = -1
+        fun walk(x: AccessibilityNodeInfo?) {
+            if (x == null) return
+            if (x.isScrollable) {
+                val r = android.graphics.Rect()
+                x.getBoundsInScreen(r)
+                if (r.height() > bestHeight) { best = x; bestHeight = r.height() }
+            }
+            for (i in 0 until x.childCount) walk(x.getChild(i))
+        }
+        walk(n)
+        return best
     }
 
     /** Clicks the node matching [needle], scrolling the screen down to find it when it is off-screen. */

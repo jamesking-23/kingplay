@@ -170,8 +170,9 @@ private fun monthTitle(key: String): String {
 
 private fun buildCards(r: ListeningReport): List<Card> = buildList {
     val name = YearMonth.parse(r.month).month.getDisplayName(TextStyle.FULL, Locale.getDefault())
-    add(Card("Your $name in music", "${r.minutes} minutes", "of listening across ${r.plays} plays."))
-    add(Card("You explored", "${r.distinctSongs} songs", "Your library kept you busy."))
+    val minutes = if (r.minutes == 1L) "1 minute" else "${r.minutes} minutes"
+    add(Card("Your $name in music", minutes, "of listening across ${r.plays} plays."))
+    add(Card("You explored", if (r.distinctSongs == 1) "1 song" else "${r.distinctSongs} songs", "Your library kept you busy."))
     r.topTracks.firstOrNull()?.let {
         add(Card("Your #1 song", it.title, "${it.artistName} · played ${it.plays} times"))
     }
