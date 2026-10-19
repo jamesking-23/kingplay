@@ -64,18 +64,50 @@ class ScreenshotTourTest {
         Thread.sleep(1500)
     }
 
-    /** Finds a node whose text or description contains [needle] and clicks it (or its clickable parent). */
+    private fun root() = inst.uiAutomation.rootInActiveWindow
+
+    private fun find(n: AccessibilityNodeInfo?, needle: String): AccessibilityNodeInfo? {
+        if (n == null) return null
+        val label = "${n.text ?: ""} ${n.contentDescription ?: ""}"
+        if (label.contains(needle, ignoreCase = true)) return n
+        for (i in 0 until n.childCount) find(n.getChild(i), needle)?.let { return it }
+        return null
+    }
+
+    private fun findScrollable(n: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+        if (n == null) return null
+        if (n.isScrollable) return n
+        for (i in 0 until n.childCount) findScrollable(n.getChild(i))?.let { return it }
+        return null
+    }
+
+    /** Clicks the node matching [needle], scrolling the screen down to find it when it is off-screen. */
     private fun click(needle: String) {
-        fun find(n: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+        var node = find(root(), needle)
+        var tries = 0
+        while (node == null && tries++ < 8) {
+            findScrollable(root())?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+            Thread.sleep(500)
+            node = find(root(), needle)
+        }
+        var n = node ?: error("nothing matches '$needle'")
+        while (!n.isClickable) n = n.parent ?: error("'$needle' is not clickable")
+        n.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        Thread.sleep(900)
+    }
+
+    private fun typeInto(text: String) {
+        fun edit(n: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
             if (n == null) return null
-            val label = "${n.text ?: ""} ${n.contentDescription ?: ""}"
-            if (label.contains(needle, ignoreCase = true)) return n
-            for (i in 0 until n.childCount) find(n.getChild(i))?.let { return it }
+            if (n.className?.toString()?.contains("EditText") == true) return n
+            for (i in 0 until n.childCount) edit(n.getChild(i))?.let { return it }
             return null
         }
-        var node = find(inst.uiAutomation.rootInActiveWindow) ?: error("nothing matches '$needle'")
-        while (!node.isClickable) node = node.parent ?: error("'$needle' is not clickable")
-        node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        val field = edit(root()) ?: error("no text field")
+        val args = android.os.Bundle().apply {
+            putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
+        }
+        field.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
         Thread.sleep(900)
     }
 
@@ -111,8 +143,20 @@ class ScreenshotTourTest {
                 if (c.moveToFirst()) c.getLong(0) else null
             }
         }
-        db.close()
         note("track id=$id")
+        if (id != null) {
+            // Seed listening history so Most played and the monthly report have something to show.
+            step("seed") {
+                val w = db.openHelper.writableDatabase
+                w.execSQL("INSERT OR IGNORE INTO track_user_data(trackId, playCount, lastPlayedMs, isFavorite) VALUES($id, 0, NULL, 0)")
+                w.execSQL("UPDATE track_user_data SET playCount = 7, lastPlayedMs = ${System.currentTimeMillis()} WHERE trackId = $id")
+                val now = System.currentTimeMillis()
+                val lastMonth = now - 33L * 24 * 3600 * 1000
+                repeat(7) { i -> w.execSQL("INSERT INTO play_events(trackId, playedAtMs) VALUES($id, ${now - i * 3_600_000L})") }
+                repeat(5) { i -> w.execSQL("INSERT INTO play_events(trackId, playedAtMs) VALUES($id, ${lastMonth - i * 3_600_000L})") }
+            }
+        }
+        db.close()
         if (id != null) step("play") {
             val token = SessionToken(ctx, ComponentName(ctx, "com.kingplay.core.player.service.PlaybackService"))
             val c = MediaController.Builder(ctx, token).buildAsync().get(30, TimeUnit.SECONDS)
@@ -122,31 +166,59 @@ class ScreenshotTourTest {
             }
             Thread.sleep(3000)
         }
+        night(false)
 
-        fun tour(prefix: String, mode: String) {
-            step("$prefix-lib") { shot("1_${prefix}_library_$mode") }
-            step("$prefix-np") {
-                click("Open now playing")
-                shot("2_${prefix}_nowplaying_$mode")
+        step("features") {
+            shot("10_library")
+            step("search") {
+                click("Search")
+                typeInto("smoke")
+                shot("11_search_results")
+                click("Close search")
+            }
+            step("playlists") {
+                click("Playlists")
+                shot("12_playlists_tab")
+                click("New playlist")
+                typeInto("Road trip")
+                shot("13_new_playlist_dialog")
+                click("Create")
+                shot("14_playlist_created")
+            }
+            step("most-played") {
+                click("Most played")
+                shot("15_most_played")
                 back()
             }
-            step("$prefix-settings") {
-                click("Settings")
-                shot("3_${prefix}_settings_$mode")
+            step("report") {
+                click("Monthly listening report")
+                shot("16_report")
+                back()
             }
         }
 
-        night(false)
-        tour("king", "light")
-        step("kk") { click("kk-ui"); back(); }
-        step("kk-light") { tour("kk", "light") }
+        // Each new design: library + now playing, light; King Neon also in dark.
+        fun design(label: String, key: String) {
+            step("pick-$key") {
+                click("Settings")
+                click(label)
+                shot("2${key}_settings")
+                back()
+            }
+            step("lib-$key") { shot("3${key}_library") }
+            step("np-$key") {
+                click("Open now playing")
+                shot("4${key}_nowplaying")
+                back()
+            }
+        }
+        design("KingNeon", "N")
+        design("KingGlass", "G")
+        design("KingClassic", "C")
         night(true)
-        scenario.close()
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-        Thread.sleep(2500)
-        step("kk-dark") { tour("kk", "dark") }
-        step("king") { click("King Art"); back() }
-        step("king-dark") { tour("king", "dark") }
+        Thread.sleep(1500)
+        design("KingNeon", "Nd")
+        design("KingClassic", "Cd")
         night(false)
         scenario.close()
     }
