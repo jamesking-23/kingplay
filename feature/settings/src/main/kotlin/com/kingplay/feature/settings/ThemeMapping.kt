@@ -19,6 +19,9 @@ fun AppThemeMode.toTheme(): ThemeMode = when (this) {
 fun AppUiTheme.toStyle(): UiStyle = when (this) {
     AppUiTheme.KING_ART -> UiStyle.KING_ART
     AppUiTheme.KK_UI -> UiStyle.KK_UI
+    AppUiTheme.KING_NEON -> UiStyle.KING_NEON
+    AppUiTheme.KING_GLASS -> UiStyle.KING_GLASS
+    AppUiTheme.KING_CLASSIC -> UiStyle.KING_CLASSIC
 }
 
 fun AppAccent.toTheme(): AccentTheme = when (this) {

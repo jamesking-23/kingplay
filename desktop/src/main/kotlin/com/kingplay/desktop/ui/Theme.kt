@@ -17,7 +17,10 @@ fun KingPlayDesktopTheme(settings: DesktopSettings, content: @Composable () -> U
     val dark = isDark(settings.themeMode, isSystemInDarkTheme())
     val kingArt = settings.uiTheme == AppUiTheme.KING_ART
     val primary = Color(accentArgb(settings.accent, dark))
-    val scheme = if (kingArt) {
+    val kingStyle = isKingStyle(settings.uiTheme)
+    val scheme = if (kingStyle) {
+        kingStyleScheme(settings.uiTheme, dark, black = settings.themeMode == AppThemeMode.AMOLED)
+    } else if (kingArt) {
         kingArtColorScheme(dark, black = settings.themeMode == AppThemeMode.AMOLED)
     } else if (dark) {
         val background = if (settings.themeMode == AppThemeMode.AMOLED) Color.Black else Color(DARK_BACKGROUND)
@@ -53,8 +56,16 @@ fun KingPlayDesktopTheme(settings: DesktopSettings, content: @Composable () -> U
     CompositionLocalProvider(LocalUiTheme provides settings.uiTheme) {
         MaterialTheme(
             colorScheme = scheme,
-            typography = if (kingArt) KingArtTypography else MaterialTheme.typography,
-            shapes = if (kingArt) KingArtShapes else MaterialTheme.shapes,
+            typography = when {
+                kingStyle -> kingStyleTypography(settings.uiTheme)
+                kingArt -> KingArtTypography
+                else -> MaterialTheme.typography
+            },
+            shapes = when {
+                kingStyle -> kingStyleShapes(settings.uiTheme)
+                kingArt -> KingArtShapes
+                else -> MaterialTheme.shapes
+            },
             content = content,
         )
     }

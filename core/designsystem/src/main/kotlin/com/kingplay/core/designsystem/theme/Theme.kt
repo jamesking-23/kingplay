@@ -20,7 +20,7 @@ import androidx.core.view.WindowCompat
 enum class ThemeMode { SYSTEM, LIGHT, DARK, AMOLED }
 
 /** The design language: [KING_ART] hand-drawn paper (default) or [KK_UI] the original Material look. */
-enum class UiStyle { KING_ART, KK_UI }
+enum class UiStyle { KING_ART, KK_UI, KING_NEON, KING_GLASS, KING_CLASSIC }
 
 data class ThemeConfig(
     val mode: ThemeMode = ThemeMode.SYSTEM,
@@ -56,9 +56,12 @@ fun KingPlayTheme(
     val context = LocalContext.current
     val kingArt = config.uiStyle == UiStyle.KING_ART
     // King Art has its own palette, so wallpaper colours and accents only apply to kk-ui.
-    val dynamic = !kingArt && config.useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val dynamic = config.uiStyle == UiStyle.KK_UI && config.useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     val base: ColorScheme = when {
+        config.uiStyle == UiStyle.KING_NEON -> kingNeonColorScheme(dark)
+        config.uiStyle == UiStyle.KING_GLASS -> kingGlassColorScheme(dark)
+        config.uiStyle == UiStyle.KING_CLASSIC -> kingClassicColorScheme(dark)
         kingArt -> kingArtColorScheme(dark)
         dynamic && dark -> dynamicDarkColorScheme(context)
         dynamic -> dynamicLightColorScheme(context)
@@ -84,8 +87,20 @@ fun KingPlayTheme(
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = if (kingArt) KingArtTypography else KingPlayTypography,
-            shapes = if (kingArt) KingArtShapes else KingPlayShapes,
+            typography = when (config.uiStyle) {
+                UiStyle.KING_ART -> KingArtTypography
+                UiStyle.KING_NEON -> KingNeonTypography
+                UiStyle.KING_GLASS -> KingGlassTypography
+                UiStyle.KING_CLASSIC -> KingClassicTypography
+                UiStyle.KK_UI -> KingPlayTypography
+            },
+            shapes = when (config.uiStyle) {
+                UiStyle.KING_ART -> KingArtShapes
+                UiStyle.KING_NEON -> KingNeonShapes
+                UiStyle.KING_GLASS -> KingGlassShapes
+                UiStyle.KING_CLASSIC -> KingClassicShapes
+                UiStyle.KK_UI -> KingPlayShapes
+            },
             content = content,
         )
     }

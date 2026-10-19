@@ -7,7 +7,7 @@ enum class AppThemeMode { SYSTEM, LIGHT, DARK, AMOLED }
  * The overall design language, like switching between two apps that share one engine.
  * [KING_ART] is the hand-drawn paper look (default); [KK_UI] is the original Material design.
  */
-enum class AppUiTheme { KING_ART, KK_UI }
+enum class AppUiTheme { KING_ART, KK_UI, KING_NEON, KING_GLASS, KING_CLASSIC }
 
 enum class AppAccent { VIOLET, OCEAN, EMBER, EMERALD }
 

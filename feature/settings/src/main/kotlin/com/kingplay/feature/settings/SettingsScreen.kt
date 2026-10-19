@@ -248,21 +248,26 @@ private fun AppearanceSection(settings: AppSettings, onEvent: (SettingsEvent) ->
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
-            UiThemeCard(
-                title = stringResource(R.string.settings_ui_king_art),
-                description = stringResource(R.string.settings_ui_king_art_desc),
-                selected = settings.uiTheme == AppUiTheme.KING_ART,
-                onClick = { onEvent(SettingsEvent.SetUiTheme(AppUiTheme.KING_ART)) },
-                modifier = Modifier.weight(1f),
-            )
-            UiThemeCard(
-                title = stringResource(R.string.settings_ui_kk),
-                description = stringResource(R.string.settings_ui_kk_desc),
-                selected = settings.uiTheme == AppUiTheme.KK_UI,
-                onClick = { onEvent(SettingsEvent.SetUiTheme(AppUiTheme.KK_UI)) },
-                modifier = Modifier.weight(1f),
-            )
+        val designs = listOf(
+            Triple(AppUiTheme.KING_ART, R.string.settings_ui_king_art, R.string.settings_ui_king_art_desc),
+            Triple(AppUiTheme.KING_NEON, R.string.settings_ui_king_neon, R.string.settings_ui_king_neon_desc),
+            Triple(AppUiTheme.KING_GLASS, R.string.settings_ui_king_glass, R.string.settings_ui_king_glass_desc),
+            Triple(AppUiTheme.KING_CLASSIC, R.string.settings_ui_king_classic, R.string.settings_ui_king_classic_desc),
+            Triple(AppUiTheme.KK_UI, R.string.settings_ui_kk, R.string.settings_ui_kk_desc),
+        )
+        designs.chunked(2).forEach { pair ->
+            Row(horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
+                pair.forEach { (theme, title, desc) ->
+                    UiThemeCard(
+                        title = stringResource(title),
+                        description = stringResource(desc),
+                        selected = settings.uiTheme == theme,
+                        onClick = { onEvent(SettingsEvent.SetUiTheme(theme)) },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (pair.size == 1) Box(Modifier.weight(1f))
+            }
         }
         Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleSmall)
         LazyRow(horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
@@ -274,7 +279,7 @@ private fun AppearanceSection(settings: AppSettings, onEvent: (SettingsEvent) ->
                 )
             }
         }
-        if (settings.uiTheme == AppUiTheme.KING_ART) {
+        if (settings.uiTheme != AppUiTheme.KK_UI) {
             Text(
                 stringResource(R.string.settings_ui_accent_note),
                 style = MaterialTheme.typography.bodySmall,

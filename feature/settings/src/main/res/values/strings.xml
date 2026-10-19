@@ -7,9 +7,15 @@
     <string name="settings_ui_theme_hint">Switch designs like switching apps; your music and settings stay the same.</string>
     <string name="settings_ui_king_art">King Art</string>
     <string name="settings_ui_king_art_desc">Hand-drawn paper, pencil icons and a spinning vinyl disc</string>
+    <string name="settings_ui_king_neon">KingNeon</string>
+    <string name="settings_ui_king_neon_desc">Night-club dark with hot magenta and cyan, sharp corners, monospace type and a glowing cover</string>
+    <string name="settings_ui_king_glass">KingGlass</string>
+    <string name="settings_ui_king_glass_desc">Calm and airy: soft blues, very round corners, light type and a floating cover</string>
+    <string name="settings_ui_king_classic">KingClassic</string>
+    <string name="settings_ui_king_classic_desc">Vintage hi-fi: cream or walnut, brass and amber, serif type and a framed record sleeve</string>
     <string name="settings_ui_kk">kk-ui</string>
     <string name="settings_ui_kk_desc">The original clean Material design</string>
-    <string name="settings_ui_accent_note">Accent and wallpaper colours apply to kk-ui. King Art uses its own pencil palette.</string>
+    <string name="settings_ui_accent_note">Accent and wallpaper colours apply to kk-ui. The King designs use their own palettes.</string>
     <string name="settings_theme">Light or dark</string>
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_light">Light</string>

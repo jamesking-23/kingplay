@@ -30,6 +30,9 @@ import com.kingplay.desktop.userdata.importNotice
 internal fun uiThemeLabel(ui: AppUiTheme): String = when (ui) {
     AppUiTheme.KING_ART -> "King Art (hand-drawn)"
     AppUiTheme.KK_UI -> "kk-ui (classic)"
+    AppUiTheme.KING_NEON -> "KingNeon (night-club)"
+    AppUiTheme.KING_GLASS -> "KingGlass (airy)"
+    AppUiTheme.KING_CLASSIC -> "KingClassic (vintage hi-fi)"
 }
 
 internal fun themeLabel(mode: AppThemeMode): String = when (mode) {
@@ -66,7 +69,11 @@ fun SettingsPage(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             AppUiTheme.entries.forEach { ui ->
                 FilterChip(
                     selected = settings.uiTheme == ui,

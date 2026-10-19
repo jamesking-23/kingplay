@@ -4,6 +4,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -182,13 +186,46 @@ private fun PlayerBody(
                     )
                 }
             } else {
-                ArtworkImage(
-                    audioUri = state.track?.uri,
-                    cacheKey = state.track?.let { "album:${it.albumId}" }.orEmpty(),
-                    sizePx = ArtworkSize.FULL,
-                    shape = MaterialTheme.shapes.extraLarge,
-                    modifier = artModifier,
-                )
+                val cover: @Composable (Modifier, androidx.compose.ui.graphics.Shape) -> Unit = { m, shape ->
+                    ArtworkImage(
+                        audioUri = state.track?.uri,
+                        cacheKey = state.track?.let { "album:${it.albumId}" }.orEmpty(),
+                        sizePx = ArtworkSize.FULL,
+                        shape = shape,
+                        modifier = m,
+                    )
+                }
+                val colors = MaterialTheme.colorScheme
+                val shape = MaterialTheme.shapes.extraLarge
+                when (KpTheme.uiStyle) {
+                    // KingNeon: a glowing neon-outlined cover.
+                    UiStyle.KING_NEON -> Box(
+                        artModifier
+                            .shadow(28.dp, shape, ambientColor = colors.primary, spotColor = colors.secondary)
+                            .border(
+                                3.dp,
+                                androidx.compose.ui.graphics.Brush.linearGradient(listOf(colors.primary, colors.secondary)),
+                                shape,
+                            )
+                            .padding(3.dp),
+                    ) { cover(Modifier.fillMaxSize(), shape) }
+                    // KingGlass: a big, soft, floating cover.
+                    UiStyle.KING_GLASS -> Box(
+                        artModifier
+                            .padding(10.dp)
+                            .shadow(24.dp, shape, ambientColor = colors.primary, spotColor = colors.primary),
+                    ) { cover(Modifier.fillMaxSize(), shape) }
+                    // KingClassic: a brass-framed record sleeve.
+                    UiStyle.KING_CLASSIC -> Box(
+                        artModifier
+                            .shadow(10.dp, shape)
+                            .background(colors.secondary, shape)
+                            .padding(8.dp)
+                            .background(colors.surface, shape)
+                            .padding(2.dp),
+                    ) { cover(Modifier.fillMaxSize(), MaterialTheme.shapes.extraSmall) }
+                    else -> cover(artModifier, shape)
+                }
             }
         }
         val stage: @Composable (Modifier) -> Unit = { stageModifier ->
