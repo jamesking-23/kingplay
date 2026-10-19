@@ -6,14 +6,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.provider.MediaStore
-import androidx.compose.ui.test.ExperimentalTestApi
-import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.compose.ui.test.onFirst
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.media3.common.MediaItem
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -34,7 +27,6 @@ import java.util.concurrent.TimeUnit
  * Not a pass/fail test: it walks the app in both designs and both light/dark, saving screenshots and a log of what
  * worked to the app's external files dir, so the visuals can be checked from CI without a phone.
  */
-@OptIn(ExperimentalTestApi::class)
 @RunWith(AndroidJUnit4::class)
 class ScreenshotTourTest {
     @get:Rule
@@ -43,9 +35,6 @@ class ScreenshotTourTest {
         Manifest.permission.READ_MEDIA_AUDIO,
         Manifest.permission.READ_MEDIA_VIDEO,
     )
-
-    @get:Rule
-    val compose = createEmptyComposeRule()
 
     private val inst = InstrumentationRegistry.getInstrumentation()
     private val ctx: Context = ApplicationProvider.getApplicationContext()
@@ -57,7 +46,7 @@ class ScreenshotTourTest {
     private fun shot(name: String) {
         Thread.sleep(1200)
         val full = inst.uiAutomation.takeScreenshot() ?: return note("no screenshot $name")
-        val bmp = Bitmap.createScaledBitmap(full, full.width / 2, full.height / 2, true)
+        val bmp = Bitmap.createScaledBitmap(full, full.width * 3 / 5, full.height * 3 / 5, true)
         val bytes = java.io.ByteArrayOutputStream().also { bmp.compress(Bitmap.CompressFormat.JPEG, 72, it) }.toByteArray()
         val b64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
         val chunks = b64.chunked(3500)
@@ -73,6 +62,26 @@ class ScreenshotTourTest {
     private fun night(on: Boolean) {
         inst.uiAutomation.executeShellCommand("cmd uimode night ${if (on) "yes" else "no"}").close()
         Thread.sleep(1500)
+    }
+
+    /** Finds a node whose text or description contains [needle] and clicks it (or its clickable parent). */
+    private fun click(needle: String) {
+        fun find(n: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+            if (n == null) return null
+            val label = "${n.text ?: ""} ${n.contentDescription ?: ""}"
+            if (label.contains(needle, ignoreCase = true)) return n
+            for (i in 0 until n.childCount) find(n.getChild(i))?.let { return it }
+            return null
+        }
+        var node = find(inst.uiAutomation.rootInActiveWindow) ?: error("nothing matches '$needle'")
+        while (!node.isClickable) node = node.parent ?: error("'$needle' is not clickable")
+        node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        Thread.sleep(900)
+    }
+
+    private fun back() {
+        inst.uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
+        Thread.sleep(900)
     }
 
     @Test
@@ -92,7 +101,7 @@ class ScreenshotTourTest {
             val uri = ctx.contentResolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, v)!!
             ctx.contentResolver.openOutputStream(uri)!!.use { o -> inst.context.assets.open(name).use { it.copyTo(o) } }
         }
-        val scenario = ActivityScenario.launch(MainActivity::class.java)
+        var scenario = ActivityScenario.launch(MainActivity::class.java)
         val db = Room.databaseBuilder(ctx, KingPlayDatabase::class.java, KingPlayDatabase.NAME).build()
         var id: Long? = null
         val deadline = System.currentTimeMillis() + 90_000
@@ -114,47 +123,30 @@ class ScreenshotTourTest {
             Thread.sleep(3000)
         }
 
-        for (dark in listOf(false, true)) {
-            night(dark)
-            val mode = if (dark) "dark" else "light"
-            step("lib-$mode") { shot("1_library_king_$mode") }
-            step("np-$mode") {
-                compose.onAllNodes(hasContentDescription("Open now playing", substring = true, ignoreCase = true)).onFirst().performClick()
-                shot("2_nowplaying_king_$mode")
-                inst.uiAutomation.executeShellCommand("input keyevent KEYCODE_BACK").close()
-                Thread.sleep(1000)
+        fun tour(prefix: String, mode: String) {
+            step("$prefix-lib") { shot("1_${prefix}_library_$mode") }
+            step("$prefix-np") {
+                click("Open now playing")
+                shot("2_${prefix}_nowplaying_$mode")
+                back()
             }
-            step("settings-$mode") {
-                compose.onAllNodes(hasContentDescription("Settings", substring = true, ignoreCase = true)).onFirst().performClick()
-                shot("3_settings_king_$mode")
-            }
-            if (!dark) {
-                step("switch-kk") {
-                    compose.onNodeWithText("kk-ui").performScrollTo().performClick()
-                    shot("4_settings_kk_light")
-                }
-                step("kk-library") {
-                    inst.uiAutomation.executeShellCommand("input keyevent KEYCODE_BACK").close()
-                    shot("5_library_kk_light")
-                }
-                step("kk-np") {
-                    compose.onAllNodes(hasContentDescription("Open now playing", substring = true, ignoreCase = true)).onFirst().performClick()
-                    shot("6_nowplaying_kk_light")
-                    inst.uiAutomation.executeShellCommand("input keyevent KEYCODE_BACK").close()
-                }
-                step("back-to-king") {
-                    compose.onAllNodes(hasContentDescription("Settings", substring = true, ignoreCase = true)).onFirst().performClick()
-                    compose.onNodeWithText("King Art").performScrollTo().performClick()
-                    inst.uiAutomation.executeShellCommand("input keyevent KEYCODE_BACK").close()
-                }
-            } else {
-                step("dark-kk") {
-                    compose.onNodeWithText("kk-ui").performScrollTo().performClick()
-                    inst.uiAutomation.executeShellCommand("input keyevent KEYCODE_BACK").close()
-                    shot("7_library_kk_dark")
-                }
+            step("$prefix-settings") {
+                click("Settings")
+                shot("3_${prefix}_settings_$mode")
             }
         }
+
+        night(false)
+        tour("king", "light")
+        step("kk") { click("kk-ui"); back(); }
+        step("kk-light") { tour("kk", "light") }
+        night(true)
+        scenario.close()
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+        Thread.sleep(2500)
+        step("kk-dark") { tour("kk", "dark") }
+        step("king") { click("King Art"); back() }
+        step("king-dark") { tour("king", "dark") }
         night(false)
         scenario.close()
     }

@@ -24,6 +24,7 @@ jobs:
           api-level: 34
           arch: x86_64
           target: google_apis
+          profile: pixel_5
           disable-animations: true
           script: bash .github/scripts/emu.sh
       - name: Publish screenshots
