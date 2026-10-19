@@ -7,6 +7,7 @@ import com.kingplay.core.database.Migrations
 import com.kingplay.core.database.dao.EqDao
 import com.kingplay.core.database.dao.ExcludedFolderDao
 import com.kingplay.core.database.dao.LyricsDao
+import com.kingplay.core.database.dao.PlayEventDao
 import com.kingplay.core.database.dao.PlaylistDao
 import com.kingplay.core.database.dao.QueueDao
 import com.kingplay.core.database.dao.TrackDao
@@ -46,6 +47,9 @@ object DatabaseModule {
 
     @Provides
     fun excludedFolderDao(db: KingPlayDatabase): ExcludedFolderDao = db.excludedFolderDao()
+
+    @Provides
+    fun playEventDao(db: KingPlayDatabase): PlayEventDao = db.playEventDao()
 
     @Provides
     fun lyricsDao(db: KingPlayDatabase): LyricsDao = db.lyricsDao()

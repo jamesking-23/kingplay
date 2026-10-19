@@ -141,6 +141,12 @@ fun PlaylistsTab(
             leadingIcon = KpIcons.MusicNote,
             onClick = navigator::toMostPlayed,
         )
+        MediaRow(
+            title = "Monthly listening report",
+            subtitle = "Your month in music, like a Wrapped",
+            leadingIcon = KpIcons.MusicNote,
+            onClick = { navigator.toReport() },
+        )
         Box(modifier = Modifier.fillMaxWidth().padding(horizontal = KpTheme.spacing.lg)) {
             KpButton(
                 text = stringResource(R.string.playlist_new),

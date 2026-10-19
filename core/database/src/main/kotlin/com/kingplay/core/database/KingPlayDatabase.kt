@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import com.kingplay.core.database.dao.EqDao
 import com.kingplay.core.database.dao.ExcludedFolderDao
 import com.kingplay.core.database.dao.LyricsDao
+import com.kingplay.core.database.dao.PlayEventDao
 import com.kingplay.core.database.dao.PlaylistDao
 import com.kingplay.core.database.dao.QueueDao
 import com.kingplay.core.database.dao.TrackDao
@@ -13,6 +14,7 @@ import com.kingplay.core.database.entity.DeviceProfileEntity
 import com.kingplay.core.database.entity.EqPresetEntity
 import com.kingplay.core.database.entity.ExcludedFolderEntity
 import com.kingplay.core.database.entity.ImportedLyricsEntity
+import com.kingplay.core.database.entity.PlayEventEntity
 import com.kingplay.core.database.entity.PlaylistEntity
 import com.kingplay.core.database.entity.PlaylistEntryEntity
 import com.kingplay.core.database.entity.QueueItemEntity
@@ -44,6 +46,7 @@ import com.kingplay.core.database.entity.VideoUserDataEntity
         DeviceProfileEntity::class,
         ExcludedFolderEntity::class,
         ImportedLyricsEntity::class,
+        PlayEventEntity::class,
     ],
     version = KingPlayDatabase.VERSION,
     exportSchema = true,
@@ -63,8 +66,10 @@ abstract class KingPlayDatabase : RoomDatabase() {
 
     abstract fun lyricsDao(): LyricsDao
 
+    abstract fun playEventDao(): PlayEventDao
+
     companion object {
-        const val VERSION = 2
+        const val VERSION = 3
         const val NAME = "kingplay.db"
     }
 }

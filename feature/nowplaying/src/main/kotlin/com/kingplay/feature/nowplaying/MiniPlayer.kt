@@ -26,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingplay.core.designsystem.component.KpIconButton
+import com.kingplay.core.designsystem.component.rememberVibratingClick
+import com.kingplay.core.designsystem.component.shakeOn
 import com.kingplay.core.designsystem.theme.KpIcons
 import com.kingplay.core.designsystem.theme.KpTheme
 import com.kingplay.core.ui.artwork.ArtworkImage
@@ -95,7 +97,8 @@ fun MiniPlayer(
                 KpIconButton(
                     icon = if (state.isPlaying) KpIcons.Pause else Icons.Default.PlayArrow,
                     contentDescription = stringResource(if (state.isPlaying) R.string.np_pause else R.string.np_play),
-                    onClick = { viewModel.onEvent(MiniPlayerEvent.TogglePlayPause) },
+                    onClick = rememberVibratingClick { viewModel.onEvent(MiniPlayerEvent.TogglePlayPause) },
+                    modifier = Modifier.shakeOn(state.isPlaying),
                 )
                 KpIconButton(
                     icon = KpIcons.SkipNext,

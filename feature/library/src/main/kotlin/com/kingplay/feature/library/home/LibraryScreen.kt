@@ -26,6 +26,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +46,7 @@ import com.kingplay.core.model.ScanPhase
 import com.kingplay.core.model.ScanState
 import com.kingplay.core.model.navigation.AppNavigator
 import com.kingplay.feature.library.R
+import com.kingplay.feature.library.report.ReportBannerViewModel
 import com.kingplay.feature.library.list.AlbumsTab
 import com.kingplay.feature.library.list.ArtistsTab
 import com.kingplay.feature.library.list.FoldersTab
@@ -77,6 +79,7 @@ fun LibraryScreen(
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     var searching by rememberSaveable { mutableStateOf(false) }
+    AskNotificationPermissionOnce()
 
     Scaffold(
         modifier = modifier,
@@ -98,6 +101,14 @@ fun LibraryScreen(
                 onRescan = { full -> viewModel.onEvent(LibraryHomeEvent.Rescan(full)) },
             )
             ScanBanner(state.scan)
+            val reportBanner: ReportBannerViewModel = hiltViewModel()
+            val lastMonth by reportBanner.lastMonth.collectAsStateWithLifecycle()
+            lastMonth?.let { month ->
+                TextButton(
+                    onClick = { navigator.toReport(month) },
+                    modifier = Modifier.padding(horizontal = KpTheme.spacing.sm),
+                ) { Text("Your listening report for last month is ready →") }
+            }
             ScrollableTabRow(selectedTabIndex = pager.currentPage, edgePadding = KpTheme.spacing.sm) {
                 tabs.forEachIndexed { index, tab ->
                     Tab(
@@ -203,5 +214,22 @@ private fun ScanBanner(scan: ScanState) {
             )
             LinearProgressIndicator(progress = { scan.fraction }, modifier = Modifier.fillMaxWidth())
         }
+    }
+}
+
+/** Android 13+ needs a runtime grant before the "your report is ready" notification can appear. Asked once per launch. */
+@Composable
+private fun AskNotificationPermissionOnce() {
+    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.TIRAMISU) return
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.POST_NOTIFICATIONS,
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (!granted) runCatching { launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
     }
 }

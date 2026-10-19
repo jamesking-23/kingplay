@@ -10,7 +10,9 @@ import com.kingplay.core.database.KingPlayDatabase
 import com.kingplay.core.database.dao.TrackDao
 import com.kingplay.core.database.dao.TrackRow
 import com.kingplay.core.database.dao.songIdsQuery
+import com.kingplay.core.database.dao.PlayEventDao
 import com.kingplay.core.database.dao.VideoDao
+import com.kingplay.core.database.entity.PlayEventEntity
 import com.kingplay.core.database.entity.TrackUserDataEntity
 import com.kingplay.core.database.toModel
 import com.kingplay.core.model.Album
@@ -35,6 +37,7 @@ class RoomLibraryRepository @Inject constructor(
     private val db: KingPlayDatabase,
     private val trackDao: TrackDao,
     private val videoDao: VideoDao,
+    private val playEvents: PlayEventDao,
 ) : LibraryRepository {
 
     override fun songs(sort: SongSort, filter: SongFilter): Flow<PagingData<Track>> = Pager(
@@ -113,6 +116,7 @@ class RoomLibraryRepository @Inject constructor(
         db.withTransaction {
             trackDao.insertUserDataIfAbsent(TrackUserDataEntity(trackId, 0, null, false))
             trackDao.incrementPlayCount(trackId, playedAtMs)
+            playEvents.insert(PlayEventEntity(trackId = trackId, playedAtMs = playedAtMs))
         }
     }
 

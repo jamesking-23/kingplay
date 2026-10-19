@@ -29,5 +29,7 @@ class KingPlayApp : Application(), Configuration.Provider, ImageLoaderFactory {
         super.onCreate()
         // Registers the media observer and daily scan, and scans now if media permission is already granted.
         libraryScanner.start()
+        // Daily check that posts the "your report is ready" notification at the start of each month.
+        com.kingplay.data.library.platform.MonthlyReportWorker.schedule(this)
     }
 }

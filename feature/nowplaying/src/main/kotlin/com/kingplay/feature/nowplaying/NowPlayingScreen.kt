@@ -50,6 +50,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingplay.core.designsystem.component.KpEmptyState
 import com.kingplay.core.designsystem.component.KpIconButton
 import com.kingplay.core.designsystem.component.rememberHapticClick
+import com.kingplay.core.designsystem.component.rememberVibratingClick
+import com.kingplay.core.designsystem.component.shakeOn
 import com.kingplay.core.designsystem.theme.KpIcons
 import androidx.compose.foundation.shape.CircleShape
 import com.kingplay.core.designsystem.component.VinylDisc
@@ -383,8 +385,8 @@ private fun TransportRow(state: NowPlayingState, onEvent: (NowPlayingEvent) -> U
             onClick = { onEvent(NowPlayingEvent.Previous) },
         )
         FilledIconButton(
-            onClick = rememberHapticClick { onEvent(NowPlayingEvent.TogglePlayPause) },
-            modifier = Modifier.size(PlayButtonSize),
+            onClick = rememberVibratingClick { onEvent(NowPlayingEvent.TogglePlayPause) },
+            modifier = Modifier.size(PlayButtonSize).shakeOn(playback.isPlaying),
         ) {
             Icon(
                 imageVector = if (playback.isPlaying) KpIcons.Pause else Icons.Default.PlayArrow,

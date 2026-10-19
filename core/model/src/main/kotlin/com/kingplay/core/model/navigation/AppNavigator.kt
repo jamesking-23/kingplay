@@ -15,6 +15,9 @@ interface AppNavigator {
 
     fun toMostPlayed()
 
+    /** [month] is "yyyy-MM"; null opens the newest month with listening. */
+    fun toReport(month: String? = null)
+
     fun toGenre(genre: String)
 
     fun toFolder(path: String)

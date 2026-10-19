@@ -13,6 +13,8 @@ dependencies {
     implementation(projects.core.ui)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.paging.compose)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     testImplementation(libs.junit)
