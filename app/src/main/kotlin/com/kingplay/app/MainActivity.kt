@@ -8,6 +8,7 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingplay.core.designsystem.theme.KingPlayTheme
+import com.kingplay.feature.settings.profile.WelcomeScreen
 import com.kingplay.feature.settings.toThemeConfig
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -22,7 +23,11 @@ class MainActivity : ComponentActivity() {
             val settings by appViewModel.settings.collectAsStateWithLifecycle()
             settings?.let { saved ->
                 KingPlayTheme(saved.toThemeConfig()) {
-                    PermissionGate { KingPlayRoot() }
+                    if (saved.nickname.isBlank()) {
+                        WelcomeScreen()
+                    } else {
+                        PermissionGate { KingPlayRoot() }
+                    }
                 }
             }
         }

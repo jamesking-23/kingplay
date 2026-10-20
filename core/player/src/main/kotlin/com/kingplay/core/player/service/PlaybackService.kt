@@ -20,6 +20,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
 import com.kingplay.core.model.MediaRef
 import com.kingplay.core.model.repository.LibraryRepository
+import com.kingplay.core.model.repository.PlaybackRecordsRepository
 import com.kingplay.core.model.repository.QueueRepository
 import com.kingplay.core.model.repository.VideoRepository
 import com.kingplay.core.player.browse.BrowseTree
@@ -60,6 +61,8 @@ class PlaybackService : MediaLibraryService() {
 
     @Inject lateinit var queueRepository: QueueRepository
 
+    @Inject lateinit var records: PlaybackRecordsRepository
+
     @Inject lateinit var audioEngine: AudioEngineBinder
 
     @Inject lateinit var lyricsBinder: LyricsBinder
@@ -87,7 +90,7 @@ class PlaybackService : MediaLibraryService() {
         lyricsBinder.start()
         sleepBinder.start(scope)
         nowPlayingBinder.start()
-        val persistence = QueuePersistence(player, queueRepository, library, videos, scope)
+        val persistence = QueuePersistence(player, queueRepository, library, videos, records, scope)
         this.persistence = persistence
         scope.launch {
             persistence.restore()

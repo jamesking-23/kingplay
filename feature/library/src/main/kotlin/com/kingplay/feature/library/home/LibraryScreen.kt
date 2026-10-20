@@ -1,6 +1,7 @@
 package com.kingplay.feature.library.home
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.kingplay.core.ui.component.ProfileAvatar
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingplay.core.designsystem.component.KpIconButton
@@ -98,6 +101,7 @@ fun LibraryScreen(
             LibraryHeader(
                 onSearch = { searching = true },
                 onSettings = navigator::toSettings,
+                onProfile = navigator::toProfile,
                 onRescan = { full -> viewModel.onEvent(LibraryHomeEvent.Rescan(full)) },
             )
             ScanBanner(state.scan)
@@ -134,8 +138,15 @@ fun LibraryScreen(
 }
 
 @Composable
-private fun LibraryHeader(onSearch: () -> Unit, onSettings: () -> Unit, onRescan: (full: Boolean) -> Unit) {
+private fun LibraryHeader(
+    onSearch: () -> Unit,
+    onSettings: () -> Unit,
+    onProfile: () -> Unit,
+    onRescan: (full: Boolean) -> Unit,
+    greeting: GreetingViewModel = hiltViewModel(),
+) {
     var menuOpen by remember { mutableStateOf(false) }
+    val who by greeting.state.collectAsStateWithLifecycle()
     Row(
         modifier = Modifier
             .statusBarsPadding()
@@ -144,8 +155,24 @@ private fun LibraryHeader(onSearch: () -> Unit, onSettings: () -> Unit, onRescan
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(stringResource(R.string.library_title), style = MaterialTheme.typography.headlineMedium)
+        Column {
+            if (who.nickname.isNotBlank()) {
+                Text(
+                    stringResource(greetingRes(), who.nickname),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(stringResource(R.string.library_title), style = MaterialTheme.typography.headlineMedium)
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .clickable(onClickLabel = stringResource(R.string.library_profile), onClick = onProfile)
+                    .padding(KpTheme.spacing.sm),
+            ) {
+                ProfileAvatar(photoPath = who.photoPath, nickname = who.nickname, size = 32.dp)
+            }
             KpIconButton(
                 icon = Icons.Default.Search,
                 contentDescription = stringResource(R.string.search_open),
@@ -233,3 +260,16 @@ private fun AskNotificationPermissionOnce() {
         if (!granted) runCatching { launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS) }
     }
 }
+
+@androidx.annotation.StringRes
+private fun greetingRes(): Int {
+    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    return when {
+        hour < NOON -> R.string.greeting_morning
+        hour < EVENING -> R.string.greeting_afternoon
+        else -> R.string.greeting_evening
+    }
+}
+
+private const val NOON = 12
+private const val EVENING = 17

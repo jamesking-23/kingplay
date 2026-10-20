@@ -7,6 +7,7 @@ import com.kingplay.core.model.MediaRef
 import com.kingplay.core.model.QueueState
 import com.kingplay.core.model.RepeatMode
 import com.kingplay.core.model.repository.LibraryRepository
+import com.kingplay.core.model.repository.PlaybackRecordsRepository
 import com.kingplay.core.model.repository.QueueRepository
 import com.kingplay.core.model.repository.VideoRepository
 import com.kingplay.core.player.logic.MediaIds
@@ -27,6 +28,7 @@ internal class QueuePersistence(
     private val queueRepository: QueueRepository,
     private val library: LibraryRepository,
     private val videos: VideoRepository,
+    private val records: PlaybackRecordsRepository,
     private val scope: CoroutineScope,
 ) : Player.Listener {
 
@@ -63,19 +65,38 @@ internal class QueuePersistence(
 
     fun stop() {
         player.removeListener(this)
+        flushRecords()
         tickJob?.cancel()
         saveJob?.cancel()
         // The position was already saved when playback paused; the service scope is cancelled right after this.
     }
 
     private var ticksSincePositionSave = 0
+    private var ticksSinceRecordsFlush = 0
+    private var pendingAudioMs = 0L
+    private var pendingVideoMs = 0L
+
+    /** Writes the listening time gathered so far. Called every half minute and whenever playback pauses or stops. */
+    private fun flushRecords() {
+        ticksSinceRecordsFlush = 0
+        val audio = pendingAudioMs
+        val video = pendingVideoMs
+        pendingAudioMs = 0
+        pendingVideoMs = 0
+        if (audio > 0 || video > 0) scope.launch { records.addListening(audio, video) }
+    }
 
     private fun onTick(deltaMs: Long) {
+        val isVideo = MediaIds.parse(player.currentMediaItem?.mediaId) is MediaRef.Video
+        if (isVideo) pendingVideoMs += deltaMs else pendingAudioMs += deltaMs
         val counted = tracker.addPlayed(deltaMs, player.duration.coerceAtLeast(0))
         counted?.let { mediaId ->
             val ref = MediaIds.parse(mediaId)
             if (ref is MediaRef.Audio) scope.launch { library.recordPlay(ref.id, System.currentTimeMillis()) }
+            if (ref is MediaRef.Video) scope.launch { records.addVideoPlay() }
         }
+        ticksSinceRecordsFlush++
+        if (ticksSinceRecordsFlush >= RECORDS_FLUSH_EVERY_TICKS) flushRecords()
         ticksSincePositionSave++
         if (ticksSincePositionSave >= POSITION_SAVE_EVERY_TICKS) {
             ticksSincePositionSave = 0
@@ -95,7 +116,10 @@ internal class QueuePersistence(
     override fun onRepeatModeChanged(repeatMode: Int) = scheduleFullSave()
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
-        if (!isPlaying) scope.launch { savePositionNow() }
+        if (!isPlaying) {
+            flushRecords()
+            scope.launch { savePositionNow() }
+        }
     }
 
     /** Debounced: dragging items around in the queue fires many timeline changes. */
@@ -123,6 +147,7 @@ internal class QueuePersistence(
     private companion object {
         const val TICK_MS = 1_000L
         const val POSITION_SAVE_EVERY_TICKS = 5
+        const val RECORDS_FLUSH_EVERY_TICKS = 30
         const val SAVE_DEBOUNCE_MS = 500L
     }
 }

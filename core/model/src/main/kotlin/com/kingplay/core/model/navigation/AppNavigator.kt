@@ -18,6 +18,8 @@ interface AppNavigator {
     /** [month] is "yyyy-MM"; null opens the newest month with listening. */
     fun toReport(month: String? = null)
 
+    fun toProfile()
+
     fun toGenre(genre: String)
 
     fun toFolder(path: String)

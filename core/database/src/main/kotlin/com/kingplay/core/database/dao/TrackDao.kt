@@ -213,6 +213,10 @@ interface TrackDao {
     @Query("SELECT COUNT(*) FROM tracks")
     fun observeCount(): Flow<Int>
 
+    /** Every play ever counted, including songs that have since left the library. */
+    @Query("SELECT COALESCE(SUM(playCount), 0) FROM track_user_data")
+    fun observeTotalPlays(): Flow<Long>
+
     // ---- Lists ----
 
     @Query(TRACK_SELECT + " WHERE t.albumId = :albumId ORDER BY t.discNumber ASC, t.trackNumber ASC, t.titleSort ASC")

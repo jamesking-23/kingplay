@@ -18,6 +18,8 @@ class AppNavigatorImpl(private val navController: NavHostController) : AppNaviga
 
     override fun toReport(month: String?) = go(Routes.report(month))
 
+    override fun toProfile() = go(Routes.PROFILE)
+
     override fun toGenre(genre: String) = go(Routes.genre(genre))
 
     override fun toFolder(path: String) = go(Routes.folder(path))

@@ -102,4 +102,21 @@
     <string name="haptic_light">Light</string>
     <string name="haptic_medium">Medium</string>
     <string name="haptic_strong">Strong</string>
+    <string name="welcome_title">Welcome to KingPlay</string>
+    <string name="welcome_message">What should we call you? You can add a picture too. Both stay on this device.</string>
+    <string name="welcome_continue">Let's go</string>
+    <string name="welcome_privacy">Your nickname and picture are never uploaded anywhere.</string>
+    <string name="profile_title">Profile</string>
+    <string name="profile_nickname">Nickname</string>
+    <string name="profile_save">Save nickname</string>
+    <string name="profile_add_photo">Add a picture</string>
+    <string name="profile_change_photo">Change picture</string>
+    <string name="profile_remove_photo">Remove</string>
+    <string name="profile_records">Your records</string>
+    <string name="profile_songs_played">Songs played</string>
+    <string name="profile_videos_played">Videos played</string>
+    <string name="profile_listening_time">Time listening</string>
+    <string name="profile_listening_split">Music %1$s · Video %2$s</string>
+    <string name="profile_since">Installed on %1$s</string>
+    <string name="profile_records_note">Song plays include everything counted so far. Videos and listening time are counted from this version onward.</string>
 </resources>

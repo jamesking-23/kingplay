@@ -7,6 +7,7 @@ import com.kingplay.core.model.repository.ListeningReportRepository
 import com.kingplay.core.model.repository.LibraryRepository
 import com.kingplay.core.model.repository.LibraryScanner
 import com.kingplay.core.model.repository.LyricsStore
+import com.kingplay.core.model.repository.PlaybackRecordsRepository
 import com.kingplay.core.model.repository.PlaylistRepository
 import com.kingplay.core.model.repository.QueueRepository
 import com.kingplay.core.model.repository.SearchRepository
@@ -15,6 +16,7 @@ import com.kingplay.data.library.platform.MediaExtractorMetadataReader
 import com.kingplay.data.library.platform.MediaStoreSource
 import com.kingplay.data.library.platform.WorkManagerLibraryScanner
 import com.kingplay.data.library.repo.DefaultBackupRepository
+import com.kingplay.data.library.repo.DataStorePlaybackRecords
 import com.kingplay.data.library.repo.RoomEqRepository
 import com.kingplay.data.library.repo.RoomLibraryFolderSettings
 import com.kingplay.data.library.repo.RoomLibraryRepository
@@ -47,6 +49,8 @@ abstract class LibraryDataModule {
     @Binds abstract fun search(impl: RoomSearchRepository): SearchRepository
 
     @Binds abstract fun listeningReports(impl: RoomListeningReportRepository): ListeningReportRepository
+
+    @Binds abstract fun playbackRecords(impl: DataStorePlaybackRecords): PlaybackRecordsRepository
 
     @Binds abstract fun eq(impl: RoomEqRepository): EqRepository
 
