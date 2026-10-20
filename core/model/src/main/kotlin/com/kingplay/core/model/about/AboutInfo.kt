@@ -54,12 +54,17 @@ object AboutInfo {
         KingPlay is built to keep your music and your data on your own device.
 
         What stays on your device: your library, playlists, favourites, play counts, lyrics, equalizer
-        presets, settings and where you stopped in a video. On a PC these are kept in your user folder, and on
+        presets, settings, your nickname and profile picture, your playback records and where you stopped in a
+        video. On a PC these are kept in your user folder, and on
         a phone in the app's own storage.
 
         What KingPlay sends: nothing about you. It has no account, and it does not upload your music,
         playlists or listening history. It does not include advertising or tracking. Any usage statistics
         would be off unless you choose to turn them on.
+
+        The lyrics browser (Android): "Find lyrics online" opens a web page inside the app, and the page you visit
+        sees your connection like any browser. KingPlay does not read the page; it only reads the text you copy and
+        tap Add on, and saves it on your device. The app asks for the Internet permission only for this.
 
         Backups: when you export a backup, it is saved where you choose. Anyone you give that file to can
         read your playlist and favourite names, so share it with care.
@@ -75,7 +80,16 @@ object AboutInfo {
     private fun item(name: String, license: String, url: String, vararg on: Platform) =
         ThirdPartyItem(name, license, url, on.toSet())
 
+    private const val OFL = "SIL Open Font License 1.1"
+
     val thirdParty: List<ThirdPartyItem> = listOf(
+        item("Poppins font", OFL, "https://github.com/itfoundry/poppins", Platform.ANDROID),
+        item("Hanken Grotesk font", OFL, "https://github.com/marcologous/hanken-grotesk", Platform.ANDROID),
+        item("Source Sans and Source Serif fonts", OFL, "https://github.com/adobe-fonts", Platform.ANDROID),
+        item("Lora font", OFL, "https://github.com/cyrealtype/Lora-Cyrillic", Platform.ANDROID),
+        item("Fredoka font", OFL, "https://github.com/hafontia-zz/Fredoka-One", Platform.ANDROID),
+        item("Caveat font", OFL, "https://github.com/googlefonts/caveat", Platform.ANDROID),
+        item("Architects Daughter font", OFL, "https://fonts.google.com/specimen/Architects+Daughter", Platform.ANDROID),
         item("Kotlin and kotlinx.coroutines", APACHE, "https://kotlinlang.org", *both),
         item("Jetpack Compose and AndroidX", APACHE, "https://developer.android.com/jetpack", Platform.ANDROID),
         item("Media3 (ExoPlayer)", APACHE, "https://developer.android.com/media/media3", Platform.ANDROID),

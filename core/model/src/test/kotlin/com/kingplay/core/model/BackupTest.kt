@@ -143,4 +143,28 @@ class BackupTest {
         assertEquals(BackupCodec.SOURCE_DESKTOP, BackupCodec.decode(text).source)
         assertEquals(desktop, BackupCodec.decode(text))
     }
+
+    @Test
+    fun profileAndHapticSettingsSurviveBackup() {
+        val settings = AppSettings(
+            nickname = "James",
+            haptics = com.kingplay.core.model.settings.HapticSettings(
+                play = com.kingplay.core.model.settings.HapticLevel.LIGHT,
+                tap = com.kingplay.core.model.settings.HapticLevel.OFF,
+            ),
+        )
+        val data = BackupData(0, settings, emptyList(), emptyList(), emptyList(), emptyList(), emptyMap())
+        val back = BackupCodec.decode(BackupCodec.encode(data)).settings
+        assertEquals("James", back.nickname)
+        assertEquals(com.kingplay.core.model.settings.HapticLevel.LIGHT, back.haptics.play)
+        assertEquals(com.kingplay.core.model.settings.HapticLevel.OFF, back.haptics.tap)
+    }
+
+    @Test
+    fun hapticsSwitchOffSilencesEveryKind() {
+        val off = com.kingplay.core.model.settings.HapticSettings(enabled = false)
+        com.kingplay.core.model.settings.HapticKind.entries.forEach {
+            assertEquals(com.kingplay.core.model.settings.HapticLevel.OFF, off.levelFor(it))
+        }
+    }
 }
