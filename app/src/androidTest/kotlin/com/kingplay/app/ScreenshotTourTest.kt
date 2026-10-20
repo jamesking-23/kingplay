@@ -198,22 +198,29 @@ class ScreenshotTourTest {
         step("features") {
             shot("10_library_greeting")
             step("profile") {
-                click("Open your profile")
+                click("Profile picture")
                 shot("11_profile")
                 back()
             }
             step("fonts") {
                 click("Settings")
-                shot("12_settings_top")
-                click("Font")
-                shot("13_settings_fonts")
-                click("Lora")
-                shot("14_font_lora")
-                click("Handwritten")
-                shot("15_font_handwritten")
-                click("Haptics")
-                shot("16_settings_haptics")
-                back()
+                try {
+                    click("Lora")
+                    shot("14_font_lora")
+                    click("Handwritten")
+                    shot("15_font_handwritten")
+                    click("Easy reading")
+                    shot("15b_font_readable")
+                    findScrollable(root())?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+                    Thread.sleep(600)
+                    find(root(), "Vibration feedback") ?: repeat(6) {
+                        findScrollable(root())?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+                        Thread.sleep(500)
+                    }
+                    shot("16_settings_haptics")
+                } finally {
+                    back()
+                }
             }
             step("lyrics-browser") {
                 click("Open now playing")
