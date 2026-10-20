@@ -115,6 +115,7 @@ fun NowPlayingScreen(
                     mode = mode,
                     onMode = { mode = if (mode == it) StageMode.ARTWORK else it },
                     onSleep = { showSleep = true },
+                    onFindLyrics = navigator::toLyricsBrowser,
                     onEvent = viewModel::onEvent,
                 )
             }
@@ -167,6 +168,7 @@ private fun PlayerBody(
     mode: StageMode,
     onMode: (StageMode) -> Unit,
     onSleep: () -> Unit,
+    onFindLyrics: () -> Unit,
     onEvent: (NowPlayingEvent) -> Unit,
 ) {
     val spacing = KpTheme.spacing
@@ -233,7 +235,7 @@ private fun PlayerBody(
                 mode = mode,
                 isPlaying = state.playback.isPlaying,
                 positionMs = positionMs,
-                onFindLyrics = navigator::toLyricsBrowser,
+                onFindLyrics = onFindLyrics,
                 modifier = stageModifier,
             ) { artwork(Modifier.fillMaxSize()) }
         }
