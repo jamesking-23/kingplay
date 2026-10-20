@@ -103,14 +103,22 @@ class ScreenshotTourTest {
             node = find(root(), needle)
         }
         var tries = 0
-        while (node == null && tries++ < 10) {
+        while (node == null && tries++ < 30) {
             findScrollable(root())?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
             Thread.sleep(500)
             node = find(root(), needle)
         }
-        var n = node ?: error("nothing matches '$needle'")
-        while (!n.isClickable) n = n.parent ?: error("'$needle' is not clickable")
-        n.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        val found = node ?: error("nothing matches '$needle'")
+        var n: AccessibilityNodeInfo? = found
+        while (n != null && !n.isClickable) n = n.parent
+        if (n != null) {
+            n.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        } else {
+            // Not reported as clickable: tap the middle of where it is drawn.
+            val r = android.graphics.Rect()
+            found.getBoundsInScreen(r)
+            inst.uiAutomation.executeShellCommand("input tap ${r.centerX()} ${r.centerY()}").close()
+        }
         Thread.sleep(900)
     }
 
