@@ -29,6 +29,15 @@
     <string name="np_mini_open">Open now playing: %1$s by %2$s</string>
     <string name="np_mini_open_no_artist">Open now playing: %1$s</string>
     <string name="np_lyrics">Lyrics</string>
+    <string name="np_lyrics_find_online">Find lyrics online</string>
+    <string name="lyrics_browser_title">Find lyrics</string>
+    <string name="lyrics_browser_hint">Open a page with the lyrics, select the text and tap Copy, then come back here and tap Add.</string>
+    <string name="lyrics_browser_add">Add copied lyrics</string>
+    <string name="lyrics_browser_nothing_copied">Nothing copied yet. Select the lyrics on the page and tap Copy first.</string>
+    <string name="lyrics_browser_not_lyrics">That text could not be used as lyrics.</string>
+    <string name="lyrics_browser_preview_title">Add these lyrics?</string>
+    <string name="lyrics_browser_save">Add</string>
+    <string name="lyrics_browser_cancel">Cancel</string>
     <string name="np_lyrics_import">Import .lrc file</string>
     <string name="np_lyrics_import_failed">That file could not be used as lyrics. Pick a .lrc or .txt file.</string>
     <string name="np_lyrics_remove_imported">Remove imported lyrics</string>

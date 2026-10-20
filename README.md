@@ -179,7 +179,9 @@ Compose Multiplatform Desktop, Windows first. Module `:desktop`; it reuses `:cor
 - Fade is a fade out and in per song, not an overlapping crossfade (that needs a second player).
 - The output device is guessed (USB, wired, Bluetooth, speaker) because Android before 13 does not say which is active.
 - The EQ uses 16-bit or float output; bit-perfect / USB exclusive output is not part of this step.
-- Lyrics are read only from tags inside the file. A separate `.lrc` file next to the song is not reachable under scoped
+- Lyrics are read from tags inside the file. "Find lyrics online" opens a browser inside the app (this is why the app now asks
+  for the INTERNET permission, used only there); you copy the text and tap Add, and it is saved on the device. KingPlay
+  never downloads lyrics by itself. Lyrics are usually copyrighted, so keep them for your own use. A separate `.lrc` file next to the song is not reachable under scoped
   storage; use "Import .lrc file" in Now Playing instead. Lyrics editing is not built.
 - The visualizer is drawn from the audio just before it reaches the speaker buffer, so on Bluetooth it can lead the sound
   by a fraction of a second.

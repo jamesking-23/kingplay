@@ -20,6 +20,8 @@ class AppNavigatorImpl(private val navController: NavHostController) : AppNaviga
 
     override fun toProfile() = go(Routes.PROFILE)
 
+    override fun toLyricsBrowser() = go(Routes.LYRICS_BROWSER)
+
     override fun toGenre(genre: String) = go(Routes.genre(genre))
 
     override fun toFolder(path: String) = go(Routes.folder(path))

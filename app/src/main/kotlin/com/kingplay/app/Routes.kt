@@ -12,6 +12,7 @@ object Routes {
     const val SETTINGS = "settings"
     const val EQUALIZER = "equalizer"
     const val PROFILE = "profile"
+    const val LYRICS_BROWSER = "lyrics_browser"
     const val MOST_PLAYED = "mostplayed"
     const val REPORT = "report/{${ReportArgs.MONTH}}"
     const val VIDEO = "video/{${VideoArgs.VIDEO_ID}}"

@@ -20,6 +20,8 @@ interface AppNavigator {
 
     fun toProfile()
 
+    fun toLyricsBrowser()
+
     fun toGenre(genre: String)
 
     fun toFolder(path: String)

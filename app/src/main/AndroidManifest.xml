@@ -3,6 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Only used by the in-app lyrics browser, which the person opens themselves. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".KingPlayApp"

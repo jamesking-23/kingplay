@@ -58,6 +58,7 @@ fun LyricsView(
     importFailed: Boolean,
     onSeek: (Long) -> Unit,
     onImport: () -> Unit,
+    onFindOnline: () -> Unit,
     onRemoveImported: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -82,6 +83,7 @@ fun LyricsView(
                     textAlign = TextAlign.Center,
                 )
             }
+            OutlinedButton(onClick = onFindOnline) { Text(stringResource(R.string.np_lyrics_find_online)) }
             OutlinedButton(onClick = onImport) { Text(stringResource(R.string.np_lyrics_import)) }
         }
         is LyricsState.Available -> Box(modifier) {

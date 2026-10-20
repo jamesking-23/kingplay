@@ -233,6 +233,7 @@ private fun PlayerBody(
                 mode = mode,
                 isPlaying = state.playback.isPlaying,
                 positionMs = positionMs,
+                onFindLyrics = navigator::toLyricsBrowser,
                 modifier = stageModifier,
             ) { artwork(Modifier.fillMaxSize()) }
         }
@@ -513,6 +514,7 @@ private fun Stage(
     mode: StageMode,
     isPlaying: Boolean,
     positionMs: StateFlow<Long>,
+    onFindLyrics: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: StageViewModel = hiltViewModel(),
     artwork: @Composable () -> Unit,
@@ -537,6 +539,7 @@ private fun Stage(
                     importFailed = state.importFailed,
                     onSeek = { viewModel.onEvent(StageEvent.Seek(it)) },
                     onImport = { pickLrc.launch(arrayOf("*/*")) },
+                    onFindOnline = onFindLyrics,
                     onRemoveImported = { viewModel.onEvent(StageEvent.RemoveImported) },
                 )
             }
