@@ -152,6 +152,15 @@ class ScreenshotTourTest {
             ctx.contentResolver.openOutputStream(uri)!!.use { o -> inst.context.assets.open(name).use { it.copyTo(o) } }
         }
         var scenario = ActivityScenario.launch(MainActivity::class.java)
+        // First run: the welcome asks for a nickname before anything else.
+        step("welcome") {
+            Thread.sleep(2500)
+            shot("00_welcome")
+            typeInto("James")
+            shot("01_welcome_filled")
+            click("Let's go")
+            Thread.sleep(1500)
+        }
         val db = Room.databaseBuilder(ctx, KingPlayDatabase::class.java, KingPlayDatabase.NAME).build()
         var id: Long? = null
         val deadline = System.currentTimeMillis() + 90_000
@@ -187,61 +196,36 @@ class ScreenshotTourTest {
         night(false)
 
         step("features") {
-            shot("10_library")
-            step("search") {
-                click("Search")
-                typeInto("smoke")
-                shot("11_search_results")
-                click("Close search")
-                Thread.sleep(1500)
-            }
-            step("playlists") {
-                click("Playlists")
-                shot("12_playlists_tab")
-                click("New playlist")
-                typeInto("Road trip")
-                shot("13_new_playlist_dialog")
-                click("Create")
-                shot("14_playlist_created")
-            }
-            step("most-played") {
-                click("Most played")
-                shot("15_most_played")
+            shot("10_library_greeting")
+            step("profile") {
+                click("Open your profile")
+                shot("11_profile")
                 back()
             }
-            step("report") {
-                click("Monthly listening report")
-                shot("16_report")
-                back()
-            }
-        }
-
-        // Each new design: library + now playing, light; King Neon also in dark.
-        fun design(label: String, key: String) {
-            step("pick-$key") {
+            step("fonts") {
                 click("Settings")
-                try {
-                    click(label)
-                    shot("2${key}_settings")
-                } finally {
-                    back()
-                }
-            }
-            step("lib-$key") { shot("3${key}_library") }
-            step("np-$key") {
-                click("Open now playing")
-                shot("4${key}_nowplaying")
+                shot("12_settings_top")
+                click("Font")
+                shot("13_settings_fonts")
+                click("Lora")
+                shot("14_font_lora")
+                click("Handwritten")
+                shot("15_font_handwritten")
+                click("Haptics")
+                shot("16_settings_haptics")
                 back()
             }
+            step("lyrics-browser") {
+                click("Open now playing")
+                click("Lyrics")
+                shot("17_lyrics_none")
+                click("Find lyrics online")
+                Thread.sleep(6000)
+                shot("18_lyrics_browser")
+                click("Add copied lyrics")
+                shot("19_lyrics_nothing_copied")
+            }
         }
-        design("KingNeon", "N")
-        design("KingGlass", "G")
-        design("KingClassic", "C")
-        night(true)
-        Thread.sleep(1500)
-        design("KingNeon", "Nd")
-        design("KingClassic", "Cd")
-        night(false)
         scenario.close()
     }
 }
