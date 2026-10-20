@@ -104,7 +104,7 @@
     <string name="haptic_strong">Strong</string>
     <string name="welcome_title">Welcome to KingPlay</string>
     <string name="welcome_message">What should we call you? You can add a picture too. Both stay on this device.</string>
-    <string name="welcome_continue">Let's go</string>
+    <string name="welcome_continue">Let\'s go</string>
     <string name="welcome_privacy">Your nickname and picture are never uploaded anywhere.</string>
     <string name="profile_title">Profile</string>
     <string name="profile_nickname">Nickname</string>
