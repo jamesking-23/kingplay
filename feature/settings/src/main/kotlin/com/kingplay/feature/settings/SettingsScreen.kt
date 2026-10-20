@@ -551,7 +551,6 @@ private fun fontLabel(font: AppFont): Int = when (font) {
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
-@Composable
 private fun HapticsSection(haptics: HapticSettings, onEvent: (SettingsEvent) -> Unit) {
     val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
@@ -585,7 +584,6 @@ private fun HapticsSection(haptics: HapticSettings, onEvent: (SettingsEvent) -> 
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
-@Composable
 private fun HapticRow(
     label: Int,
     level: HapticLevel,
