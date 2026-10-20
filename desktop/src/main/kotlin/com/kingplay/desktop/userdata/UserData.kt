@@ -18,6 +18,9 @@ data class UserEqPreset(val name: String, val preampDb: Float, val gainsDb: List
 
 data class PlayStat(val count: Int, val lastPlayedMs: Long)
 
+/** One counted play, kept so the monthly report can tell which month it belongs to. */
+data class PlayEvent(val trackId: Long, val atMs: Long)
+
 data class SavedQueue(
     val trackIds: List<Long>,
     val index: Int,
@@ -41,6 +44,10 @@ data class UserData(
     val eqPresets: List<UserEqPreset> = emptyList(),
     /** Where each video was left, by video id. Finished or barely started videos are not kept. */
     val videoProgress: Map<Long, VideoProgress> = emptyMap(),
+    /** Counted plays, oldest first, capped at [MAX_HISTORY]. */
+    val history: List<PlayEvent> = emptyList(),
+    /** The month ("yyyy-MM") whose "report is ready" notice was already shown. */
+    val reportShownFor: String? = null,
 ) {
     /** Saves (or replaces, ignoring letter case) a named equalizer curve. Blank names and the limit are refused. */
     fun withEqPreset(preset: UserEqPreset): UserData {
@@ -106,8 +113,13 @@ data class UserData(
 
     fun recordPlay(trackId: Long, now: Long): UserData {
         val old = stats[trackId]
-        return copy(stats = stats + (trackId to PlayStat((old?.count ?: 0) + 1, now)))
+        return copy(
+            stats = stats + (trackId to PlayStat((old?.count ?: 0) + 1, now)),
+            history = (history + PlayEvent(trackId, now)).takeLast(MAX_HISTORY),
+        )
     }
+
+    fun withReportShown(month: String): UserData = copy(reportShownFor = month)
 
     fun withQueue(queue: SavedQueue?): UserData = copy(queue = queue)
 
@@ -121,6 +133,7 @@ data class UserData(
     companion object {
         const val DEFAULT_NAME = "New playlist"
         const val MAX_EQ_PRESETS = 30
+        const val MAX_HISTORY = 50_000
         private const val EQ_BANDS = EqPreset.BAND_COUNT
 
         fun uniqueName(wanted: String, taken: List<String>): String {

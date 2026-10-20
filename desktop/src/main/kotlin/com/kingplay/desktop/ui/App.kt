@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.Folder
@@ -107,6 +108,8 @@ private sealed interface Page {
 
     data object Settings : Page
 
+    data object Report : Page
+
     data class AlbumDetail(val id: Long, val title: String) : Page
 
     data class ArtistDetail(val id: Long, val name: String) : Page
@@ -144,6 +147,17 @@ fun App(
     var nameDialog by remember { mutableStateOf<NameDialogState?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
     val currentId = (playback.current as? MediaRef.Audio)?.id
+
+    // At the start of a month, say once that last month's report is ready.
+    LaunchedEffect(user.history.size, user.reportShownFor) {
+        val last = java.time.YearMonth.now().minusMonths(1)
+        val key = last.toString()
+        if (user.reportShownFor != key && key in com.kingplay.desktop.userdata.monthsWithPlays(user.history)) {
+            val name = last.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault())
+            notice = "Your $name listening report is ready. Open Report in the side bar."
+            app.updateUser { it.withReportShown(key) }
+        }
+    }
 
     val actions = SongActions(
         favorites = user.favorites,
@@ -241,6 +255,7 @@ private fun Rail(page: Page, onPage: (Page) -> Unit) {
         RailItem("Equalizer", Icons.Filled.Equalizer, page is Page.Equalizer) { onPage(Page.Equalizer) }
         RailItem("Videos", Icons.Filled.Movie, page is Page.Videos) { onPage(Page.Videos) }
         RailItem("Library", Icons.Filled.Folder, page is Page.Library) { onPage(Page.Library) }
+        RailItem("Report", Icons.Filled.BarChart, page is Page.Report) { onPage(Page.Report) }
         RailItem("Settings", Icons.Filled.Settings, page is Page.Settings) { onPage(Page.Settings) }
     }
 }
@@ -339,6 +354,7 @@ private fun PageContent(
             onRemove = app::removeFolder,
             onRescan = app::rescan,
         )
+        Page.Report -> ReportPage(user, index)
         Page.Settings -> SettingsPage(
             settings = settings,
             onChange = app::updateSettings,

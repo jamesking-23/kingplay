@@ -29,6 +29,8 @@ class UserDataStore(private val file: File) {
             "stats" to data.stats.map { (id, s) ->
                 mapOf("id" to id, "count" to s.count.toLong(), "lastPlayedMs" to s.lastPlayedMs)
             },
+            "history" to data.history.map { listOf(it.trackId, it.atMs) },
+            "reportShownFor" to data.reportShownFor,
             "lyrics" to data.lyrics,
             "videoProgress" to data.videoProgress.map { (id, p) ->
                 mapOf("id" to id, "positionMs" to p.positionMs, "durationMs" to p.durationMs)
@@ -85,6 +87,13 @@ class UserDataStore(private val file: File) {
                 // Never reuse an id even if the saved counter is missing or stale.
                 lyrics = (root["lyrics"] as? Map<*, *>).orEmpty()
                     .mapNotNull { (k, v) -> if (k is String && v is String) k to v else null }.toMap(),
+                history = list(root["history"]).mapNotNull { raw ->
+                    val pair = raw as? List<*> ?: return@mapNotNull null
+                    val id = (pair.getOrNull(0) as? Number)?.toLong() ?: return@mapNotNull null
+                    val at = (pair.getOrNull(1) as? Number)?.toLong() ?: return@mapNotNull null
+                    PlayEvent(id, at)
+                }.takeLast(UserData.MAX_HISTORY),
+                reportShownFor = root["reportShownFor"] as? String,
                 eqPresets = eqPresets(root["eqPresets"]),
                 videoProgress = videoProgress(root["videoProgress"]),
                 nextPlaylistId = maxOf((root["nextPlaylistId"] as? Number)?.toLong() ?: 1, highest + 1),
