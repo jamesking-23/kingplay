@@ -54,7 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingplay.core.designsystem.component.KpEmptyState
 import com.kingplay.core.designsystem.component.KpIconButton
 import com.kingplay.core.designsystem.component.rememberHapticClick
-import com.kingplay.core.designsystem.component.rememberVibratingClick
+import com.kingplay.core.model.settings.HapticKind
 import com.kingplay.core.designsystem.component.shakeOn
 import com.kingplay.core.designsystem.theme.KpIcons
 import androidx.compose.foundation.shape.CircleShape
@@ -299,7 +299,7 @@ private fun Controls(
             val track = state.track
             val favorite = track?.isFavorite == true
             IconButton(
-                onClick = rememberHapticClick { onEvent(NowPlayingEvent.ToggleFavorite) },
+                onClick = rememberHapticClick(HapticKind.TOGGLE) { onEvent(NowPlayingEvent.ToggleFavorite) },
                 enabled = track != null,
             ) {
                 Icon(
@@ -420,9 +420,10 @@ private fun TransportRow(state: NowPlayingState, onEvent: (NowPlayingEvent) -> U
             icon = KpIcons.SkipPrevious,
             contentDescription = stringResource(R.string.np_previous),
             onClick = { onEvent(NowPlayingEvent.Previous) },
+            haptic = HapticKind.TRANSPORT,
         )
         FilledIconButton(
-            onClick = rememberVibratingClick { onEvent(NowPlayingEvent.TogglePlayPause) },
+            onClick = rememberHapticClick(HapticKind.PLAY) { onEvent(NowPlayingEvent.TogglePlayPause) },
             modifier = Modifier.size(PlayButtonSize).shakeOn(playback.isPlaying),
         ) {
             Icon(
@@ -435,6 +436,7 @@ private fun TransportRow(state: NowPlayingState, onEvent: (NowPlayingEvent) -> U
             icon = KpIcons.SkipNext,
             contentDescription = stringResource(R.string.np_next),
             onClick = { onEvent(NowPlayingEvent.Next) },
+            haptic = HapticKind.TRANSPORT,
         )
         ToggleIconButton(
             icon = if (playback.repeatMode == RepeatMode.ONE) KpIcons.RepeatOne else KpIcons.Repeat,
@@ -458,7 +460,7 @@ private fun ToggleIconButton(
     active: Boolean,
     onClick: () -> Unit,
 ) {
-    IconButton(onClick = rememberHapticClick(onClick)) {
+    IconButton(onClick = rememberHapticClick(HapticKind.TOGGLE, onClick)) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,

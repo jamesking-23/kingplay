@@ -38,4 +38,8 @@ fun AppSettings.toThemeConfig(): ThemeConfig = ThemeConfig(
     accent = accent.toTheme(),
     lowPowerVisuals = lowPowerVisuals,
     uiStyle = uiTheme.toStyle(),
+    font = font,
+    textScale = textScale,
+    customAccent = customAccent,
+    haptics = haptics,
 )

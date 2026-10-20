@@ -11,6 +11,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.border
+import androidx.compose.material3.Slider
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import kotlin.math.roundToInt
+import com.kingplay.core.designsystem.component.Haptics
+import com.kingplay.core.designsystem.theme.AccentChoices
+import com.kingplay.core.designsystem.theme.family
+import com.kingplay.core.model.settings.AppFont
+import com.kingplay.core.model.settings.HapticKind
+import com.kingplay.core.model.settings.HapticLevel
+import com.kingplay.core.model.settings.HapticSettings
 import com.kingplay.core.model.settings.AppUiTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.semantics.Role
@@ -147,6 +160,10 @@ fun SettingsContent(
         ) {
             item { SectionTitle(R.string.settings_appearance) }
             item { AppearanceSection(state.settings, onEvent) }
+            item { SectionTitle(R.string.settings_personalise) }
+            item { PersonaliseSection(state.settings, onEvent) }
+            item { SectionTitle(R.string.settings_haptics) }
+            item { HapticsSection(state.settings.haptics, onEvent) }
             item { SectionTitle(R.string.settings_audio) }
             item { OutlinedButton(onClick = onEqualizer) { Text(stringResource(R.string.settings_equalizer)) } }
             item { SectionTitle(R.string.settings_library) }
@@ -449,4 +466,154 @@ private fun statusMessage(status: BackupStatus): String? = when (status) {
             done
         }
     }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PersonaliseSection(settings: AppSettings, onEvent: (SettingsEvent) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
+        Text(stringResource(R.string.settings_font), style = MaterialTheme.typography.titleSmall)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.xs),
+        ) {
+            AppFont.entries.forEach { font ->
+                FilterChip(
+                    selected = settings.font == font,
+                    onClick = { onEvent(SettingsEvent.SetFont(font)) },
+                    label = { Text(stringResource(fontLabel(font)), fontFamily = font.family()) },
+                )
+            }
+        }
+        Text(
+            stringResource(R.string.settings_font_sample),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            stringResource(R.string.settings_text_size, (settings.textScale * PERCENT).toInt()),
+            style = MaterialTheme.typography.titleSmall,
+        )
+        Slider(
+            value = settings.textScale,
+            onValueChange = { onEvent(SettingsEvent.SetTextScale((it * SCALE_STEPS).roundToInt() / SCALE_STEPS)) },
+            valueRange = AppSettings.MIN_TEXT_SCALE..AppSettings.MAX_TEXT_SCALE,
+        )
+        Text(stringResource(R.string.settings_colour), style = MaterialTheme.typography.titleSmall)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm),
+        ) {
+            FilterChip(
+                selected = settings.customAccent == null,
+                onClick = { onEvent(SettingsEvent.SetCustomAccent(null)) },
+                label = { Text(stringResource(R.string.settings_colour_default)) },
+            )
+            AccentChoices.forEach { argb ->
+                val picked = settings.customAccent == argb
+                Box(
+                    Modifier
+                        .size(SWATCH_BUTTON)
+                        .clip(CircleShape)
+                        .background(androidx.compose.ui.graphics.Color(argb.toInt()))
+                        .border(
+                            if (picked) 3.dp else 1.dp,
+                            if (picked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant,
+                            CircleShape,
+                        )
+                        .selectable(selected = picked, role = Role.RadioButton) {
+                            onEvent(SettingsEvent.SetCustomAccent(argb))
+                        }
+                        .semantics { contentDescription = "Colour #%06X".format(argb and 0xFFFFFF) },
+                )
+            }
+        }
+    }
+}
+
+private const val PERCENT = 100
+private const val SCALE_STEPS = 20f
+private val SWATCH_BUTTON = 40.dp
+
+private fun fontLabel(font: AppFont): Int = when (font) {
+    AppFont.DEFAULT -> R.string.font_default
+    AppFont.POPPINS -> R.string.font_poppins
+    AppFont.HANKEN -> R.string.font_hanken
+    AppFont.SOURCE_SANS -> R.string.font_source_sans
+    AppFont.SOURCE_SERIF -> R.string.font_source_serif
+    AppFont.LORA -> R.string.font_lora
+    AppFont.FREDOKA -> R.string.font_fredoka
+    AppFont.HANDWRITTEN -> R.string.font_handwritten
+    AppFont.SKETCH -> R.string.font_sketch
+    AppFont.MONO -> R.string.font_mono
+    AppFont.READABLE -> R.string.font_readable
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun HapticsSection(haptics: HapticSettings, onEvent: (SettingsEvent) -> Unit) {
+    val context = LocalContext.current
+    Column(verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
+        SwitchRow(
+            title = stringResource(R.string.settings_haptics_on),
+            hint = stringResource(R.string.settings_haptics_hint),
+            checked = haptics.enabled,
+            onChange = { on -> onEvent(SettingsEvent.SetHaptics { it.copy(enabled = on) }) },
+        )
+        if (haptics.enabled) {
+            HapticRow(R.string.haptic_play, haptics.play, HapticKind.PLAY, context) { level ->
+                onEvent(SettingsEvent.SetHaptics { it.copy(play = level) })
+            }
+            HapticRow(R.string.haptic_transport, haptics.transport, HapticKind.TRANSPORT, context) { level ->
+                onEvent(SettingsEvent.SetHaptics { it.copy(transport = level) })
+            }
+            HapticRow(R.string.haptic_toggle, haptics.toggle, HapticKind.TOGGLE, context) { level ->
+                onEvent(SettingsEvent.SetHaptics { it.copy(toggle = level) })
+            }
+            HapticRow(R.string.haptic_tap, haptics.tap, HapticKind.TAP, context) { level ->
+                onEvent(SettingsEvent.SetHaptics { it.copy(tap = level) })
+            }
+            Text(
+                stringResource(R.string.settings_haptics_try),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun HapticRow(
+    label: Int,
+    level: HapticLevel,
+    kind: HapticKind,
+    context: Context,
+    onLevel: (HapticLevel) -> Unit,
+) {
+    Column {
+        Text(stringResource(label), style = MaterialTheme.typography.titleSmall)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
+            HapticLevel.entries.forEach { option ->
+                FilterChip(
+                    selected = level == option,
+                    onClick = {
+                        onLevel(option)
+                        // Picking a level plays it right away, so the choice can be felt.
+                        Haptics.play(context, option, kind)
+                    },
+                    label = { Text(stringResource(levelLabel(option))) },
+                )
+            }
+        }
+    }
+}
+
+private fun levelLabel(level: HapticLevel): Int = when (level) {
+    HapticLevel.OFF -> R.string.haptic_off
+    HapticLevel.LIGHT -> R.string.haptic_light
+    HapticLevel.MEDIUM -> R.string.haptic_medium
+    HapticLevel.STRONG -> R.string.haptic_strong
 }

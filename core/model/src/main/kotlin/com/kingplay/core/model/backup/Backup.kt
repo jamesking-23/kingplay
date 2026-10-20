@@ -4,7 +4,10 @@ import com.kingplay.core.model.EqPreset
 import com.kingplay.core.model.settings.AppAccent
 import com.kingplay.core.model.settings.AppSettings
 import com.kingplay.core.model.settings.AppThemeMode
+import com.kingplay.core.model.settings.AppFont
 import com.kingplay.core.model.settings.AppUiTheme
+import com.kingplay.core.model.settings.HapticLevel
+import com.kingplay.core.model.settings.HapticSettings
 
 /** A song as the backup remembers it: where it was, and enough to double-check a match. */
 data class BackupTrack(val path: String, val title: String, val artist: String)
@@ -69,6 +72,17 @@ object BackupCodec {
                 "dynamicColor" to data.settings.dynamicColor,
                 "lowPowerVisuals" to data.settings.lowPowerVisuals,
                 "uiTheme" to data.settings.uiTheme.name,
+                "font" to data.settings.font.name,
+                "textScale" to data.settings.textScale.toDouble(),
+                "customAccent" to data.settings.customAccent,
+                "haptics" to linkedMapOf(
+                    "enabled" to data.settings.haptics.enabled,
+                    "play" to data.settings.haptics.play.name,
+                    "transport" to data.settings.haptics.transport.name,
+                    "toggle" to data.settings.haptics.toggle.name,
+                    "tap" to data.settings.haptics.tap.name,
+                ),
+                "nickname" to data.settings.nickname,
             ),
             "playlists" to data.playlists.map {
                 linkedMapOf("name" to it.name, "createdAtMs" to it.createdAtMs, "tracks" to it.tracks.map(::track))
@@ -184,6 +198,21 @@ object BackupCodec {
             dynamicColor = m["dynamicColor"] as? Boolean ?: defaults.dynamicColor,
             lowPowerVisuals = m["lowPowerVisuals"] as? Boolean ?: defaults.lowPowerVisuals,
             uiTheme = enumOrNull<AppUiTheme>(m["uiTheme"]) ?: defaults.uiTheme,
+            font = enumOrNull<AppFont>(m["font"]) ?: defaults.font,
+            textScale = ((m["textScale"] as? Number)?.toFloat() ?: defaults.textScale)
+                .coerceIn(AppSettings.MIN_TEXT_SCALE, AppSettings.MAX_TEXT_SCALE),
+            customAccent = (m["customAccent"] as? Number)?.toLong(),
+            haptics = (m["haptics"] as? Map<*, *>)?.let { h ->
+                val d = defaults.haptics
+                HapticSettings(
+                    enabled = h["enabled"] as? Boolean ?: d.enabled,
+                    play = enumOrNull<HapticLevel>(h["play"]) ?: d.play,
+                    transport = enumOrNull<HapticLevel>(h["transport"]) ?: d.transport,
+                    toggle = enumOrNull<HapticLevel>(h["toggle"]) ?: d.toggle,
+                    tap = enumOrNull<HapticLevel>(h["tap"]) ?: d.tap,
+                )
+            } ?: defaults.haptics,
+            nickname = (m["nickname"] as? String).orEmpty().trim().take(AppSettings.MAX_NICKNAME),
         )
     }
 

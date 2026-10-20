@@ -13,7 +13,13 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import com.kingplay.core.designsystem.component.LocalHaptics
+import com.kingplay.core.model.settings.AppFont
+import com.kingplay.core.model.settings.HapticSettings
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
@@ -29,6 +35,11 @@ data class ThemeConfig(
     val density: LayoutDensity = LayoutDensity.COMFORTABLE,
     val lowPowerVisuals: Boolean = false,
     val uiStyle: UiStyle = UiStyle.KING_ART,
+    val font: AppFont = AppFont.DEFAULT,
+    val textScale: Float = 1f,
+    /** ARGB colour that replaces the design's main colour, or null. */
+    val customAccent: Long? = null,
+    val haptics: HapticSettings = HapticSettings(),
 )
 
 object KpTheme {
@@ -68,7 +79,8 @@ fun KingPlayTheme(
         dark -> darkAccentScheme(config.accent)
         else -> lightAccentScheme(config.accent)
     }
-    val colorScheme = if (dark && config.mode == ThemeMode.AMOLED) base.toAmoled() else base
+    val amoled = if (dark && config.mode == ThemeMode.AMOLED) base.toAmoled() else base
+    val colorScheme = config.customAccent?.let { amoled.withAccent(Color(it.toInt()), dark) } ?: amoled
 
     val view = LocalView.current
     if (!view.isInEditMode) {
@@ -84,16 +96,18 @@ fun KingPlayTheme(
         LocalUiStyle provides config.uiStyle,
         LocalSpacing provides if (config.density == LayoutDensity.COMPACT) CompactSpacing else ComfortableSpacing,
         LocalLowPowerVisuals provides effectiveLowPower(config.lowPowerVisuals, context.animatorScale()),
+        LocalHaptics provides config.haptics,
+        LocalDensity provides Density(LocalDensity.current.density, LocalDensity.current.fontScale * config.textScale),
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = when (config.uiStyle) {
+            typography = (when (config.uiStyle) {
                 UiStyle.KING_ART -> KingArtTypography
                 UiStyle.KING_NEON -> KingNeonTypography
                 UiStyle.KING_GLASS -> KingGlassTypography
                 UiStyle.KING_CLASSIC -> KingClassicTypography
                 UiStyle.KK_UI -> KingPlayTypography
-            },
+            }).withFont(config.font),
             shapes = when (config.uiStyle) {
                 UiStyle.KING_ART -> KingArtShapes
                 UiStyle.KING_NEON -> KingNeonShapes

@@ -10,7 +10,9 @@ import com.kingplay.core.model.repository.LibraryFolderSettings
 import com.kingplay.core.model.repository.LibraryScanner
 import com.kingplay.core.model.repository.SettingsRepository
 import com.kingplay.core.model.settings.AppAccent
+import com.kingplay.core.model.settings.AppFont
 import com.kingplay.core.model.settings.AppSettings
+import com.kingplay.core.model.settings.HapticSettings
 import com.kingplay.core.model.settings.AppThemeMode
 import com.kingplay.core.model.settings.AppUiTheme
 import com.kingplay.core.ui.MviViewModel
@@ -60,6 +62,14 @@ sealed interface SettingsEvent : UiEvent {
 
     data class SetLowPower(val enabled: Boolean) : SettingsEvent
 
+    data class SetFont(val font: AppFont) : SettingsEvent
+
+    data class SetTextScale(val scale: Float) : SettingsEvent
+
+    data class SetCustomAccent(val argb: Long?) : SettingsEvent
+
+    data class SetHaptics(val transform: (HapticSettings) -> HapticSettings) : SettingsEvent
+
     data class SetAnalytics(val granted: Boolean) : SettingsEvent
 
     data class Rescan(val full: Boolean) : SettingsEvent
@@ -98,6 +108,12 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.SetAccent -> update { it.copy(accent = event.accent) }
             is SettingsEvent.SetDynamicColor -> update { it.copy(dynamicColor = event.enabled) }
             is SettingsEvent.SetLowPower -> update { it.copy(lowPowerVisuals = event.enabled) }
+            is SettingsEvent.SetFont -> update { it.copy(font = event.font) }
+            is SettingsEvent.SetTextScale -> update {
+                it.copy(textScale = event.scale.coerceIn(AppSettings.MIN_TEXT_SCALE, AppSettings.MAX_TEXT_SCALE))
+            }
+            is SettingsEvent.SetCustomAccent -> update { it.copy(customAccent = event.argb) }
+            is SettingsEvent.SetHaptics -> update { it.copy(haptics = event.transform(it.haptics)) }
             is SettingsEvent.SetAnalytics -> viewModelScope.launch { consent.setAnalyticsConsent(event.granted) }
             is SettingsEvent.Rescan -> scanner.requestScan(event.full)
             is SettingsEvent.IncludeFolder -> viewModelScope.launch { folders.include(event.path) }

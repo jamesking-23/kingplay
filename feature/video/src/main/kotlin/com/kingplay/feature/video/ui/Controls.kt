@@ -34,7 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kingplay.core.designsystem.component.KpIconButton
 import com.kingplay.core.designsystem.component.rememberHapticClick
-import com.kingplay.core.designsystem.component.rememberVibratingClick
+import com.kingplay.core.model.settings.HapticKind
 import com.kingplay.core.designsystem.component.shakeOn
 import com.kingplay.core.designsystem.theme.KpIcons
 import com.kingplay.core.designsystem.theme.KpTheme
@@ -142,7 +142,7 @@ private fun TransportRow(state: VideoPlayerState, actions: ControlActions, modif
             enabled = state.hasPrevious,
         )
         FilledIconButton(
-            onClick = rememberVibratingClick(actions.onPlayPause),
+            onClick = rememberHapticClick(HapticKind.PLAY, actions.onPlayPause),
             modifier = Modifier.size(PlayButtonSize).shakeOn(state.isPlaying),
         ) {
             Icon(

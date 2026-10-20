@@ -5,6 +5,8 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.kingplay.core.common.ConsentGate
@@ -27,11 +29,36 @@ private object Keys {
     val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
     val LOW_POWER = booleanPreferencesKey("low_power_visuals")
     val UI_THEME = stringPreferencesKey("ui_theme")
+    val FONT = stringPreferencesKey("font")
+    val TEXT_SCALE = floatPreferencesKey("text_scale")
+    val CUSTOM_ACCENT = longPreferencesKey("custom_accent")
+    val HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
+    val HAPTIC_PLAY = stringPreferencesKey("haptic_play")
+    val HAPTIC_TRANSPORT = stringPreferencesKey("haptic_transport")
+    val HAPTIC_TOGGLE = stringPreferencesKey("haptic_toggle")
+    val HAPTIC_TAP = stringPreferencesKey("haptic_tap")
+    val NICKNAME = stringPreferencesKey("nickname")
+    val PROFILE_PHOTO = stringPreferencesKey("profile_photo")
     val ANALYTICS_CONSENT = booleanPreferencesKey("analytics_consent")
 }
 
-private fun Preferences.stored() =
-    StoredSettings(this[Keys.THEME_MODE], this[Keys.ACCENT], this[Keys.DYNAMIC_COLOR], this[Keys.LOW_POWER], this[Keys.UI_THEME])
+private fun Preferences.stored() = StoredSettings(
+    themeMode = this[Keys.THEME_MODE],
+    accent = this[Keys.ACCENT],
+    dynamicColor = this[Keys.DYNAMIC_COLOR],
+    lowPowerVisuals = this[Keys.LOW_POWER],
+    uiTheme = this[Keys.UI_THEME],
+    font = this[Keys.FONT],
+    textScale = this[Keys.TEXT_SCALE],
+    customAccent = this[Keys.CUSTOM_ACCENT],
+    hapticsEnabled = this[Keys.HAPTICS_ENABLED],
+    hapticPlay = this[Keys.HAPTIC_PLAY],
+    hapticTransport = this[Keys.HAPTIC_TRANSPORT],
+    hapticToggle = this[Keys.HAPTIC_TOGGLE],
+    hapticTap = this[Keys.HAPTIC_TAP],
+    nickname = this[Keys.NICKNAME],
+    profilePhoto = this[Keys.PROFILE_PHOTO],
+)
 
 @Singleton
 class DataStoreSettingsRepository @Inject constructor(
@@ -53,6 +80,16 @@ class DataStoreSettingsRepository @Inject constructor(
             p[Keys.DYNAMIC_COLOR] = next.dynamicColor!!
             p[Keys.LOW_POWER] = next.lowPowerVisuals!!
             p[Keys.UI_THEME] = next.uiTheme!!
+            p[Keys.FONT] = next.font!!
+            p[Keys.TEXT_SCALE] = next.textScale!!
+            if (next.customAccent != null) p[Keys.CUSTOM_ACCENT] = next.customAccent else p.remove(Keys.CUSTOM_ACCENT)
+            p[Keys.HAPTICS_ENABLED] = next.hapticsEnabled!!
+            p[Keys.HAPTIC_PLAY] = next.hapticPlay!!
+            p[Keys.HAPTIC_TRANSPORT] = next.hapticTransport!!
+            p[Keys.HAPTIC_TOGGLE] = next.hapticToggle!!
+            p[Keys.HAPTIC_TAP] = next.hapticTap!!
+            p[Keys.NICKNAME] = next.nickname!!
+            if (next.profilePhoto != null) p[Keys.PROFILE_PHOTO] = next.profilePhoto else p.remove(Keys.PROFILE_PHOTO)
         }
     }
 }
