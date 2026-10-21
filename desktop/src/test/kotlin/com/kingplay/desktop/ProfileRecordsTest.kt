@@ -20,7 +20,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProfileRecordsTest {
-    private fun temp(): File = File.createTempFile("kp", "").also { it.delete(); it.mkdirs(); it.deleteOnExit() }
+    private fun temp(): File = File.createTempFile("kpt", "").also { it.delete(); it.mkdirs(); it.deleteOnExit() }
 
     @Test
     fun listeningTimeReadsNaturally() {
