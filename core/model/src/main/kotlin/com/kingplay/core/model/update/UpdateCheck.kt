@@ -23,7 +23,7 @@ object UpdateCheck {
 
     /** Release tags as comparable numbers: v1.0.0-preview8 is [1, 0, 0, 8]; a final release ranks above every preview. */
     fun versionOf(tag: String): List<Long>? {
-        val numbers = NUMBER.findAll(tag).map { it.value.toLongOrNull() ?: return null }.toList()
+        val numbers = NUMBER.findAll(tag).mapNotNull { it.value.toLongOrNull() }.toList()
         if (numbers.isEmpty()) return null
         val preview = listOf("preview", "beta", "alpha", "rc").any { tag.contains(it, ignoreCase = true) }
         return if (preview) numbers else numbers + FINAL_RELEASE_RANK
