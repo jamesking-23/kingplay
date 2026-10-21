@@ -20,6 +20,7 @@ import kotlin.math.roundToInt
 import com.kingplay.core.designsystem.component.Haptics
 import com.kingplay.core.designsystem.theme.AccentChoices
 import com.kingplay.core.designsystem.theme.family
+import com.kingplay.feature.settings.update.UpdateSection
 import com.kingplay.core.model.settings.AppFont
 import com.kingplay.core.model.settings.HapticKind
 import com.kingplay.core.model.settings.HapticLevel
@@ -198,6 +199,8 @@ fun SettingsContent(
                     onDismiss = { onEvent(SettingsEvent.DismissBackupStatus) },
                 )
             }
+            item { SectionTitle(R.string.settings_updates) }
+            item { UpdateSection() }
             item { SectionTitle(R.string.settings_about) }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {

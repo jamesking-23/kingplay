@@ -1,0 +1,14 @@
+package com.kingplay.app
+
+import com.kingplay.core.model.update.InstalledVersion
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+
+@Module
+@InstallIn(SingletonComponent::class)
+object VersionModule {
+    @Provides
+    fun installedVersion(): InstalledVersion = InstalledVersion(BuildConfig.RELEASE_TAG)
+}

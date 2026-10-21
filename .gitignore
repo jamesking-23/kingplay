@@ -14,3 +14,6 @@
 *.jks
 *.keystore
 keystore.properties
+
+# Preview builds are signed with this shared key so one preview can update the next. Use a private key for a public release.
+!app/preview-signing.jks

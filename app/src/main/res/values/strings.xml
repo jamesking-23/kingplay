@@ -10,4 +10,7 @@
     <string name="perm_grant">Allow access</string>
     <string name="perm_open_settings">Open app settings</string>
     <string name="perm_denied_hint">Access was not granted. You can allow it in the app settings.</string>
+    <string name="update_channel">App updates</string>
+    <string name="update_done_title">KingPlay was updated</string>
+    <string name="update_done_text">Now on %1$s. Tap to open it.</string>
 </resources>

@@ -9,14 +9,32 @@ android {
 
     defaultConfig {
         applicationId = "com.kingplay.app"
-        versionCode = 1
+        // The release workflow passes the tag and an ever-growing build number, so each preview can replace the last.
+        versionCode = System.getenv("APP_VERSION_CODE")?.toIntOrNull() ?: 1
         versionName = "1.0.0"
+        buildConfigField("String", "RELEASE_TAG", "\"${System.getenv("APP_TAG") ?: "dev"}\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    // Preview builds share one signing key so that Android accepts a newer preview over an older one.
+    // Replace it with a private key (kept out of the repository) before a public release.
+    signingConfigs {
+        create("preview") {
+            storeFile = file("preview-signing.jks")
+            storePassword = "kingplay-preview"
+            keyAlias = "kingplay-preview"
+            keyPassword = "kingplay-preview"
+        }
     }
 
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
+            signingConfig = signingConfigs.getByName("preview")
         }
         release {
             isMinifyEnabled = true

@@ -151,6 +151,10 @@ fun SettingsPage(
         }
 
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        Text("Updates", style = MaterialTheme.typography.titleMedium)
+        UpdateSection()
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
         Text("About", style = MaterialTheme.typography.titleMedium)
         AboutSection()
         Text(

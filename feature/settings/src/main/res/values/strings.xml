@@ -119,4 +119,21 @@
     <string name="profile_listening_split">Music %1$s · Video %2$s</string>
     <string name="profile_since">Installed on %1$s</string>
     <string name="profile_records_note">Song plays include everything counted so far. Videos and listening time are counted from this version onward.</string>
+    <string name="settings_updates">Updates</string>
+    <string name="update_installed">Installed version: %1$s</string>
+    <string name="update_check">Check for updates</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_up_to_date">You have the latest version.</string>
+    <string name="update_available">A new version is available: %1$s</string>
+    <string name="update_install">Download and install</string>
+    <string name="update_downloading">Downloading… %1$d%%</string>
+    <string name="update_installing">Android is asking you to confirm. Tap Update, then Open to start the new version.</string>
+    <string name="update_needs_permission">Android needs your permission before KingPlay can install updates. Allow it on the next page, then come back and try again.</string>
+    <string name="update_open_permission">Allow installing updates</string>
+    <string name="update_try_again">I allowed it, try again</string>
+    <string name="update_failed_offline">Could not reach the update server. Check your internet connection.</string>
+    <string name="update_failed_none">No downloadable version was found.</string>
+    <string name="update_failed_download">The download failed. Try again.</string>
+    <string name="update_failed_file">The downloaded file is not a KingPlay update, so it was not installed.</string>
+    <string name="update_or_manual">You can also update by uninstalling KingPlay and installing the newest version from the project page. Your music is never deleted, but settings and playlists are removed when you uninstall.</string>
 </resources>

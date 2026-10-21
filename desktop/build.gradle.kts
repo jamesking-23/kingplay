@@ -27,11 +27,14 @@ dependencies {
 compose.desktop {
     application {
         mainClass = "com.kingplay.desktop.MainKt"
+        // Tells the running program which release it is, for "Check for updates".
+        jvmArgs += "-Dkingplay.tag=${System.getenv("APP_TAG") ?: "dev"}"
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.Exe)
             packageName = "KingPlay"
             // Windows installers need a major version of at least 1. Keep APP_VERSION in ui/AboutSection.kt equal to this.
-            packageVersion = "1.0.0"
+            // The release workflow passes a growing build number so Windows treats each preview as an upgrade.
+            packageVersion = "1.0.${System.getenv("APP_VERSION_CODE")?.toIntOrNull()?.coerceIn(0, 65535) ?: 0}"
             description = "KingPlay music player"
             vendor = "KingPlay"
             // "Open with" / double-click in Explorer. Windows asks the person before changing a default app.
