@@ -3,7 +3,11 @@ package com.kingplay.desktop.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import com.kingplay.core.model.settings.AppSettings
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -90,6 +94,58 @@ fun SettingsPage(
                     selected = settings.themeMode == mode,
                     onClick = { onChange { it.copy(themeMode = mode) } },
                     label = { Text(themeLabel(mode)) },
+                )
+            }
+        }
+
+        Text("Font", style = MaterialTheme.typography.titleMedium)
+        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            com.kingplay.core.model.settings.AppFont.entries.forEach { font ->
+                FilterChip(
+                    selected = settings.font == font,
+                    onClick = { onChange { it.copy(font = font) } },
+                    label = { Text(fontLabel(font)) },
+                )
+            }
+        }
+        Text(
+            "The quick brown fox jumps over the lazy dog. 0123456789",
+            style = MaterialTheme.typography.bodyLarge,
+        )
+        Text("Text size ${(settings.textScale * 100).toInt()}%", style = MaterialTheme.typography.titleMedium)
+        androidx.compose.material3.Slider(
+            value = settings.textScale,
+            onValueChange = { v -> onChange { it.copy(textScale = (Math.round(v * 20) / 20f)) } },
+            valueRange = AppSettings.MIN_TEXT_SCALE..AppSettings.MAX_TEXT_SCALE,
+            modifier = Modifier.widthIn(max = 360.dp),
+        )
+        Text("Your own colour", style = MaterialTheme.typography.titleMedium)
+        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            FilterChip(
+                selected = settings.customAccent == null,
+                onClick = { onChange { it.copy(customAccent = null) } },
+                label = { Text("Design colour") },
+            )
+            CUSTOM_COLOURS.forEach { (name, argb) ->
+                FilterChip(
+                    selected = settings.customAccent == argb,
+                    onClick = { onChange { it.copy(customAccent = argb) } },
+                    label = { Text(name) },
+                    leadingIcon = {
+                        androidx.compose.foundation.layout.Box(
+                            Modifier
+                                .size(14.dp)
+                                .background(androidx.compose.ui.graphics.Color(argb.toInt()), androidx.compose.foundation.shape.CircleShape),
+                        )
+                    },
                 )
             }
         }
@@ -184,3 +240,14 @@ internal fun exportBackup(app: DesktopAppState, onNotice: (String) -> Unit) {
 private const val TRAY_LABEL = "Keep playing in the tray when the window is closed"
 
 private const val KEYS_LABEL = "Use the keyboard's media keys even when KingPlay is in the background"
+
+private val CUSTOM_COLOURS = listOf(
+    "Crimson" to 0xFFD32F2F,
+    "Orange" to 0xFFF57C00,
+    "Gold" to 0xFFFBC02D,
+    "Green" to 0xFF2E7D32,
+    "Teal" to 0xFF00897B,
+    "Sky" to 0xFF0288D1,
+    "Indigo" to 0xFF3949AB,
+    "Pink" to 0xFFD81B60,
+)

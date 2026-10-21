@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Equalizer
@@ -110,6 +111,8 @@ private sealed interface Page {
 
     data object Report : Page
 
+    data object Profile : Page
+
     data class AlbumDetail(val id: Long, val title: String) : Page
 
     data class ArtistDetail(val id: Long, val name: String) : Page
@@ -172,6 +175,10 @@ fun App(
     )
 
     KingPlayDesktopTheme(settings) {
+        if (settings.nickname.isBlank()) {
+            WelcomeScreen(app, settings)
+            return@KingPlayDesktopTheme
+        }
         CompositionLocalProvider(LocalCovers provides covers) {
             Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -184,6 +191,18 @@ fun App(
                                     "Reading your music… ${(scan as ScanStatus.Scanning).found} songs found",
                                     style = MaterialTheme.typography.labelMedium,
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                Avatar(settings.profilePhoto, settings.nickname, 28.dp)
+                                Text(
+                                    com.kingplay.desktop.userdata.greeting(java.time.LocalTime.now().hour, settings.nickname),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                             notice?.let { Notice(it) { notice = null } }
@@ -256,6 +275,7 @@ private fun Rail(page: Page, onPage: (Page) -> Unit) {
         RailItem("Videos", Icons.Filled.Movie, page is Page.Videos) { onPage(Page.Videos) }
         RailItem("Library", Icons.Filled.Folder, page is Page.Library) { onPage(Page.Library) }
         RailItem("Report", Icons.Filled.BarChart, page is Page.Report) { onPage(Page.Report) }
+        RailItem("Profile", Icons.Filled.AccountCircle, page is Page.Profile) { onPage(Page.Profile) }
         RailItem("Settings", Icons.Filled.Settings, page is Page.Settings) { onPage(Page.Settings) }
     }
 }
@@ -355,6 +375,7 @@ private fun PageContent(
             onRescan = app::rescan,
         )
         Page.Report -> ReportPage(user, index)
+        Page.Profile -> ProfilePage(app, settings, user)
         Page.Settings -> SettingsPage(
             settings = settings,
             onChange = app::updateSettings,

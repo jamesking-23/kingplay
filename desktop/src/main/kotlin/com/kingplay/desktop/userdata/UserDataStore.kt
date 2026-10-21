@@ -31,6 +31,10 @@ class UserDataStore(private val file: File) {
             },
             "history" to data.history.map { listOf(it.trackId, it.atMs) },
             "reportShownFor" to data.reportShownFor,
+            "videoPlays" to data.videoPlays,
+            "audioListenMs" to data.audioListenMs,
+            "videoListenMs" to data.videoListenMs,
+            "installedAtMs" to data.installedAtMs,
             "lyrics" to data.lyrics,
             "videoProgress" to data.videoProgress.map { (id, p) ->
                 mapOf("id" to id, "positionMs" to p.positionMs, "durationMs" to p.durationMs)
@@ -94,6 +98,10 @@ class UserDataStore(private val file: File) {
                     PlayEvent(id, at)
                 }.takeLast(UserData.MAX_HISTORY),
                 reportShownFor = root["reportShownFor"] as? String,
+                videoPlays = (root["videoPlays"] as? Number)?.toLong()?.coerceAtLeast(0) ?: 0,
+                audioListenMs = (root["audioListenMs"] as? Number)?.toLong()?.coerceAtLeast(0) ?: 0,
+                videoListenMs = (root["videoListenMs"] as? Number)?.toLong()?.coerceAtLeast(0) ?: 0,
+                installedAtMs = (root["installedAtMs"] as? Number)?.toLong()?.coerceAtLeast(0) ?: 0,
                 eqPresets = eqPresets(root["eqPresets"]),
                 videoProgress = videoProgress(root["videoProgress"]),
                 nextPlaylistId = maxOf((root["nextPlaylistId"] as? Number)?.toLong() ?: 1, highest + 1),

@@ -98,13 +98,15 @@ class DesktopAppState(
             val (saved, user) = withContext(Dispatchers.IO) { store.load() to userStore.load() }
             _folders.value = saved.folders
             _index.value = LibraryIndex(saved.tracks)
-            _user.value = user
+            _user.value = user.withInstalledAt(now())
             controller?.setVolume(_settings.value.volumePercent)
             applyEqualizer(_settings.value)
             // A file opened from Explorer while loading wins over the saved queue.
             if (controller?.state?.value?.hasMedia != true) restoreQueue(user)
             launch { writeUserDataLoop() }
             launch { saveQueueLoop() }
+            launch { listeningLoop() }
+            dirty.trySend(Unit)
             if (saved.folders.isNotEmpty()) rescan()
         }
     }
@@ -166,6 +168,39 @@ class DesktopAppState(
     fun saveVideoProgress(video: VideoFile, positionMs: Long, durationMs: Long) =
         updateUser { it.withVideoProgress(video.id, positionMs, durationMs) }
 
+    /** Time and plays are gathered here and written into the person's data every few seconds, not on every tick. */
+    private var pendingAudioMs = 0L
+    private var pendingVideoMs = 0L
+
+    fun addVideoPlay() = updateUser { it.withVideoPlay() }
+
+    /** Called while a video is really playing, with how many milliseconds just passed. */
+    fun addVideoTime(ms: Long) {
+        pendingVideoMs += ms
+    }
+
+    private suspend fun listeningLoop() {
+        var sinceFlush = 0L
+        while (scope.isActive) {
+            delay(LISTEN_TICK_MS)
+            if (controller?.state?.value?.isPlaying == true) pendingAudioMs += LISTEN_TICK_MS
+            sinceFlush += LISTEN_TICK_MS
+            if (sinceFlush >= LISTEN_FLUSH_MS) {
+                sinceFlush = 0
+                flushListening()
+            }
+        }
+    }
+
+    private fun flushListening() {
+        val audio = pendingAudioMs
+        val video = pendingVideoMs
+        if (audio == 0L && video == 0L) return
+        pendingAudioMs = 0
+        pendingVideoMs = 0
+        updateUser { it.withListening(audio, video) }
+    }
+
     fun pauseMusicForVideo() {
         controller?.pause()
     }
@@ -200,6 +235,7 @@ class DesktopAppState(
 
     /** Writes everything now. Called when the window closes. */
     fun flush() {
+        flushListening()
         rememberQueue()
         runCatching { userStore.save(_user.value) }
     }
@@ -295,6 +331,8 @@ class DesktopAppState(
 
     companion object {
         private const val SAVE_DELAY_MS = 400L
+        private const val LISTEN_TICK_MS = 1_000L
+        private const val LISTEN_FLUSH_MS = 15_000L
         private const val QUEUE_SAVE_INTERVAL_MS = 5_000L
         private const val MS_PER_SECOND = 1000
 

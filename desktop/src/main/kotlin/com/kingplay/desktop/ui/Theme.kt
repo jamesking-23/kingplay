@@ -7,6 +7,9 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import com.kingplay.core.model.settings.AppThemeMode
 import com.kingplay.core.model.settings.AppUiTheme
 import androidx.compose.runtime.CompositionLocalProvider
@@ -53,14 +56,28 @@ fun KingPlayDesktopTheme(settings: DesktopSettings, content: @Composable () -> U
             error = Color(0xFFBA1A1A),
         )
     }
-    CompositionLocalProvider(LocalUiTheme provides settings.uiTheme) {
+    val custom = settings.customAccent?.let { Color(it.toInt()) }
+    val tinted = if (custom == null) {
+        scheme
+    } else {
+        scheme.copy(
+            primary = custom,
+            onPrimary = if (custom.luminance() > LIGHT_ACCENT) Color.Black else Color.White,
+            primaryContainer = lerp(custom, scheme.background, CONTAINER_MIX),
+        )
+    }
+    val density = LocalDensity.current
+    CompositionLocalProvider(
+        LocalUiTheme provides settings.uiTheme,
+        LocalDensity provides Density(density.density, density.fontScale * settings.textScale),
+    ) {
         MaterialTheme(
-            colorScheme = scheme,
+            colorScheme = tinted,
             typography = when {
                 kingStyle -> kingStyleTypography(settings.uiTheme)
                 kingArt -> KingArtTypography
                 else -> MaterialTheme.typography
-            },
+            }.withFont(settings.font),
             shapes = when {
                 kingStyle -> kingStyleShapes(settings.uiTheme)
                 kingArt -> KingArtShapes
@@ -71,6 +88,7 @@ fun KingPlayDesktopTheme(settings: DesktopSettings, content: @Composable () -> U
     }
 }
 
+private const val LIGHT_ACCENT = 0.55f
 private const val DARK_BACKGROUND = 0xFF111015
 private const val CONTAINER_MIX = 0.78f
 private const val SURFACE_LIFT = 0.07f

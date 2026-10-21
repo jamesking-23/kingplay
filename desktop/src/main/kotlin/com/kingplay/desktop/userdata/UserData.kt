@@ -48,7 +48,23 @@ data class UserData(
     val history: List<PlayEvent> = emptyList(),
     /** The month ("yyyy-MM") whose "report is ready" notice was already shown. */
     val reportShownFor: String? = null,
+    /** Videos that were started, ever. */
+    val videoPlays: Long = 0,
+    /** Real time spent listening to music and watching video, in milliseconds. */
+    val audioListenMs: Long = 0,
+    val videoListenMs: Long = 0,
+    /** When KingPlay first ran on this PC (epoch milliseconds), or 0 before the first start. */
+    val installedAtMs: Long = 0,
 ) {
+    val songPlays: Long get() = stats.values.sumOf { it.count.toLong() }
+
+    fun withListening(audioMs: Long, videoMs: Long): UserData =
+        copy(audioListenMs = audioListenMs + audioMs.coerceAtLeast(0), videoListenMs = videoListenMs + videoMs.coerceAtLeast(0))
+
+    fun withVideoPlay(): UserData = copy(videoPlays = videoPlays + 1)
+
+    fun withInstalledAt(now: Long): UserData = if (installedAtMs > 0) this else copy(installedAtMs = now)
+
     /** Saves (or replaces, ignoring letter case) a named equalizer curve. Blank names and the limit are refused. */
     fun withEqPreset(preset: UserEqPreset): UserData {
         val name = preset.name.trim()

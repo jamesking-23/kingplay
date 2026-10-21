@@ -171,6 +171,8 @@ private fun runApp(inbox: Channel<LaunchRequest?>) = application {
                 startMs = startMs,
                 settings = settings,
                 onProgress = { position, duration -> app.saveVideoProgress(video, position, duration) },
+                onStarted = app::addVideoPlay,
+                onWatched = app::addVideoTime,
                 onClose = { videoQueue = null },
                 onNext = queue.next()?.let { next -> { firstStartMs = 0L; videoQueue = next } },
                 onPrevious = queue.previous()?.let { prev -> { firstStartMs = 0L; videoQueue = prev } },

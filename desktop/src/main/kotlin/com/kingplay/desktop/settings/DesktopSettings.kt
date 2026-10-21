@@ -2,6 +2,8 @@ package com.kingplay.desktop.settings
 
 import com.kingplay.core.model.EqPreset
 import com.kingplay.core.model.settings.AppAccent
+import com.kingplay.core.model.settings.AppFont
+import com.kingplay.core.model.settings.AppSettings
 import com.kingplay.core.model.settings.AppThemeMode
 import com.kingplay.core.model.settings.AppUiTheme
 import com.kingplay.desktop.library.JsonFile
@@ -18,6 +20,14 @@ data class DesktopSettings(
     val closeToTray: Boolean = false,
     val globalMediaKeys: Boolean = true,
     val uiTheme: AppUiTheme = AppUiTheme.KING_ART,
+    val font: AppFont = AppFont.DEFAULT,
+    val textScale: Float = 1f,
+    /** A colour the person picked (ARGB) that replaces the accent, or null. */
+    val customAccent: Long? = null,
+    /** What the app calls the person; empty until the first-run welcome is done. */
+    val nickname: String = "",
+    /** Path of the saved profile picture inside the KingPlay data folder, or null. */
+    val profilePhoto: String? = null,
 ) {
     fun withVolume(percent: Int): DesktopSettings = copy(volumePercent = percent.coerceIn(0, MAX_VOLUME))
 
@@ -43,6 +53,11 @@ class SettingsStore(private val file: File) {
             closeToTray = root["closeToTray"] as? Boolean ?: false,
             globalMediaKeys = root["globalMediaKeys"] as? Boolean ?: true,
             uiTheme = enumOrNull<AppUiTheme>(root["uiTheme"]) ?: defaults.uiTheme,
+            font = enumOrNull<AppFont>(root["font"]) ?: defaults.font,
+            textScale = ((root["textScale"] as? Number)?.toFloat() ?: 1f).coerceIn(AppSettings.MIN_TEXT_SCALE, AppSettings.MAX_TEXT_SCALE),
+            customAccent = (root["customAccent"] as? Number)?.toLong(),
+            nickname = (root["nickname"] as? String).orEmpty().trim().take(AppSettings.MAX_NICKNAME),
+            profilePhoto = (root["profilePhoto"] as? String)?.takeIf { it.isNotBlank() },
         )
     }
 
@@ -50,6 +65,11 @@ class SettingsStore(private val file: File) {
         file,
         mapOf(
             "uiTheme" to settings.uiTheme.name,
+            "font" to settings.font.name,
+            "textScale" to settings.textScale,
+            "customAccent" to settings.customAccent,
+            "nickname" to settings.nickname,
+            "profilePhoto" to settings.profilePhoto,
             "themeMode" to settings.themeMode.name,
             "accent" to settings.accent.name,
             "volumePercent" to settings.volumePercent.toLong(),

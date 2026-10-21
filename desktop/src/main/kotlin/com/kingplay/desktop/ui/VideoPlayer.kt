@@ -83,6 +83,8 @@ fun VideoWindow(
     settings: DesktopSettings,
     onProgress: (positionMs: Long, durationMs: Long) -> Unit,
     onClose: () -> Unit,
+    onStarted: () -> Unit = {},
+    onWatched: (ms: Long) -> Unit = {},
     onNext: (() -> Unit)? = null,
     onPrevious: (() -> Unit)? = null,
 ) {
@@ -126,14 +128,24 @@ fun VideoWindow(
 
     val nextNow by rememberUpdatedState(onNext)
     val progressNow by rememberUpdatedState(onProgress)
+    val startedNow by rememberUpdatedState(onStarted)
+    val watchedNow by rememberUpdatedState(onWatched)
     LaunchedEffect(component) {
         var polls = 0
         var finished = false
+        var counted = false
         while (true) {
             delay(POLL_MS)
             position = player.status().time().coerceAtLeast(0)
             length = player.status().length().coerceAtLeast(0)
             playing = player.status().isPlaying
+            if (playing) {
+                watchedNow(POLL_MS)
+                if (!counted) {
+                    counted = true
+                    startedNow()
+                }
+            }
             if (!finished && player.status().state() == State.ENDED) {
                 finished = true
                 nextNow?.invoke()
