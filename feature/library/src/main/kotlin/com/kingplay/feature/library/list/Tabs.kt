@@ -213,7 +213,7 @@ fun PlaylistsTab(
 }
 
 @Composable
-private fun CreatePlaylistDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
+internal fun CreatePlaylistDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
     var name by rememberSaveable { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,

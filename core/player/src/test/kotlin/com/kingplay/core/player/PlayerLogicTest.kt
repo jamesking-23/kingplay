@@ -126,20 +126,19 @@ class QueueSnapshotTest {
 
 class PlayCountTrackerTest {
     @Test
-    fun thresholdIsHalfTheTrackCappedAtThirtySecondsWithAFloor() {
-        assertEquals(30_000L, defaultPlayThresholdMs(240_000))
-        assertEquals(20_000L, defaultPlayThresholdMs(40_000))
-        assertEquals(5_000L, defaultPlayThresholdMs(6_000))
-        assertEquals(30_000L, defaultPlayThresholdMs(0))
+    fun aSongCountsAfterThreeSecondsOfRealPlaying() {
+        assertEquals(3_000L, defaultPlayThresholdMs(240_000))
+        assertEquals(3_000L, defaultPlayThresholdMs(0))
+        assertEquals(2_000L, defaultPlayThresholdMs(2_000))
     }
 
     @Test
-    fun countsOncePerStartAfterEnoughRealPlayTime() {
+    fun countsOncePerStartAfterThreeSeconds() {
         val t = PlayCountTracker()
         t.onItemStarted("a:1")
-        assertNull(t.addPlayed(10_000, 240_000))
-        assertNull(t.addPlayed(10_000, 240_000))
-        assertEquals("a:1", t.addPlayed(10_000, 240_000))
+        assertNull(t.addPlayed(1_000, 240_000))
+        assertNull(t.addPlayed(1_000, 240_000))
+        assertEquals("a:1", t.addPlayed(1_000, 240_000))
         assertNull(t.addPlayed(60_000, 240_000))
     }
 
@@ -147,18 +146,18 @@ class PlayCountTrackerTest {
     fun repeatOfSameItemCountsAgain() {
         val t = PlayCountTracker()
         t.onItemStarted("a:1")
-        assertEquals("a:1", t.addPlayed(30_000, 240_000))
+        assertEquals("a:1", t.addPlayed(3_000, 240_000))
         t.onItemStarted("a:1")
-        assertEquals("a:1", t.addPlayed(30_000, 240_000))
+        assertEquals("a:1", t.addPlayed(3_000, 240_000))
     }
 
     @Test
-    fun skippingEarlyDoesNotCount() {
+    fun skippingBeforeThreeSecondsDoesNotCount() {
         val t = PlayCountTracker()
         t.onItemStarted("a:1")
-        assertNull(t.addPlayed(4_000, 240_000))
+        assertNull(t.addPlayed(2_900, 240_000))
         t.onItemStarted("a:2")
-        assertNull(t.addPlayed(4_000, 240_000))
+        assertNull(t.addPlayed(2_000, 240_000))
     }
 
     @Test

@@ -59,6 +59,14 @@
     <string name="detail_empty_message">This list has no songs, or it was removed.</string>
 
     <string name="playlist_new">New playlist</string>
+    <string name="options_choose_playlist">Add to playlist</string>
+    <string name="options_added_to">Added to %1$s</string>
+    <string name="options_share_title">Share %1$s</string>
+    <string name="options_share_failed">No app can share this file.</string>
+    <string name="options_delete_title">Delete this song?</string>
+    <string name="options_delete_message">%1$s will be deleted from your phone. This cannot be undone.</string>
+    <string name="options_delete_confirm">Delete</string>
+    <string name="options_delete_unsupported">This Android version does not allow KingPlay to delete files. Delete it from your Files app.</string>
     <string name="playlist_name_label">Playlist name</string>
     <string name="playlist_create">Create</string>
     <string name="playlist_cancel">Cancel</string>

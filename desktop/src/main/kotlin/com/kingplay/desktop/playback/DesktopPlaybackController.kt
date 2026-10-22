@@ -202,7 +202,7 @@ class DesktopPlaybackController(
 
     private fun countIfDue(positionMs: Long) {
         val duration = _state.value.durationMs
-        if (!counted && duration > 0 && positionMs >= minOf(duration / 2, COUNT_AFTER_MS)) countNow()
+        if (!counted && duration > 0 && positionMs >= minOf(duration, COUNT_AFTER_MS)) countNow()
     }
 
     private fun countNow() {
@@ -289,7 +289,7 @@ class DesktopPlaybackController(
 
     private companion object {
         const val RESTART_AFTER_MS = 3_000L
-        const val COUNT_AFTER_MS = 240_000L
+        const val COUNT_AFTER_MS = 3_000L
         const val MISSING_MESSAGE = "These songs are no longer in your library"
     }
 }

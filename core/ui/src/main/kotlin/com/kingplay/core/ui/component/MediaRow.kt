@@ -1,6 +1,7 @@
 package com.kingplay.core.ui.component
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -44,6 +45,7 @@ private val MinRowHeight = 64.dp
  * Give it [artworkUri] for cover art or [leadingIcon] for things without art (folders, genres).
  * The whole row is one TalkBack stop that reads title and subtitle; the overflow menu is a second stop.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MediaRow(
     title: String,
@@ -58,12 +60,13 @@ fun MediaRow(
     menu: (@Composable ColumnScope.(dismiss: () -> Unit) -> Unit)? = null,
 ) {
     val spacing = KpTheme.spacing
+    var menuOpen by remember { mutableStateOf(false) }
     val description = stringResource(R.string.ui_row_description, title, subtitle)
     Row(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = MinRowHeight)
-            .clickable(role = Role.Button, onClick = onClick)
+            .combinedClickable(role = Role.Button, onClick = onClick, onLongClick = menu?.let { { menuOpen = true } })
             .padding(horizontal = spacing.lg, vertical = spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -111,22 +114,26 @@ fun MediaRow(
                 )
             }
         }
-        if (menu != null) RowMenu(title = title, content = menu)
+        if (menu != null) RowMenu(title = title, expanded = menuOpen, onExpanded = { menuOpen = it }, content = menu)
     }
 }
 
 @Composable
-private fun RowMenu(title: String, content: @Composable ColumnScope.(dismiss: () -> Unit) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
+private fun RowMenu(
+    title: String,
+    expanded: Boolean,
+    onExpanded: (Boolean) -> Unit,
+    content: @Composable ColumnScope.(dismiss: () -> Unit) -> Unit,
+) {
     Box {
-        IconButton(onClick = { expanded = true }) {
+        IconButton(onClick = { onExpanded(true) }) {
             Icon(
                 imageVector = Icons.Default.MoreVert,
                 contentDescription = stringResource(R.string.ui_more_options, title),
             )
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            content { expanded = false }
+        DropdownMenu(expanded = expanded, onDismissRequest = { onExpanded(false) }) {
+            content { onExpanded(false) }
         }
     }
 }

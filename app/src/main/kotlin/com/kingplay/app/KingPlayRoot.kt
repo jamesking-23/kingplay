@@ -28,6 +28,7 @@ import com.kingplay.feature.library.detail.MostPlayedRoute
 import com.kingplay.feature.library.detail.PlaylistDetailRoute
 import com.kingplay.feature.library.report.ReportArgs
 import com.kingplay.feature.nowplaying.stage.LyricsBrowserScreen
+import com.kingplay.feature.library.options.TrackOptionsHost
 import com.kingplay.feature.settings.profile.ProfileScreen
 import com.kingplay.feature.library.report.ReportScreen
 import com.kingplay.feature.library.home.LibraryScreen
@@ -43,6 +44,11 @@ import com.kingplay.feature.video.ui.VideoPlayerScreen
  */
 @Composable
 fun KingPlayRoot(modifier: Modifier = Modifier, startRoute: String? = null) {
+    TrackOptionsHost { KingPlayContent(modifier, startRoute) }
+}
+
+@Composable
+private fun KingPlayContent(modifier: Modifier, startRoute: String?) {
     val navController = rememberNavController()
     // Debug builds only: lets the screenshot tour open a screen directly.
     androidx.compose.runtime.LaunchedEffect(startRoute) { startRoute?.let { navController.navigate(it) } }

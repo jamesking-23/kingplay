@@ -29,9 +29,8 @@ class PlayCountTracker(
     }
 }
 
-private const val MIN_PLAY_MS = 5_000L
-private const val MAX_PLAY_MS = 30_000L
+private const val COUNT_AFTER_MS = 3_000L
 
-/** Half the track or 30 seconds, whichever comes first, but never under 5 seconds. */
+/** A song counts as played once it has really played for 3 seconds (or its whole length, if it is shorter). */
 fun defaultPlayThresholdMs(durationMs: Long): Long =
-    if (durationMs <= 0) MAX_PLAY_MS else (durationMs / 2).coerceIn(MIN_PLAY_MS, MAX_PLAY_MS)
+    if (durationMs <= 0) COUNT_AFTER_MS else minOf(COUNT_AFTER_MS, durationMs)

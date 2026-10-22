@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android's own backup keeps your library data, play counts, playlists and settings, so a reinstall can bring them back. -->
+<full-backup-content>
+    <include domain="database" path="." />
+    <include domain="file" path="." />
+</full-backup-content>

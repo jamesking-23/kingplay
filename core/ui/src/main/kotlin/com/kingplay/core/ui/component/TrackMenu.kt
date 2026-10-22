@@ -2,6 +2,7 @@ package com.kingplay.core.ui.component
 
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -42,6 +43,28 @@ fun ColumnScope.TrackMenuItems(
         onClick = {
             dismiss()
             onToggleFavorite(track)
+        },
+    )
+    val options = LocalTrackOptions.current ?: return
+    DropdownMenuItem(
+        text = { Text(stringResource(R.string.ui_add_to_playlist)) },
+        onClick = {
+            dismiss()
+            options.addToPlaylist(track)
+        },
+    )
+    DropdownMenuItem(
+        text = { Text(stringResource(R.string.ui_share)) },
+        onClick = {
+            dismiss()
+            options.share(track)
+        },
+    )
+    DropdownMenuItem(
+        text = { Text(stringResource(R.string.ui_delete_song), color = MaterialTheme.colorScheme.error) },
+        onClick = {
+            dismiss()
+            options.delete(track)
         },
     )
 }
