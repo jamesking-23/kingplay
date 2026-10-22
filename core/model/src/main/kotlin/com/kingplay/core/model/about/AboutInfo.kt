@@ -66,6 +66,9 @@ object AboutInfo {
         sees your connection like any browser. KingPlay does not read the page; it only reads the text you copy and
         tap Add on, and saves it on your device. The app asks for the Internet permission only for this.
 
+        On a PC, "Find lyrics online" opens your web browser; KingPlay only reads the text you copy and tap Add
+        copied lyrics on.
+
         Backups: when you export a backup, it is saved where you choose. Anyone you give that file to can
         read your playlist and favourite names, so share it with care.
 

@@ -23,6 +23,17 @@ class ProfileRecordsTest {
     private fun temp(): File = File.createTempFile("kpt", "").also { it.delete(); it.mkdirs(); it.deleteOnExit() }
 
     @Test
+    fun lyricsSearchAddressNamesTheSong() {
+        val track = com.kingplay.core.model.Track(
+            id = 1, uri = "C:\\a.mp3", title = "Midnight City", artistId = 1, artistName = "M83", albumId = 1,
+            albumTitle = "B", albumArtist = null, genre = null, durationMs = 1, bitrateKbps = 0, sampleRateHz = 0,
+            format = "mp3", trackNumber = 0, discNumber = 0, year = null, folderPath = "C:\\", dateAddedMs = 0,
+            dateModifiedMs = 0,
+        )
+        assertEquals("https://duckduckgo.com/?q=M83+Midnight+City+lyrics", com.kingplay.desktop.ui.lyricsSearchUrl(track))
+    }
+
+    @Test
     fun listeningTimeReadsNaturally() {
         assertEquals("under a minute", formatListening(20_000))
         assertEquals("45 min", formatListening(45 * 60_000L))

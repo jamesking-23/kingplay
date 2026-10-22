@@ -10,7 +10,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,6 +64,26 @@ fun LyricsPage(
         value = LyricsLoad.Loading
         value = LyricsLoad.Done(app.lyricsFor(track))
     }
+    var pending by remember(track.id) { mutableStateOf<String?>(null) }
+    pending?.let { text ->
+        AlertDialog(
+            onDismissRequest = { pending = null },
+            title = { Text("Add these lyrics?") },
+            text = {
+                Column(Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
+                    Text(text.take(PREVIEW_CHARS) + if (text.length > PREVIEW_CHARS) "\u2026" else "")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val saved = text.length <= MAX_LYRICS_BYTES && app.importLyrics(track, text)
+                    onNotice(if (saved) "Lyrics saved for ${track.title}." else "That text could not be used as lyrics.")
+                    pending = null
+                }) { Text("Add") }
+            },
+            dismissButton = { TextButton(onClick = { pending = null }) { Text("Cancel") } },
+        )
+    }
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -70,6 +98,15 @@ fun LyricsPage(
                     maxLines = 1,
                 )
             }
+            OutlinedButton(onClick = { openLyricsSearch(track, onNotice) }) { Text("Find lyrics online") }
+            OutlinedButton(onClick = {
+                val copied = readClipboardText()
+                if (copied.isBlank()) {
+                    onNotice("Nothing copied yet. Select the lyrics on the web page, copy them, then come back.")
+                } else {
+                    pending = copied
+                }
+            }) { Text("Add copied lyrics") }
             OutlinedButton(onClick = { importLrc(app, track, onNotice) }) { Text("Import .lrc") }
             if (imported) {
                 OutlinedButton(onClick = { app.removeImportedLyrics(track) }) { Text("Remove imported") }
@@ -151,3 +188,18 @@ private fun importLrc(app: DesktopAppState, track: Track, onNotice: (String) -> 
 }
 
 private const val FOLLOW_OFFSET = 3
+private const val PREVIEW_CHARS = 1_500
+
+/** The web search for a song's lyrics, as an address. */
+fun lyricsSearchUrl(track: Track): String =
+    "https://duckduckgo.com/?q=" + java.net.URLEncoder.encode("${track.artistName} ${track.title} lyrics", "UTF-8")
+
+private fun openLyricsSearch(track: Track, onNotice: (String) -> Unit) {
+    val opened = runCatching { java.awt.Desktop.getDesktop().browse(java.net.URI(lyricsSearchUrl(track))) }.isSuccess
+    if (!opened) onNotice("Could not open your web browser.")
+}
+
+private fun readClipboardText(): String = runCatching {
+    java.awt.Toolkit.getDefaultToolkit().systemClipboard
+        .getData(java.awt.datatransfer.DataFlavor.stringFlavor) as? String
+}.getOrNull().orEmpty().trim()
