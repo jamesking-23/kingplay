@@ -44,6 +44,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingplay.core.designsystem.component.KpIconButton
 import com.kingplay.core.designsystem.theme.KpTheme
+import com.kingplay.core.designsystem.theme.UiStyle
+import androidx.compose.foundation.background
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.draw.clip
 import com.kingplay.core.model.ScanFailure
 import com.kingplay.core.model.ScanPhase
 import com.kingplay.core.model.ScanState
@@ -114,15 +119,11 @@ fun LibraryScreen(
                     modifier = Modifier.padding(horizontal = KpTheme.spacing.sm),
                 ) { Text("Your listening report for last month is ready →") }
             }
-            ScrollableTabRow(selectedTabIndex = pager.currentPage, edgePadding = KpTheme.spacing.sm) {
-                tabs.forEachIndexed { index, tab ->
-                    Tab(
-                        selected = pager.currentPage == index,
-                        onClick = { scope.launch { pager.animateScrollToPage(index) } },
-                        text = { Text(stringResource(tab.label)) },
-                    )
-                }
-            }
+            LibraryTabs(
+                labels = tabs.map { stringResource(it.label) },
+                selected = pager.currentPage,
+                onSelect = { scope.launch { pager.animateScrollToPage(it) } },
+            )
             HorizontalPager(state = pager, modifier = Modifier.fillMaxSize()) { page ->
                 when (tabs[page]) {
                     LibraryTab.Songs -> SongsTab(snackbar = snackbar)
@@ -133,6 +134,49 @@ fun LibraryScreen(
                     LibraryTab.Playlists -> PlaylistsTab(navigator)
                     LibraryTab.Videos -> VideosTab(navigator)
                 }
+            }
+        }
+    }
+}
+
+/** Pills, an underline, bracketed text or plain tabs, depending on the design. */
+@Composable
+private fun LibraryTabs(labels: List<String>, selected: Int, onSelect: (Int) -> Unit) {
+    val style = KpTheme.uiStyle
+    val scheme = MaterialTheme.colorScheme
+    if (style == UiStyle.KING_NEON || style == UiStyle.KING_GLASS || style == UiStyle.KK_UI) {
+        LazyRow(
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = KpTheme.spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(vertical = KpTheme.spacing.xs),
+        ) {
+            items(labels.size) { i ->
+                val on = i == selected
+                val shape = if (style == UiStyle.KING_NEON) {
+                    androidx.compose.foundation.shape.RoundedCornerShape(10.dp)
+                } else {
+                    androidx.compose.foundation.shape.RoundedCornerShape(50)
+                }
+                Text(
+                    text = labels[i],
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (on) scheme.onPrimary else scheme.onSurface,
+                    modifier = Modifier
+                        .clip(shape)
+                        .background(if (on) scheme.primary else scheme.surfaceVariant.copy(alpha = 0.5f))
+                        .clickable(role = androidx.compose.ui.semantics.Role.Tab) { onSelect(i) }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+        }
+    } else {
+        ScrollableTabRow(
+            selectedTabIndex = selected,
+            edgePadding = KpTheme.spacing.sm,
+            containerColor = androidx.compose.ui.graphics.Color.Transparent,
+        ) {
+            labels.forEachIndexed { index, label ->
+                Tab(selected = selected == index, onClick = { onSelect(index) }, text = { Text(label) })
             }
         }
     }

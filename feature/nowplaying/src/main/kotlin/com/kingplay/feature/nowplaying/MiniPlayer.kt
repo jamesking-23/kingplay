@@ -1,6 +1,11 @@
 package com.kingplay.feature.nowplaying
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.surfaceColorAtElevation
+import androidx.compose.ui.draw.shadow
+import com.kingplay.core.designsystem.theme.UiStyle
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -54,7 +59,27 @@ fun MiniPlayer(
     } else {
         stringResource(R.string.np_mini_open, state.title, artist)
     }
-    Surface(modifier = modifier.fillMaxWidth(), tonalElevation = 3.dp) {
+    val style = KpTheme.uiStyle
+    val shape = when (style) {
+        UiStyle.KING_CLASSIC -> RoundedCornerShape(4.dp)
+        UiStyle.KING_NEON -> RoundedCornerShape(14.dp)
+        UiStyle.KING_GLASS -> RoundedCornerShape(28.dp)
+        else -> RoundedCornerShape(20.dp)
+    }
+    val tint = if (style == UiStyle.KING_GLASS) 0.85f else 1f
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .shadow(8.dp, shape),
+        shape = shape,
+        color = MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp).copy(alpha = tint),
+        border = if (style == UiStyle.KING_NEON) {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
+        } else {
+            null
+        },
+    ) {
         Column {
             LinearProgressIndicator(
                 progress = { state.progress },
