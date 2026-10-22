@@ -95,7 +95,7 @@ fun NowPlayingScreen(
     var showSleep by rememberSaveable { mutableStateOf(false) }
     var mode by rememberSaveable { mutableStateOf(StageMode.ARTWORK) }
 
-    Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Surface(modifier = modifier.fillMaxSize(), color = androidx.compose.ui.graphics.Color.Transparent) {
         Column(modifier = Modifier.statusBarsPadding().navigationBarsPadding()) {
             TopBar(
                 onClose = navigator::back,

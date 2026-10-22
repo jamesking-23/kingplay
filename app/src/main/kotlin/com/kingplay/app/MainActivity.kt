@@ -15,6 +15,7 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val appViewModel: AppViewModel by viewModels()
+    private val coverViewModel: CoverColorViewModel by viewModels()
 
     private fun debugStartRoute(): String? = if (BuildConfig.DEBUG) intent?.getStringExtra("kp_route") else null
 
@@ -23,8 +24,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val settings by appViewModel.settings.collectAsStateWithLifecycle()
+            val cover by coverViewModel.color.collectAsStateWithLifecycle()
             settings?.let { saved ->
-                KingPlayTheme(saved.toThemeConfig()) {
+                KingPlayTheme(saved.toThemeConfig().let { if (saved.coverTheme) it.copy(coverColor = cover) else it }) {
                     if (saved.nickname.isBlank()) {
                         WelcomeScreen()
                     } else {

@@ -64,6 +64,8 @@ sealed interface SettingsEvent : UiEvent {
 
     data class SetFont(val font: AppFont) : SettingsEvent
 
+    data class SetCoverTheme(val enabled: Boolean) : SettingsEvent
+
     data class SetTextScale(val scale: Float) : SettingsEvent
 
     data class SetCustomAccent(val argb: Long?) : SettingsEvent
@@ -109,6 +111,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.SetDynamicColor -> update { it.copy(dynamicColor = event.enabled) }
             is SettingsEvent.SetLowPower -> update { it.copy(lowPowerVisuals = event.enabled) }
             is SettingsEvent.SetFont -> update { it.copy(font = event.font) }
+            is SettingsEvent.SetCoverTheme -> update { it.copy(coverTheme = event.enabled) }
             is SettingsEvent.SetTextScale -> update {
                 it.copy(textScale = event.scale.coerceIn(AppSettings.MIN_TEXT_SCALE, AppSettings.MAX_TEXT_SCALE))
             }

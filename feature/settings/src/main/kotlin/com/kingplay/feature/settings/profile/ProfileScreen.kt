@@ -58,9 +58,14 @@ fun ProfileScreen(navigator: AppNavigator, modifier: Modifier = Modifier, viewMo
     }
     Scaffold(
         modifier = modifier,
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    scrolledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
                 title = { Text(stringResource(R.string.profile_title)) },
                 navigationIcon = {
                     KpIconButton(

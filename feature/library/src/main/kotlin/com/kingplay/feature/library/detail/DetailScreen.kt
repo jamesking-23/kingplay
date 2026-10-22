@@ -1,6 +1,8 @@
 package com.kingplay.feature.library.detail
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -71,10 +73,15 @@ fun DetailScreen(
 ) {
     Scaffold(
         modifier = modifier,
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    scrolledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
                 title = { Text(state.header?.title?.let { displayName(it) }.orEmpty(), maxLines = 1) },
                 navigationIcon = {
                     KpIconButton(
@@ -156,6 +163,7 @@ private fun TrackList(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Header(state: DetailState, trackList: List<Track>, onEvent: (DetailEvent) -> Unit) {
     val header = state.header
@@ -171,7 +179,7 @@ private fun Header(state: DetailState, trackList: List<Track>, onEvent: (DetailE
                 sizePx = ArtworkSize.CARD,
                 modifier = Modifier.size(HeaderArtwork),
             )
-            Column(verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
                 Text(
                     text = header?.title?.let { displayName(it) }.orEmpty(),
                     style = MaterialTheme.typography.titleLarge,
@@ -195,7 +203,10 @@ private fun Header(state: DetailState, trackList: List<Track>, onEvent: (DetailE
                 }
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(spacing.xs),
+        ) {
             KpButton(
                 text = stringResource(R.string.library_play_all),
                 onClick = { onEvent(DetailEvent.PlayAll) },

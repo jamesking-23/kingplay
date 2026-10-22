@@ -13,6 +13,7 @@ dependencies {
     api(libs.androidx.lifecycle.viewmodel)
     api(libs.coil.compose)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.palette)
     api(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)

@@ -74,9 +74,14 @@ fun EqualizerContent(
     val settings = state.settings
     Scaffold(
         modifier = modifier,
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    scrolledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
                 title = { Text(stringResource(R.string.eq_title), maxLines = 1) },
                 navigationIcon = {
                     KpIconButton(

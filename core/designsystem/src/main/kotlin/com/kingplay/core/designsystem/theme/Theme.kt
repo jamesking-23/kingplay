@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.ContextWrapper
 import android.os.Build
 import android.provider.Settings
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +41,8 @@ data class ThemeConfig(
     val textScale: Float = 1f,
     /** ARGB colour that replaces the design's main colour, or null. */
     val customAccent: Long? = null,
+    /** ARGB colour pulled from the playing song's cover art, or null. It blends into the design's colours. */
+    val coverColor: Int? = null,
     val haptics: HapticSettings = HapticSettings(),
 )
 
@@ -80,7 +84,16 @@ fun KingPlayTheme(
         else -> lightAccentScheme(config.accent)
     }
     val amoled = if (dark && config.mode == ThemeMode.AMOLED) base.toAmoled() else base
-    val colorScheme = config.customAccent?.let { amoled.withAccent(Color(it.toInt()), dark) } ?: amoled
+    val coverTint = if (config.customAccent == null) {
+        config.coverColor?.let { animateColorAsState(tuneCoverColor(it, dark), tween(COVER_FADE_MS), label = "cover").value }
+    } else {
+        null
+    }
+    val colorScheme = when {
+        config.customAccent != null -> amoled.withAccent(Color(config.customAccent.toInt()), dark)
+        coverTint != null -> amoled.withCover(coverTint, dark)
+        else -> amoled
+    }
 
     val view = LocalView.current
     if (!view.isInEditMode) {
@@ -97,6 +110,7 @@ fun KingPlayTheme(
         LocalSpacing provides if (config.density == LayoutDensity.COMPACT) CompactSpacing else ComfortableSpacing,
         LocalLowPowerVisuals provides effectiveLowPower(config.lowPowerVisuals, context.animatorScale()),
         LocalHaptics provides config.haptics,
+        LocalCoverTint provides coverTint,
         LocalDensity provides Density(LocalDensity.current.density, LocalDensity.current.fontScale * config.textScale),
     ) {
         MaterialTheme(
@@ -107,7 +121,7 @@ fun KingPlayTheme(
                 UiStyle.KING_GLASS -> KingGlassTypography
                 UiStyle.KING_CLASSIC -> KingClassicTypography
                 UiStyle.KK_UI -> KingPlayTypography
-            }).withFont(config.font),
+            }).withFont(config.font).readable(),
             shapes = when (config.uiStyle) {
                 UiStyle.KING_ART -> KingArtShapes
                 UiStyle.KING_NEON -> KingNeonShapes
@@ -130,3 +144,5 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     is ContextWrapper -> baseContext.findActivity()
     else -> null
 }
+
+private const val COVER_FADE_MS = 700

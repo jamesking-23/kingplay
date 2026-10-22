@@ -3,6 +3,7 @@ package com.kingplay.app
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -11,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,6 +30,7 @@ import com.kingplay.feature.library.detail.MostPlayedRoute
 import com.kingplay.feature.library.detail.PlaylistDetailRoute
 import com.kingplay.feature.library.report.ReportArgs
 import com.kingplay.feature.nowplaying.stage.LyricsBrowserScreen
+import com.kingplay.core.designsystem.theme.CoverBackdrop
 import com.kingplay.feature.library.options.TrackOptionsHost
 import com.kingplay.feature.settings.profile.ProfileScreen
 import com.kingplay.feature.library.report.ReportScreen
@@ -44,7 +47,7 @@ import com.kingplay.feature.video.ui.VideoPlayerScreen
  */
 @Composable
 fun KingPlayRoot(modifier: Modifier = Modifier, startRoute: String? = null) {
-    TrackOptionsHost { KingPlayContent(modifier, startRoute) }
+    TrackOptionsHost { CoverBackdrop(modifier = Modifier.fillMaxSize()) { KingPlayContent(modifier, startRoute) } }
 }
 
 @Composable
@@ -59,6 +62,7 @@ private fun KingPlayContent(modifier: Modifier, startRoute: String?) {
 
     Scaffold(
         modifier = modifier,
+        containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (!fullScreen) {

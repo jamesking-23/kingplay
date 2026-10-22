@@ -74,6 +74,8 @@
     <string name="about_collapsed">Collapsed</string>
     <string name="settings_about_note">Your music and data stay on this device.</string>
     <string name="settings_personalise">Fonts and colours</string>
+    <string name="settings_cover_theme">Colours follow the song</string>
+    <string name="settings_cover_theme_hint">Blend the app\'s colours with the cover art of the song that is playing.</string>
     <string name="settings_font">Font</string>
     <string name="settings_font_sample">The quick brown fox jumps over the lazy dog. 0123456789</string>
     <string name="settings_text_size">Text size: %1$d%%</string>

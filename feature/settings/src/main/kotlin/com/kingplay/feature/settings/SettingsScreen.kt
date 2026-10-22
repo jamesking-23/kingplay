@@ -140,9 +140,14 @@ fun SettingsContent(
 ) {
     Scaffold(
         modifier = modifier,
+        containerColor = androidx.compose.ui.graphics.Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    scrolledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
                 title = { Text(stringResource(R.string.settings_title), maxLines = 1) },
                 navigationIcon = {
                     KpIconButton(
@@ -475,6 +480,12 @@ private fun statusMessage(status: BackupStatus): String? = when (status) {
 @Composable
 private fun PersonaliseSection(settings: AppSettings, onEvent: (SettingsEvent) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm)) {
+        SwitchRow(
+            title = stringResource(R.string.settings_cover_theme),
+            hint = stringResource(R.string.settings_cover_theme_hint),
+            checked = settings.coverTheme,
+            onChange = { onEvent(SettingsEvent.SetCoverTheme(it)) },
+        )
         Text(stringResource(R.string.settings_font), style = MaterialTheme.typography.titleSmall)
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm),

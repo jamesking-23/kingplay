@@ -55,6 +55,8 @@ data class AppSettings(
     val nickname: String = "",
     /** Path of the profile picture inside the app's private storage, or null. */
     val profilePhoto: String? = null,
+    /** Tint the app's colours with the colours of the cover art of the song that is playing. */
+    val coverTheme: Boolean = true,
 ) {
     companion object {
         const val MIN_TEXT_SCALE = 0.85f

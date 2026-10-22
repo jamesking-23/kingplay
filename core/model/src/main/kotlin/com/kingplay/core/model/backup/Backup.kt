@@ -83,6 +83,7 @@ object BackupCodec {
                     "tap" to data.settings.haptics.tap.name,
                 ),
                 "nickname" to data.settings.nickname,
+                "coverTheme" to data.settings.coverTheme,
             ),
             "playlists" to data.playlists.map {
                 linkedMapOf("name" to it.name, "createdAtMs" to it.createdAtMs, "tracks" to it.tracks.map(::track))
@@ -213,6 +214,7 @@ object BackupCodec {
                 )
             } ?: defaults.haptics,
             nickname = (m["nickname"] as? String).orEmpty().trim().take(AppSettings.MAX_NICKNAME),
+            coverTheme = m["coverTheme"] as? Boolean ?: defaults.coverTheme,
         )
     }
 

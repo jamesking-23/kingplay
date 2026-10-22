@@ -25,6 +25,7 @@ data class StoredSettings(
     val hapticTap: String? = null,
     val nickname: String? = null,
     val profilePhoto: String? = null,
+    val coverTheme: Boolean? = null,
 )
 
 private fun level(name: String?, fallback: HapticLevel) = HapticLevel.entries.firstOrNull { it.name == name } ?: fallback
@@ -50,6 +51,7 @@ fun StoredSettings.toSettings(): AppSettings {
         ),
         nickname = nickname.orEmpty().trim().take(AppSettings.MAX_NICKNAME),
         profilePhoto = profilePhoto?.ifBlank { null },
+        coverTheme = coverTheme ?: defaults.coverTheme,
     )
 }
 
@@ -69,4 +71,5 @@ fun AppSettings.toStored() = StoredSettings(
     hapticTap = haptics.tap.name,
     nickname = nickname,
     profilePhoto = profilePhoto,
+    coverTheme = coverTheme,
 )
