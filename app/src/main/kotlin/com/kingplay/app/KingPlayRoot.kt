@@ -42,8 +42,10 @@ import com.kingplay.feature.video.ui.VideoPlayerScreen
  * full-screen ones (Now Playing and the video player).
  */
 @Composable
-fun KingPlayRoot(modifier: Modifier = Modifier) {
+fun KingPlayRoot(modifier: Modifier = Modifier, startRoute: String? = null) {
     val navController = rememberNavController()
+    // Debug builds only: lets the screenshot tour open a screen directly.
+    androidx.compose.runtime.LaunchedEffect(startRoute) { startRoute?.let { navController.navigate(it) } }
     val navigator = remember(navController) { AppNavigatorImpl(navController) }
     val backStack by navController.currentBackStackEntryAsState()
     val route = backStack?.destination?.route

@@ -205,40 +205,32 @@ class ScreenshotTourTest {
 
         step("features") {
             shot("10_library_greeting")
-            step("profile") {
-                click("Profile picture")
-                shot("11_profile")
-                back()
+            fun open(route: String) {
+                scenario.close()
+                val intent = android.content.Intent(ctx, MainActivity::class.java)
+                    .putExtra("kp_route", route).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                scenario = ActivityScenario.launch(intent)
+                Thread.sleep(3000)
             }
-            step("fonts") {
-                click("Settings")
-                try {
-                    click("Lora")
-                    shot("14_font_lora")
-                    click("Handwritten")
-                    shot("15_font_handwritten")
-                    click("Easy reading")
-                    shot("15b_font_readable")
+            step("profile") {
+                open("profile")
+                shot("11_profile")
+            }
+            step("settings") {
+                open("settings")
+                shot("12_settings_0")
+                for (page in 1..6) {
                     findScrollable(root())?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
-                    Thread.sleep(600)
-                    find(root(), "Vibration feedback") ?: repeat(6) {
-                        findScrollable(root())?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
-                        Thread.sleep(500)
-                    }
-                    shot("16_settings_haptics")
-                } finally {
-                    back()
+                    Thread.sleep(700)
+                    shot("12_settings_$page")
                 }
             }
             step("lyrics-browser") {
-                click("Open now playing")
-                click("Lyrics")
-                shot("17_lyrics_none")
-                click("Find lyrics online")
+                open("lyrics_browser")
                 Thread.sleep(6000)
-                shot("18_lyrics_browser")
+                shot("17_lyrics_browser")
                 click("Add copied lyrics")
-                shot("19_lyrics_nothing_copied")
+                shot("18_lyrics_nothing_copied")
             }
         }
         scenario.close()

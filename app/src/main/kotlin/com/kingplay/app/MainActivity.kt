@@ -16,6 +16,8 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val appViewModel: AppViewModel by viewModels()
 
+    private fun debugStartRoute(): String? = if (BuildConfig.DEBUG) intent?.getStringExtra("kp_route") else null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -26,7 +28,7 @@ class MainActivity : ComponentActivity() {
                     if (saved.nickname.isBlank()) {
                         WelcomeScreen()
                     } else {
-                        PermissionGate { KingPlayRoot() }
+                        PermissionGate { KingPlayRoot(startRoute = debugStartRoute()) }
                     }
                 }
             }
