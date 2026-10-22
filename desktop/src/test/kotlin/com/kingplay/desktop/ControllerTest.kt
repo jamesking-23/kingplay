@@ -203,28 +203,28 @@ class ControllerTest {
         assertEquals("Song 1", controller.state.value.title)
     }
 
-    @Test fun aPlayIsCountedOnceAfterHalfTheSong() {
+    @Test fun aPlayIsCountedOnceAfterThreeSeconds() {
         controller.playMedia(refs(1))
-        engine.bus.tryEmit(EngineEvent.Position(50_000))
+        engine.bus.tryEmit(EngineEvent.Position(2_000))
         assertTrue(finished.isEmpty())
-        engine.bus.tryEmit(EngineEvent.Position(100_000))
+        engine.bus.tryEmit(EngineEvent.Position(3_000))
         engine.bus.tryEmit(EngineEvent.Position(120_000))
         engine.bus.tryEmit(EngineEvent.Ended)
         assertEquals(listOf(1L), finished)
     }
 
-    @Test fun longSongsCountAfterFourMinutes() {
+    @Test fun longSongsCountAfterThreeSecondsToo() {
         library[1] = track(1, durationMs = 3_600_000)
         controller.playMedia(refs(1))
-        engine.bus.tryEmit(EngineEvent.Position(239_000))
+        engine.bus.tryEmit(EngineEvent.Position(2_999))
         assertTrue(finished.isEmpty())
-        engine.bus.tryEmit(EngineEvent.Position(240_000))
+        engine.bus.tryEmit(EngineEvent.Position(3_000))
         assertEquals(listOf(1L), finished)
     }
 
     @Test fun skippingEarlyDoesNotCount() {
         controller.playMedia(refs(1, 2))
-        engine.bus.tryEmit(EngineEvent.Position(10_000))
+        engine.bus.tryEmit(EngineEvent.Position(1_000))
         controller.skipToNext()
         assertTrue(finished.isEmpty())
     }
