@@ -161,6 +161,14 @@ class BackupTest {
     }
 
     @Test
+    fun coverThemeSwitchSurvivesBackup() {
+        for (on in listOf(true, false)) {
+            val data = BackupData(0, AppSettings(coverTheme = on), emptyList(), emptyList(), emptyList(), emptyList(), emptyMap())
+            assertEquals(on, BackupCodec.decode(BackupCodec.encode(data)).settings.coverTheme)
+        }
+    }
+
+    @Test
     fun hapticsSwitchOffSilencesEveryKind() {
         val off = com.kingplay.core.model.settings.HapticSettings(enabled = false)
         com.kingplay.core.model.settings.HapticKind.entries.forEach {
