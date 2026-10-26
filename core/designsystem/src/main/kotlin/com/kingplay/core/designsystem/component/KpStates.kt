@@ -1,7 +1,9 @@
 package com.kingplay.core.designsystem.component
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -65,13 +67,15 @@ private fun StateLayout(
     actionLabel: String?,
     onAction: (() -> Unit)?,
 ) {
+    // Centred when it fits; scrolls instead of being cut off at large text sizes.
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
+        modifier = Modifier
+            .verticalScroll(androidx.compose.foundation.rememberScrollState())
             .padding(KpTheme.spacing.xl)
             .semantics(mergeDescendants = true) { },
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.md, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.md),
     ) {
         Icon(
             imageVector = icon,
@@ -91,5 +95,6 @@ private fun StateLayout(
         if (actionLabel != null && onAction != null) {
             KpButton(text = actionLabel, onClick = onAction, style = KpButtonStyle.Tonal)
         }
+    }
     }
 }

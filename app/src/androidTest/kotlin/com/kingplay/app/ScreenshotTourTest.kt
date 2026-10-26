@@ -248,6 +248,16 @@ class ScreenshotTourTest {
                     shot("20_${ui}_library")
                 }
             }
+            step("long press") {
+                openUi("KING_NEON")
+                val r = android.graphics.Rect()
+                (find(root(), "Smoke FLAC") ?: error("no song row")).getBoundsInScreen(r)
+                inst.uiAutomation.executeShellCommand("input swipe ${r.centerX()} ${r.centerY()} ${r.centerX()} ${r.centerY()} 1000").close()
+                Thread.sleep(800)
+                shot("21_long_press_menu")
+                click("Add to playlist")
+                shot("22_add_to_playlist")
+            }
             // Large text: the playlist tab and a detail screen must still lay out.
             inst.uiAutomation.executeShellCommand("settings put system font_scale 1.6").close()
             Thread.sleep(1500)

@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
@@ -138,13 +140,13 @@ fun PlaylistsTab(
         MediaRow(
             title = stringResource(R.string.most_played_title),
             subtitle = stringResource(R.string.most_played_subtitle),
-            leadingIcon = KpIcons.MusicNote,
+            leadingIcon = Icons.Default.Star,
             onClick = navigator::toMostPlayed,
         )
         MediaRow(
             title = "Monthly listening report",
             subtitle = "Your month in music, like a Wrapped",
-            leadingIcon = KpIcons.MusicNote,
+            leadingIcon = Icons.Default.DateRange,
             onClick = { navigator.toReport() },
         )
         Box(modifier = Modifier.fillMaxWidth().padding(horizontal = KpTheme.spacing.lg)) {
