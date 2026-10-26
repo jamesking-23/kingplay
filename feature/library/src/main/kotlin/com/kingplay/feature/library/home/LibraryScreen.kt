@@ -200,7 +200,7 @@ private fun LibraryHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             if (who.nickname.isNotBlank()) {
                 Text(
                     stringResource(greetingRes(), who.nickname),

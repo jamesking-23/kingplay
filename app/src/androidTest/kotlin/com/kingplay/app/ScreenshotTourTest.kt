@@ -254,7 +254,10 @@ class ScreenshotTourTest {
             step("large font") {
                 openUi("KING_NEON")
                 shot("30_large_library")
-                click("Playlists")
+                repeat(5) {
+                    inst.uiAutomation.executeShellCommand("input swipe 900 1300 120 1300 150").close()
+                    Thread.sleep(500)
+                }
                 shot("31_large_playlists")
                 click("Most played")
                 shot("32_large_most_played")
