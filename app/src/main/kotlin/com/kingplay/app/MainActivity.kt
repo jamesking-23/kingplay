@@ -19,6 +19,12 @@ class MainActivity : ComponentActivity() {
 
     private fun debugStartRoute(): String? = if (BuildConfig.DEBUG) intent?.getStringExtra("kp_route") else null
 
+    private fun debugStyle(): com.kingplay.core.designsystem.theme.UiStyle? = if (BuildConfig.DEBUG) {
+        intent?.getStringExtra("kp_ui")?.let { runCatching { com.kingplay.core.designsystem.theme.UiStyle.valueOf(it) }.getOrNull() }
+    } else {
+        null
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -26,7 +32,11 @@ class MainActivity : ComponentActivity() {
             val settings by appViewModel.settings.collectAsStateWithLifecycle()
             val cover by coverViewModel.color.collectAsStateWithLifecycle()
             settings?.let { saved ->
-                KingPlayTheme(saved.toThemeConfig().let { if (saved.coverTheme) it.copy(coverColor = cover) else it }) {
+                KingPlayTheme(
+                    saved.toThemeConfig()
+                        .let { if (saved.coverTheme) it.copy(coverColor = cover) else it }
+                        .let { c -> debugStyle()?.let { c.copy(uiStyle = it) } ?: c },
+                ) {
                     if (saved.nickname.isBlank()) {
                         WelcomeScreen()
                     } else {

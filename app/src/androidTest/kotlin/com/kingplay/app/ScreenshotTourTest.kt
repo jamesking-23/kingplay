@@ -233,6 +233,34 @@ class ScreenshotTourTest {
                 shot("18_lyrics_nothing_copied")
             }
         }
+        step("designs") {
+            fun openUi(ui: String, route: String? = null) {
+                scenario.close()
+                val intent = android.content.Intent(ctx, MainActivity::class.java)
+                    .putExtra("kp_ui", ui).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                route?.let { intent.putExtra("kp_route", it) }
+                scenario = ActivityScenario.launch(intent)
+                Thread.sleep(3500)
+            }
+            for (ui in listOf("KING_ART", "KK_UI", "KING_NEON", "KING_GLASS", "KING_CLASSIC")) {
+                step("design $ui") {
+                    openUi(ui)
+                    shot("20_${ui}_library")
+                }
+            }
+            // Large text: the playlist tab and a detail screen must still lay out.
+            inst.uiAutomation.executeShellCommand("settings put system font_scale 1.6").close()
+            Thread.sleep(1500)
+            step("large font") {
+                openUi("KING_NEON")
+                shot("30_large_library")
+                click("Playlists")
+                shot("31_large_playlists")
+                click("Most played")
+                shot("32_large_most_played")
+            }
+            inst.uiAutomation.executeShellCommand("settings put system font_scale 1.0").close()
+        }
         scenario.close()
     }
 }
