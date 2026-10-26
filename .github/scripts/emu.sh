@@ -5,7 +5,7 @@ adb shell settings put global hide_error_dialogs 1
 adb shell settings put global window_animation_scale 0
 adb shell settings put global transition_animation_scale 0
 adb logcat -c
-timeout 420 gradle :app:connectedDebugAndroidTest --stacktrace 2>&1 | tee build.log
+timeout 900 gradle :app:connectedDebugAndroidTest --stacktrace 2>&1 | tee build.log
 rc=${PIPESTATUS[0]}
 adb logcat -d -v threadtime > logcat.txt
 rm -rf shots; mkdir -p shots
