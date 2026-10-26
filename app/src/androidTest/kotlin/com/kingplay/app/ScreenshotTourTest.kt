@@ -248,6 +248,18 @@ class ScreenshotTourTest {
                     shot("20_${ui}_library")
                 }
             }
+            for (ui in listOf("KING_ART", "KK_UI", "KING_NEON", "KING_GLASS", "KING_CLASSIC")) {
+                step("np $ui") {
+                    openUi(ui, "nowplaying")
+                    shot("40_${ui}_nowplaying")
+                }
+            }
+            for (ui in listOf("KING_GLASS", "KING_CLASSIC")) {
+                step("settings $ui") {
+                    openUi(ui, "settings")
+                    shot("41_${ui}_settings")
+                }
+            }
             step("long press") {
                 openUi("KING_NEON")
                 val r = android.graphics.Rect()
