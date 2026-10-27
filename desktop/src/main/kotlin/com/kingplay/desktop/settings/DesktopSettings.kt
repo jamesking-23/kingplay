@@ -20,7 +20,7 @@ data class DesktopSettings(
     val closeToTray: Boolean = false,
     val globalMediaKeys: Boolean = true,
     val uiTheme: AppUiTheme = AppUiTheme.KING_ART,
-    val font: AppFont = AppFont.DEFAULT,
+    val font: AppFont = AppFont.FREDOKA,
     val textScale: Float = 1f,
     /** A colour the person picked (ARGB) that replaces the accent, or null. */
     val customAccent: Long? = null,

@@ -45,7 +45,7 @@ data class AppSettings(
     val dynamicColor: Boolean = true,
     val lowPowerVisuals: Boolean = false,
     val uiTheme: AppUiTheme = AppUiTheme.KING_ART,
-    val font: AppFont = AppFont.DEFAULT,
+    val font: AppFont = AppFont.FREDOKA,
     /** Multiplies every text size; 1.0 is normal. */
     val textScale: Float = 1f,
     /** A colour the person picked (ARGB) that replaces the design's main colour, or null to keep the design's own. */

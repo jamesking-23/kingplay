@@ -139,8 +139,12 @@ private fun AboutTextDialog(title: String, text: String, onClose: () -> Unit) {
 /** Opens a web address in the default browser; does nothing if this PC has none. */
 private fun openLink(url: String) {
     runCatching {
-        if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-            Desktop.getDesktop().browse(URI(url))
+        if (!Desktop.isDesktopSupported()) return@runCatching
+        val desktop = Desktop.getDesktop()
+        if (url.startsWith("mailto:") && desktop.isSupported(Desktop.Action.MAIL)) {
+            desktop.mail(URI(url))
+        } else if (desktop.isSupported(Desktop.Action.BROWSE)) {
+            desktop.browse(URI(url))
         }
     }
 }

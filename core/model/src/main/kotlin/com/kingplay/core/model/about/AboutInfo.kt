@@ -14,9 +14,12 @@ enum class Platform { ANDROID, DESKTOP }
 object AboutInfo {
     const val PRODUCT = "KingPlay"
     const val COMPANY = "KKINGG Corporation"
-    const val FEEDBACK_URL = "https://github.com/jamesking-23/kingplay/issues"
-    const val HELP_URL = "https://github.com/jamesking-23/kingplay#readme"
-    const val DESKTOP_HELP_URL = "https://github.com/jamesking-23/kingplay/blob/main/docs/DESKTOP_USER_GUIDE.md"
+    const val SUPPORT_EMAIL = "jamesezra2002@gmail.com"
+
+    /** Help and feedback open the person's email app, addressed to the developer; nothing sends itself. */
+    const val FEEDBACK_URL = "mailto:$SUPPORT_EMAIL?subject=KingPlay%20feedback"
+    const val HELP_URL = "mailto:$SUPPORT_EMAIL?subject=KingPlay%20help"
+    const val DESKTOP_HELP_URL = "mailto:$SUPPORT_EMAIL?subject=KingPlay%20for%20Windows%20help"
 
     private const val ID_BYTES = 16
 

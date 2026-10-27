@@ -37,6 +37,6 @@ class AboutInfoTest {
         assertTrue(AboutInfo.licenseTerms.contains("KKINGG Corporation"))
         assertTrue(AboutInfo.privacyPolicy.contains("nothing about you"))
         listOf(AboutInfo.FEEDBACK_URL, AboutInfo.helpUrl(Platform.ANDROID), AboutInfo.helpUrl(Platform.DESKTOP))
-            .forEach { assertTrue(it.startsWith("https://")) }
+            .forEach { assertTrue(it.startsWith("mailto:${AboutInfo.SUPPORT_EMAIL}")) }
     }
 }

@@ -84,14 +84,13 @@ fun KingPlayTheme(
         else -> lightAccentScheme(config.accent)
     }
     val amoled = if (dark && config.mode == ThemeMode.AMOLED) base.toAmoled() else base
-    val coverTint = if (config.customAccent == null) {
-        config.coverColor?.let { animateColorAsState(tuneCoverColor(it, dark), tween(COVER_FADE_MS), label = "cover").value }
-    } else {
-        null
+    // The cover colour follows the song even when a custom accent is chosen (the Settings switch turns it off).
+    val coverTint = config.coverColor?.let {
+        animateColorAsState(tuneCoverColor(it, dark), tween(COVER_FADE_MS), label = "cover").value
     }
     val colorScheme = when {
-        config.customAccent != null -> amoled.withAccent(Color(config.customAccent.toInt()), dark)
         coverTint != null -> amoled.withCover(coverTint, dark)
+        config.customAccent != null -> amoled.withAccent(Color(config.customAccent.toInt()), dark)
         else -> amoled
     }
 
