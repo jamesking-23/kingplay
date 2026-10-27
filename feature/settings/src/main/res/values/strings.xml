@@ -137,5 +137,5 @@
     <string name="update_failed_none">No downloadable version was found.</string>
     <string name="update_failed_download">The download failed. Try again.</string>
     <string name="update_failed_file">The downloaded file is not a KingPlay update, so it was not installed.</string>
-    <string name="update_or_manual">You can also update by uninstalling KingPlay and installing the newest version from the project page. Your music is never deleted, but settings and playlists are removed when you uninstall.</string>
+    <string name="update_or_manual">You can also update by uninstalling KingPlay and installing the newest version. Your music is never deleted, but settings and playlists are removed when you uninstall.</string>
 </resources>

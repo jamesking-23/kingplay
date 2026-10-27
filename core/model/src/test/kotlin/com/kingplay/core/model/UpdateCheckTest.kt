@@ -52,4 +52,11 @@ class UpdateCheckTest {
         assertNull(UpdateCheck.newest(http, UpdatePlatform.ANDROID))
         assertNull(UpdateCheck.newest("not json", UpdatePlatform.ANDROID))
     }
+
+    @Test
+    fun displayedNotesNeverContainLinks() {
+        val raw = "## What's Changed\n* Faster scan by @x in https://github.com/a/b/pull/3\nBetter search\n\n\n**Full Changelog**: https://github.com/a/b/compare/v1...v2"
+        val shown = UpdateCheck.plainNotes(raw)
+        assertEquals("Better search", shown)
+    }
 }

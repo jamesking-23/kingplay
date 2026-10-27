@@ -19,6 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingplay.core.designsystem.component.KpButton
 import com.kingplay.core.designsystem.component.KpButtonStyle
 import com.kingplay.core.designsystem.theme.KpTheme
+import com.kingplay.core.model.update.UpdateCheck
 import com.kingplay.feature.settings.R
 
 /** "Check for updates": finds a newer build, downloads it and hands it to Android's installer. */
@@ -59,9 +60,10 @@ fun UpdateSection(modifier: Modifier = Modifier, viewModel: UpdateViewModel = hi
         }
         when (val s = state) {
             is UpdateState.Available -> {
-                if (s.release.notes.isNotBlank()) {
+                val notes = UpdateCheck.plainNotes(s.release.notes)
+                if (notes.isNotBlank()) {
                     Text(
-                        s.release.notes.take(NOTES_MAX),
+                        notes.take(NOTES_MAX),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

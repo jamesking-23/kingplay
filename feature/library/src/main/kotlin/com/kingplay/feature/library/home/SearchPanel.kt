@@ -3,7 +3,13 @@ package com.kingplay.feature.library.home
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.filled.PlayArrow
+import com.kingplay.core.designsystem.component.KpButton
+import com.kingplay.core.designsystem.component.KpButtonStyle
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -39,6 +45,7 @@ import com.kingplay.core.ui.quantityString
 import com.kingplay.feature.library.R
 
 /** Full-screen search over songs, albums, artists and videos. Shown in place of the tabs. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SearchPanel(
     navigator: AppNavigator,
@@ -92,6 +99,24 @@ fun SearchPanel(
             )
             else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                 if (results.tracks.isNotEmpty()) {
+                    item(key = "play-all") {
+                        FlowRow(
+                            modifier = Modifier.padding(horizontal = KpTheme.spacing.lg, vertical = KpTheme.spacing.xs),
+                            horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm),
+                        ) {
+                            KpButton(
+                                text = stringResource(R.string.search_play_all, results.tracks.size),
+                                onClick = { viewModel.playAll(results.tracks) },
+                                leadingIcon = Icons.Default.PlayArrow,
+                            )
+                            KpButton(
+                                text = stringResource(R.string.search_shuffle),
+                                onClick = { viewModel.shuffleAll(results.tracks) },
+                                style = KpButtonStyle.Tonal,
+                                leadingIcon = KpIcons.Shuffle,
+                            )
+                        }
+                    }
                     item(key = "h-songs") { SectionTitle(stringResource(R.string.songs_section)) }
                     items(results.tracks, key = { "t${it.id}" }) { track ->
                         MediaRow(

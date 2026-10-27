@@ -87,7 +87,7 @@ fun UpdateSection() {
             }) { Text("Check for updates") }
         }
         Text(
-            "You can also update by uninstalling KingPlay and installing the newest version from the project page.",
+            "You can also update by uninstalling KingPlay and installing the newest version.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

@@ -33,7 +33,7 @@ class SearchViewModel @Inject constructor(
     val results: StateFlow<SearchResults> = _query
         .debounce(DEBOUNCE_MS)
         .flatMapLatest { text ->
-            if (text.isBlank()) flowOf(SearchResults.Empty) else search.search(text).catch { emit(SearchResults.Empty) }
+            if (text.isBlank()) flowOf(SearchResults.Empty) else search.search(text, MAX_RESULTS).catch { emit(SearchResults.Empty) }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), SearchResults.Empty)
 
@@ -41,10 +41,17 @@ class SearchViewModel @Inject constructor(
         _query.value = text
     }
 
+    fun playAll(tracks: List<Track>) {
+        tracks.firstOrNull()?.let { actions.playFrom(tracks.map { t -> t.id }, it.id) }
+    }
+
+    fun shuffleAll(tracks: List<Track>) = actions.shuffle(tracks.map { it.id })
+
     fun play(track: Track, among: List<Track>) = actions.playFrom(among.map { it.id }, track.id)
 
     private companion object {
         const val DEBOUNCE_MS = 200L
+        const val MAX_RESULTS = 500
         const val STOP_TIMEOUT_MS = 5_000L
     }
 }

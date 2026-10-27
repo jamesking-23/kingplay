@@ -21,6 +21,14 @@ object UpdateCheck {
     private const val FINAL_RELEASE_RANK = 1_000_000L
     private val NUMBER = Regex("\\d+")
 
+    /** Release notes for display: lines with web addresses or repository names are dropped, so no download links show. */
+    fun plainNotes(notes: String): String = notes.lines()
+        .filterNot { it.contains("http", ignoreCase = true) || it.contains("github", ignoreCase = true) }
+        .filterNot { it.trim().startsWith("#") && it.contains("what's changed", ignoreCase = true) }
+        .joinToString("\n")
+        .replace(Regex("\n{3,}"), "\n\n")
+        .trim()
+
     /** Release tags as comparable numbers: v1.0.0-preview8 is [1, 0, 0, 8]; a final release ranks above every preview. */
     fun versionOf(tag: String): List<Long>? {
         val numbers = NUMBER.findAll(tag).mapNotNull { it.value.toLongOrNull() }.toList()

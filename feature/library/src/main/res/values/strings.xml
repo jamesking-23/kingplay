@@ -96,6 +96,8 @@
     <string name="search_open">Search</string>
     <string name="search_close">Close search</string>
     <string name="search_clear">Clear</string>
+    <string name="search_play_all">Play all (%1$d)</string>
+    <string name="search_shuffle">Shuffle</string>
     <string name="search_empty">No matches</string>
     <string name="search_prompt">Type to search your library</string>
     <plurals name="count_items">
