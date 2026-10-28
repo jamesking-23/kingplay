@@ -1,5 +1,7 @@
 package com.kingplay.feature.settings
 
+import com.kingplay.core.designsystem.theme.UiStyle
+import androidx.compose.foundation.shape.RoundedCornerShape
 import android.content.Context
 import android.net.Uri
 import android.os.Build
@@ -223,11 +225,29 @@ fun SettingsContent(
 
 @Composable
 private fun SectionTitle(textRes: Int) {
-    Text(
-        text = stringResource(textRes),
-        style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(top = KpTheme.spacing.md).semantics { heading() },
-    )
+    val text = stringResource(textRes)
+    val scheme = MaterialTheme.colorScheme
+    val heading = Modifier.padding(top = KpTheme.spacing.lg).semantics { heading() }
+    when (KpTheme.uiStyle) {
+        UiStyle.KING_NEON -> Column(modifier = heading) {
+            Text(text.uppercase(), style = MaterialTheme.typography.labelLarge, color = scheme.primary)
+            Box(Modifier.padding(top = 4.dp).size(width = 36.dp, height = 3.dp).background(scheme.secondary))
+        }
+        UiStyle.KING_GLASS -> Text(
+            text,
+            style = MaterialTheme.typography.titleSmall,
+            color = scheme.onPrimaryContainer,
+            modifier = heading
+                .background(scheme.primaryContainer.copy(alpha = 0.7f), RoundedCornerShape(50))
+                .padding(horizontal = 14.dp, vertical = 6.dp),
+        )
+        UiStyle.KING_CLASSIC -> Column(modifier = heading) {
+            Text(text.uppercase(), style = MaterialTheme.typography.labelLarge, color = scheme.secondary)
+            androidx.compose.material3.HorizontalDivider(color = scheme.secondary, modifier = Modifier.padding(top = 4.dp))
+        }
+        UiStyle.KK_UI -> Text(text, style = MaterialTheme.typography.titleMedium, color = scheme.primary, modifier = heading)
+        UiStyle.KING_ART -> Text(text, style = MaterialTheme.typography.titleMedium, modifier = heading)
+    }
 }
 
 @Composable
