@@ -10,6 +10,8 @@
     <string name="library_full_rescan">Full rescan</string>
     <string name="library_more">More library options</string>
 
+    <string name="playlist_empty_title">This playlist is empty</string>
+    <string name="playlist_empty_message">Add songs from your library to start it.</string>
     <string name="add_songs_title">Add songs</string>
     <string name="add_songs_confirm">Add (%1$d)</string>
     <string name="add_songs_button">Add songs</string>

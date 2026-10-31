@@ -104,8 +104,12 @@ fun DetailScreen(
                 }
                 Async.Empty -> KpEmptyState(
                     icon = KpIcons.MusicNote,
-                    title = stringResource(R.string.detail_empty_title),
-                    message = stringResource(R.string.detail_empty_message),
+                    title = stringResource(
+                        if (onAddSongs != null) R.string.playlist_empty_title else R.string.detail_empty_title,
+                    ),
+                    message = stringResource(
+                        if (onAddSongs != null) R.string.playlist_empty_message else R.string.detail_empty_message,
+                    ),
                     actionLabel = onAddSongs?.let { stringResource(R.string.add_songs_button) },
                     onAction = onAddSongs,
                 )
