@@ -14,6 +14,8 @@ object WhatsNew {
         "The app's colours follow the cover art of the song that is playing.",
         "Bigger default text, and Fredoka as the starting font.",
         "Five designs, each with its own look for lists, tabs and the mini player.",
+        "Windows: full-screen video hides its controls after 2 seconds and brings them back on a mouse move or key press.",
+        "Windows: the same playlist, search, queue and cover-colour features as the phone, plus Show in folder and Recycle Bin on songs.",
     )
 
     /** True when the pop-up should appear: an update happened, not a first run or a development build. */
