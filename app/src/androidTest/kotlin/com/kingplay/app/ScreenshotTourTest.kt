@@ -270,6 +270,30 @@ class ScreenshotTourTest {
                 click("Add to playlist")
                 shot("22_add_to_playlist")
             }
+            step("playlist flow") {
+                openUi("KING_GLASS")
+                inst.uiAutomation.executeShellCommand("input swipe 900 1300 120 1300 150").close()
+                Thread.sleep(900)
+                shot("50_playlists_tab_empty")
+                click("New playlist")
+                typeInto("Road trip")
+                click("Create")
+                shot("51_new_playlist_opened")
+                click("Add songs")
+                shot("52_add_songs_picker")
+                click("Smoke FLAC")
+                click("Smoke OGG")
+                shot("53_picked")
+                click("Add (2)")
+                shot("54_playlist_with_songs")
+                back()
+                shot("55_playlists_tab_after")
+            }
+            step("queue from mini player") {
+                openUi("KING_NEON")
+                click("Show queue")
+                shot("56_queue_sheet")
+            }
             // Large text: the playlist tab and a detail screen must still lay out.
             inst.uiAutomation.executeShellCommand("settings put system font_scale 1.6").close()
             Thread.sleep(1500)
