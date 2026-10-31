@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
@@ -48,6 +49,7 @@ fun NowPlayingBar(
     initialVolumePercent: Int,
     onVolumeChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    onQueue: (() -> Unit)? = null,
 ) {
     var volume by remember { mutableFloatStateOf(initialVolumePercent.toFloat() / PERCENT) }
     var dragging by remember { mutableStateOf<Float?>(null) }
@@ -130,6 +132,11 @@ fun NowPlayingBar(
                         },
                         on = state.repeatMode != RepeatMode.OFF,
                     ) { controller.setRepeatMode(nextRepeatMode(state.repeatMode)) }
+                    if (onQueue != null) {
+                        IconButton(onClick = onQueue) {
+                            Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = "Show queue")
+                        }
+                    }
                 }
                 Row(
                     modifier = Modifier.weight(1f),

@@ -28,6 +28,8 @@ data class DesktopSettings(
     val nickname: String = "",
     /** Path of the saved profile picture inside the KingPlay data folder, or null. */
     val profilePhoto: String? = null,
+    /** The version whose "What's new" has been dealt with; empty on a fresh install. */
+    val lastSeenVersion: String = "",
 ) {
     fun withVolume(percent: Int): DesktopSettings = copy(volumePercent = percent.coerceIn(0, MAX_VOLUME))
 
@@ -58,6 +60,7 @@ class SettingsStore(private val file: File) {
             customAccent = (root["customAccent"] as? Number)?.toLong(),
             nickname = (root["nickname"] as? String).orEmpty().trim().take(AppSettings.MAX_NICKNAME),
             profilePhoto = (root["profilePhoto"] as? String)?.takeIf { it.isNotBlank() },
+            lastSeenVersion = (root["lastSeenVersion"] as? String).orEmpty(),
         )
     }
 
@@ -70,6 +73,7 @@ class SettingsStore(private val file: File) {
             "customAccent" to settings.customAccent,
             "nickname" to settings.nickname,
             "profilePhoto" to settings.profilePhoto,
+            "lastSeenVersion" to settings.lastSeenVersion,
             "themeMode" to settings.themeMode.name,
             "accent" to settings.accent.name,
             "volumePercent" to settings.volumePercent.toLong(),

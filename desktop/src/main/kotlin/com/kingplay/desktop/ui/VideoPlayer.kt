@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -68,6 +69,8 @@ private const val SKIP_MS = 10_000L
 private const val POLL_MS = 500L
 private const val SURFACE_POLL_MS = 50L
 private const val SAVE_EVERY_POLLS = 10
+private const val ACTIVITY_POLL_MS = 150L
+private const val HIDE_AFTER_MS = 2_000L
 
 /** One choice in the subtitle or audio list. */
 private data class TrackChoice(val id: Int, val label: String)
@@ -105,6 +108,10 @@ fun VideoWindow(
     var panel by remember(video.id) { mutableStateOf<TrackPanel?>(null) }
     var tracks by remember(video.id) { mutableStateOf<Pair<List<TrackChoice>, Int>>(emptyList<TrackChoice>() to -1) }
     val fullscreen = windowState.placement == WindowPlacement.Fullscreen
+    // In full screen the controls fade away after a short idle time and come back on any mouse or key activity.
+    var controlsVisible by remember(video.id) { mutableStateOf(true) }
+    var controlsHeightDp by remember(video.id) { mutableFloatStateOf(0f) }
+    val wake = remember(video.id) { java.util.concurrent.atomic.AtomicBoolean(false) }
 
     LaunchedEffect(component) {
         // VLC needs a visible surface when playback starts, or it opens a window of its own.
@@ -118,7 +125,25 @@ fun VideoWindow(
     }
 
     DisposableEffect(component) {
+        // Key presses and clicks on the native video surface never reach Compose, so listen on it directly.
+        val surface = component.videoSurfaceComponent()
+        val key = object : java.awt.event.KeyAdapter() {
+            override fun keyPressed(e: java.awt.event.KeyEvent) = wake.set(true)
+        }
+        val mouse = object : java.awt.event.MouseAdapter() {
+            override fun mousePressed(e: java.awt.event.MouseEvent) = wake.set(true)
+            override fun mouseMoved(e: java.awt.event.MouseEvent) = wake.set(true)
+            override fun mouseWheelMoved(e: java.awt.event.MouseWheelEvent) = wake.set(true)
+        }
+        surface.addKeyListener(key)
+        surface.addMouseListener(mouse)
+        surface.addMouseMotionListener(mouse)
+        surface.addMouseWheelListener(mouse)
         onDispose {
+            surface.removeKeyListener(key)
+            surface.removeMouseListener(mouse)
+            surface.removeMouseMotionListener(mouse)
+            surface.removeMouseWheelListener(mouse)
             val lastPosition = player.status().time()
             val lastLength = player.status().length()
             if (lastLength > 0) onProgress(lastPosition, lastLength)
@@ -189,6 +214,7 @@ fun VideoWindow(
         title = video.title,
         state = windowState,
         onPreviewKeyEvent = { event ->
+            wake.set(true)
             if (event.type != KeyEventType.KeyDown) {
                 false
             } else {
@@ -203,12 +229,59 @@ fun VideoWindow(
             }
         },
     ) {
+        val density = androidx.compose.ui.platform.LocalDensity.current.density
+        LaunchedEffect(fullscreen, component) {
+            val blank = java.awt.Toolkit.getDefaultToolkit().createCustomCursor(
+                java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB),
+                java.awt.Point(0, 0),
+                "hidden",
+            )
+            fun cursorHidden(hidden: Boolean) {
+                val cursor = if (hidden) blank else java.awt.Cursor.getDefaultCursor()
+                runCatching {
+                    component.cursor = cursor
+                    component.videoSurfaceComponent().cursor = cursor
+                    window.cursor = cursor
+                }
+            }
+            controlsVisible = true
+            cursorHidden(false)
+            var last = runCatching { java.awt.MouseInfo.getPointerInfo()?.location }.getOrNull()
+            var idleSince = System.currentTimeMillis()
+            try {
+                while (fullscreen) {
+                    delay(ACTIVITY_POLL_MS)
+                    val now = System.currentTimeMillis()
+                    val pointer = runCatching { java.awt.MouseInfo.getPointerInfo()?.location }.getOrNull()
+                    val moved = pointer != null && last != null && (pointer.x != last.x || pointer.y != last.y)
+                    last = pointer
+                    val overControls = pointer != null && controlsVisible &&
+                        pointer.y >= window.y + window.height - controlsHeightDp
+                    if (moved || overControls || wake.getAndSet(false)) {
+                        idleSince = now
+                        if (!controlsVisible) {
+                            controlsVisible = true
+                            cursorHidden(false)
+                        }
+                    } else if (controlsVisible && now - idleSince >= HIDE_AFTER_MS) {
+                        controlsVisible = false
+                        cursorHidden(true)
+                    }
+                }
+            } finally {
+                controlsVisible = true
+                cursorHidden(false)
+            }
+        }
         KingPlayDesktopTheme(settings) {
             Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     Box(modifier = Modifier.weight(1f).fillMaxWidth().background(Color.Black)) {
                         SwingPanel(factory = { component }, modifier = Modifier.fillMaxSize())
                     }
+                    if (!fullscreen || controlsVisible) Column(
+                        modifier = Modifier.onSizeChanged { controlsHeightDp = it.height / density },
+                    ) {
                     panel?.let { which ->
                         TrackStrip(
                             title = if (which == TrackPanel.Subtitles) "Subtitles" else "Audio track",
@@ -255,6 +328,7 @@ fun VideoWindow(
                         onNext = onNext,
                         onPrevious = onPrevious,
                     )
+                    }
                 }
             }
         }

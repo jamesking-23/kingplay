@@ -238,11 +238,17 @@ fun App(
                             currentTrack = currentId?.let(index::get),
                             initialVolumePercent = settings.volumePercent,
                             onVolumeChange = app::setVolume,
+                            onQueue = { page = Page.Queue },
                         )
                     }
                 }
             }
             nameDialog?.let { NameDialog(it) { nameDialog = null } }
+            WhatsNewDialog(
+                lastSeen = settings.lastSeenVersion,
+                installed = com.kingplay.desktop.update.installedTag,
+                onSeen = { tag -> app.updateSettings { it.copy(lastSeenVersion = tag) } },
+            )
         }
     }
 }
@@ -260,15 +266,15 @@ private fun Rail(page: Page, onPage: (Page) -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         RailItem("Songs", Icons.Filled.MusicNote, page is Page.Songs) { onPage(Page.Songs) }
-        RailItem("Albums", Icons.Filled.Album, page is Page.Albums || page is Page.AlbumDetail) { onPage(Page.Albums) }
-        RailItem("Artists", Icons.Filled.Person, page is Page.Artists || page is Page.ArtistDetail) {
-            onPage(Page.Artists)
-        }
         RailItem(
             "Playlists",
             Icons.Filled.LibraryMusic,
             page is Page.Playlists || page is Page.PlaylistDetail || page is Page.Smart,
         ) { onPage(Page.Playlists) }
+        RailItem("Albums", Icons.Filled.Album, page is Page.Albums || page is Page.AlbumDetail) { onPage(Page.Albums) }
+        RailItem("Artists", Icons.Filled.Person, page is Page.Artists || page is Page.ArtistDetail) {
+            onPage(Page.Artists)
+        }
         RailItem("Queue", Icons.AutoMirrored.Filled.QueueMusic, page is Page.Queue) { onPage(Page.Queue) }
         RailItem("Lyrics", Icons.Filled.Lyrics, page is Page.Lyrics) { onPage(Page.Lyrics) }
         RailItem("Equalizer", Icons.Filled.Equalizer, page is Page.Equalizer) { onPage(Page.Equalizer) }
@@ -335,7 +341,30 @@ private fun PageContent(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
             )
             val shown = remember(index, query) { index.search(query).sortedForList() }
-            SongList(shown, currentId, app.controller, actions)
+            SongList(
+                shown,
+                currentId,
+                app.controller,
+                actions,
+                header = if (query.isNotBlank() && shown.isNotEmpty()) {
+                    {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Button(onClick = { app.controller?.playMedia(shown.map { MediaRef.Audio(it.id) }, 0) }) {
+                                Text("Play all (${shown.size})")
+                            }
+                            OutlinedButton(onClick = {
+                                app.controller?.setShuffleEnabled(true)
+                                app.controller?.playMedia(shown.shuffled().map { MediaRef.Audio(it.id) }, 0)
+                            }) { Text("Shuffle") }
+                        }
+                    }
+                } else {
+                    null
+                },
+            )
         }
         Page.Albums -> AlbumList(
             index.albums,
@@ -478,7 +507,9 @@ private fun PlaylistsPage(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Button(onClick = {
-                    onDialog(NameDialogState("New playlist", "", "Create") { app.createPlaylist(it) })
+                    onDialog(NameDialogState("New playlist", "", "Create") {
+                        onOpen(Page.PlaylistDetail(app.createPlaylist(it)))
+                    })
                 }) { Text("New playlist") }
                 OutlinedButton(onClick = { importM3u(app, onNotice) }) { Text("Import .m3u") }
             }
@@ -536,6 +567,7 @@ private fun PlaylistDetail(
 ) {
     val playlist = user.playlist(id)
     var confirmDelete by remember { mutableStateOf(false) }
+    var adding by remember { mutableStateOf(false) }
     if (playlist == null) {
         // Deleted (here or elsewhere): leave the page instead of showing an empty one.
         LaunchedEffect(Unit) { onBack() }
@@ -567,11 +599,19 @@ private fun PlaylistDetail(
                         if (saved != null) onNotice("Saved $saved")
                     }) { Text("Export") }
                     TextButton(onClick = { confirmDelete = true }) { Text("Delete") }
+                    OutlinedButton(onClick = { adding = true }) { Text("Add songs") }
                     PlayAllButton(app, tracks)
                 }
             }
         },
     )
+    if (adding) {
+        AddSongsDialog(
+            tracks = remember(index) { index.tracks.sortedForList() },
+            onAdd = { ids -> app.updateUser { it.addToPlaylist(id, ids) } },
+            onDismiss = { adding = false },
+        )
+    }
     if (confirmDelete) {
         ConfirmDialog(
             title = "Delete playlist?",
