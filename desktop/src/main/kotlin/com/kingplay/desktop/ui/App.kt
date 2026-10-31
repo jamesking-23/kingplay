@@ -1,5 +1,12 @@
 package com.kingplay.desktop.ui
 
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import com.kingplay.core.model.theme.CoverTone
+import androidx.compose.ui.graphics.toAwtImage
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.produceState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -149,7 +156,18 @@ fun App(
     var query by remember { mutableStateOf("") }
     var nameDialog by remember { mutableStateOf<NameDialogState?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
+    var deleting by remember { mutableStateOf<Track?>(null) }
     val currentId = (playback.current as? MediaRef.Audio)?.id
+    // The dominant colour of the playing song's cover; the theme blends it in until the next song.
+    val coverArgb by produceState<Int?>(null, currentId, covers, settings.coverTheme) {
+        value = if (!settings.coverTheme || currentId == null) {
+            null
+        } else {
+            withContext(Dispatchers.IO) {
+                index[currentId]?.let { covers.load(it) }?.let { CoverTone.dominant(samplePixels(it)) }
+            }
+        }
+    }
 
     // At the start of a month, say once that last month's report is ready.
     LaunchedEffect(user.history.size, user.reportShownFor) {
@@ -172,15 +190,33 @@ fun App(
         newPlaylistWith = { track ->
             nameDialog = NameDialogState("New playlist", "", "Create") { app.createPlaylist(it, listOf(track)) }
         },
+        showInFolder = { track -> showInFolder(track.uri) },
+        delete = { deleting = it },
     )
 
-    KingPlayDesktopTheme(settings) {
+    KingPlayDesktopTheme(settings, coverArgb) {
         if (settings.nickname.isBlank()) {
             WelcomeScreen(app, settings)
             return@KingPlayDesktopTheme
         }
         CompositionLocalProvider(LocalCovers provides covers) {
-            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            val tint = coverArgb?.takeIf { settings.coverTheme }?.let {
+                Color(CoverTone.tune(it, MaterialTheme.colorScheme.background.luminance() < DARK_LUMINANCE))
+            }
+            val bg = MaterialTheme.colorScheme.background
+            Surface(
+                modifier = Modifier.fillMaxSize().background(
+                    if (tint == null) {
+                        androidx.compose.ui.graphics.SolidColor(bg)
+                    } else {
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            0f to androidx.compose.ui.graphics.lerp(bg, tint, COVER_GRADIENT_TOP_MIX),
+                            COVER_GRADIENT_END to bg,
+                        )
+                    },
+                ),
+                color = Color.Transparent,
+            ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     Row(modifier = Modifier.weight(1f)) {
                         Rail(page) { page = it }
@@ -244,6 +280,22 @@ fun App(
                 }
             }
             nameDialog?.let { NameDialog(it) { nameDialog = null } }
+            deleting?.let { track ->
+                ConfirmDialog(
+                    title = "Move to Recycle Bin?",
+                    message = "\"${track.title}\" will be moved to the Recycle Bin and removed from KingPlay.",
+                    confirmLabel = "Move",
+                    onConfirm = {
+                        if (moveToTrash(track.uri)) {
+                            app.rescan()
+                            notice = "Moved \"${track.title}\" to the Recycle Bin."
+                        } else {
+                            notice = "Could not move that file. It may be open in another program."
+                        }
+                    },
+                    onDismiss = { deleting = null },
+                )
+            }
             WhatsNewDialog(
                 lastSeen = settings.lastSeenVersion,
                 installed = com.kingplay.desktop.update.installedTag,
@@ -770,3 +822,31 @@ private fun importM3u(app: DesktopAppState, onNotice: (String) -> Unit) {
     val (found, total) = app.importM3u(name, text)
     onNotice("Created \"$name\" with $found of $total songs.")
 }
+
+private const val DARK_LUMINANCE = 0.5f
+private const val COVER_GRADIENT_END = 0.62f
+
+/** A small ARGB sample of a picture, enough to find its main colour without reading every pixel. */
+private fun samplePixels(image: androidx.compose.ui.graphics.ImageBitmap): IntArray {
+    val size = 24
+    val small = java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+    val g = small.createGraphics()
+    g.drawImage(image.toAwtImage(), 0, 0, size, size, null)
+    g.dispose()
+    return small.getRGB(0, 0, size, size, null, 0, size)
+}
+
+private fun showInFolder(path: String) {
+    runCatching {
+        // Opens Explorer with the file selected; falls back to just opening its folder.
+        ProcessBuilder("explorer.exe", "/select,", java.io.File(path).absolutePath).start()
+    }.onFailure {
+        runCatching { java.awt.Desktop.getDesktop().open(java.io.File(path).parentFile) }
+    }
+}
+
+private fun moveToTrash(path: String): Boolean = runCatching {
+    val desktop = java.awt.Desktop.getDesktop()
+    java.awt.Desktop.isDesktopSupported() && desktop.isSupported(java.awt.Desktop.Action.MOVE_TO_TRASH) &&
+        desktop.moveToTrash(java.io.File(path))
+}.getOrDefault(false)

@@ -53,6 +53,8 @@ class SongActions(
     val addToQueue: (Track) -> Unit,
     val addToPlaylist: (playlistId: Long, track: Track) -> Unit,
     val newPlaylistWith: (Track) -> Unit,
+    val showInFolder: (Track) -> Unit = {},
+    val delete: (Track) -> Unit = {},
 )
 
 @Composable
@@ -176,6 +178,18 @@ private fun SongRow(
                     menuOpen = false
                     actions.newPlaylistWith(track)
                 })
+                HorizontalDivider()
+                DropdownMenuItem(text = { Text("Show in folder") }, onClick = {
+                    menuOpen = false
+                    actions.showInFolder(track)
+                })
+                DropdownMenuItem(
+                    text = { Text("Move to Recycle Bin…", color = MaterialTheme.colorScheme.error) },
+                    onClick = {
+                        menuOpen = false
+                        actions.delete(track)
+                    },
+                )
                 if (reorder != null) {
                     HorizontalDivider()
                     stepTarget(reorder.position, -1, reorder.count)?.let { to ->

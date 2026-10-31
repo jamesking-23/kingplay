@@ -16,7 +16,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import com.kingplay.desktop.settings.DesktopSettings
 
 @Composable
-fun KingPlayDesktopTheme(settings: DesktopSettings, content: @Composable () -> Unit) {
+fun KingPlayDesktopTheme(settings: DesktopSettings, coverColor: Int? = null, content: @Composable () -> Unit) {
     val dark = isDark(settings.themeMode, isSystemInDarkTheme())
     val kingArt = settings.uiTheme == AppUiTheme.KING_ART
     val primary = Color(accentArgb(settings.accent, dark))
@@ -57,7 +57,27 @@ fun KingPlayDesktopTheme(settings: DesktopSettings, content: @Composable () -> U
         )
     }
     val custom = settings.customAccent?.let { Color(it.toInt()) }
-    val tinted = if (custom == null) {
+    val cover = coverColor?.takeIf { settings.coverTheme }?.let {
+        androidx.compose.animation.animateColorAsState(
+            Color(com.kingplay.core.model.theme.CoverTone.tune(it, dark)),
+            androidx.compose.animation.core.tween(COVER_FADE_MS),
+            label = "cover",
+        ).value
+    }
+    val tinted = if (cover != null) {
+        val mix = if (dark) SURFACE_MIX_DARK else SURFACE_MIX_LIGHT
+        fun soft(c: Color) = lerp(c, cover, mix)
+        scheme.copy(
+            primary = cover,
+            onPrimary = if (cover.luminance() > LIGHT_ACCENT) Color.Black else Color.White,
+            primaryContainer = lerp(cover, scheme.background, CONTAINER_MIX),
+            secondary = lerp(scheme.secondary, cover, SECONDARY_MIX),
+            tertiary = lerp(scheme.tertiary, cover, SECONDARY_MIX),
+            background = soft(scheme.background),
+            surface = soft(scheme.surface),
+            surfaceVariant = soft(scheme.surfaceVariant),
+        )
+    } else if (custom == null) {
         scheme
     } else {
         scheme.copy(
@@ -89,6 +109,11 @@ fun KingPlayDesktopTheme(settings: DesktopSettings, content: @Composable () -> U
 }
 
 private const val LIGHT_ACCENT = 0.55f
+private const val COVER_FADE_MS = 700
+private const val SURFACE_MIX_DARK = 0.10f
+private const val SURFACE_MIX_LIGHT = 0.07f
+private const val SECONDARY_MIX = 0.4f
+const val COVER_GRADIENT_TOP_MIX = 0.34f
 private const val DARK_BACKGROUND = 0xFF111015
 private const val CONTAINER_MIX = 0.78f
 private const val SURFACE_LIFT = 0.07f

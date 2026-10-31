@@ -150,6 +150,22 @@ fun SettingsPage(
             }
         }
 
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Switch(
+                checked = settings.coverTheme,
+                onCheckedChange = { on -> onChange { it.copy(coverTheme = on) } },
+                modifier = Modifier.semantics { contentDescription = "Colour from cover art" },
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Colour from cover art")
+                Text(
+                    "Blend the app's colours with the cover of the song that is playing.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
         if (settings.uiTheme == AppUiTheme.KK_UI) {
             Text("Accent colour", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
