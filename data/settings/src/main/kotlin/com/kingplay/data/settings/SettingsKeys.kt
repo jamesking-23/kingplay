@@ -26,6 +26,7 @@ data class StoredSettings(
     val nickname: String? = null,
     val profilePhoto: String? = null,
     val coverTheme: Boolean? = null,
+    val lastSeenVersion: String? = null,
 )
 
 private fun level(name: String?, fallback: HapticLevel) = HapticLevel.entries.firstOrNull { it.name == name } ?: fallback
@@ -52,6 +53,7 @@ fun StoredSettings.toSettings(): AppSettings {
         nickname = nickname.orEmpty().trim().take(AppSettings.MAX_NICKNAME),
         profilePhoto = profilePhoto?.ifBlank { null },
         coverTheme = coverTheme ?: defaults.coverTheme,
+        lastSeenVersion = lastSeenVersion.orEmpty(),
     )
 }
 
@@ -72,4 +74,5 @@ fun AppSettings.toStored() = StoredSettings(
     nickname = nickname,
     profilePhoto = profilePhoto,
     coverTheme = coverTheme,
+    lastSeenVersion = lastSeenVersion,
 )

@@ -66,11 +66,11 @@ import kotlinx.coroutines.launch
 
 private enum class LibraryTab(@StringRes val label: Int) {
     Songs(R.string.tab_songs),
+    Playlists(R.string.tab_playlists),
     Albums(R.string.tab_albums),
     Artists(R.string.tab_artists),
     Genres(R.string.tab_genres),
     Folders(R.string.tab_folders),
-    Playlists(R.string.tab_playlists),
     Videos(R.string.tab_videos),
 }
 

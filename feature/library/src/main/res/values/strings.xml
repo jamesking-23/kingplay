@@ -10,6 +10,9 @@
     <string name="library_full_rescan">Full rescan</string>
     <string name="library_more">More library options</string>
 
+    <string name="add_songs_title">Add songs</string>
+    <string name="add_songs_confirm">Add (%1$d)</string>
+    <string name="add_songs_button">Add songs</string>
     <string name="tab_songs">Songs</string>
     <string name="tab_albums">Albums</string>
     <string name="tab_artists">Artists</string>

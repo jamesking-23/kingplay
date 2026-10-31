@@ -103,7 +103,7 @@ class PlaylistDetailViewModel @Inject constructor(
     actions = actions,
     playback = playback,
 ) {
-    private val playlistId = handle.requireLong(DetailArgs.PLAYLIST_ID)
+    val playlistId = handle.requireLong(DetailArgs.PLAYLIST_ID)
 
     /** Removes the row at [rowIndex] of the track list shown on screen. */
     fun removeRow(rowIndex: Int) {

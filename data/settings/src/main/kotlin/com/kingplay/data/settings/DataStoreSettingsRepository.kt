@@ -40,6 +40,7 @@ private object Keys {
     val NICKNAME = stringPreferencesKey("nickname")
     val PROFILE_PHOTO = stringPreferencesKey("profile_photo")
     val COVER_THEME = booleanPreferencesKey("cover_theme")
+    val LAST_SEEN_VERSION = stringPreferencesKey("last_seen_version")
     val ANALYTICS_CONSENT = booleanPreferencesKey("analytics_consent")
 }
 
@@ -60,6 +61,7 @@ private fun Preferences.stored() = StoredSettings(
     nickname = this[Keys.NICKNAME],
     profilePhoto = this[Keys.PROFILE_PHOTO],
     coverTheme = this[Keys.COVER_THEME],
+    lastSeenVersion = this[Keys.LAST_SEEN_VERSION],
 )
 
 @Singleton
@@ -92,6 +94,7 @@ class DataStoreSettingsRepository @Inject constructor(
             p[Keys.HAPTIC_TAP] = next.hapticTap!!
             p[Keys.NICKNAME] = next.nickname!!
             p[Keys.COVER_THEME] = next.coverTheme!!
+            p[Keys.LAST_SEEN_VERSION] = next.lastSeenVersion!!
             if (next.profilePhoto != null) p[Keys.PROFILE_PHOTO] = next.profilePhoto else p.remove(Keys.PROFILE_PHOTO)
         }
     }

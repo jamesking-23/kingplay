@@ -1,5 +1,13 @@
 package com.kingplay.feature.library.list
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.Alignment
+import com.kingplay.core.designsystem.component.KpErrorState
+import com.kingplay.core.ui.Async
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -158,31 +166,54 @@ fun PlaylistsTab(
         }
     }
 
-    ListTab(
-        state = state,
-        onRetry = viewModel::retry,
-        emptyIcon = KpIcons.QueueMusic,
-        emptyTitle = stringResource(R.string.playlists_empty_title),
-        emptyMessage = stringResource(R.string.playlists_empty_message),
-        key = { it.id },
-        modifier = modifier,
-        header = newPlaylistButton,
-    ) { playlist ->
-        MediaRow(
-            title = playlist.name,
-            subtitle = quantityString(R.plurals.count_items, playlist.entryCount),
-            leadingIcon = KpIcons.QueueMusic,
-            onClick = { navigator.toPlaylist(playlist.id) },
-            menu = { dismiss ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.playlist_delete)) },
-                    onClick = {
-                        dismiss()
-                        pendingDelete = playlist
+    // One list for everything: the shortcuts, then the playlists. (Swapping between an empty screen and a list
+    // used to leave a gap under the tab bar after the first playlist was made.)
+    androidx.compose.foundation.lazy.LazyColumn(modifier = modifier.fillMaxSize()) {
+        item(key = "header") { Column { newPlaylistButton() } }
+        when (val current = state) {
+            is Async.Content -> items(current.data, key = { it.id }) { playlist ->
+                MediaRow(
+                    title = playlist.name,
+                    subtitle = quantityString(R.plurals.count_items, playlist.entryCount),
+                    leadingIcon = KpIcons.QueueMusic,
+                    onClick = { navigator.toPlaylist(playlist.id) },
+                    menu = { dismiss ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.playlist_delete)) },
+                            onClick = {
+                                dismiss()
+                                pendingDelete = playlist
+                            },
+                        )
                     },
                 )
-            },
-        )
+            }
+            Async.Empty -> item(key = "empty") {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(KpTheme.spacing.xl),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm),
+                ) {
+                    androidx.compose.material3.Icon(
+                        KpIcons.QueueMusic,
+                        contentDescription = null,
+                        tint = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(48.dp),
+                    )
+                    Text(
+                        stringResource(R.string.playlists_empty_title),
+                        style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        stringResource(R.string.playlists_empty_message),
+                        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            is Async.Error -> item(key = "error") { KpErrorState(onRetry = viewModel::retry, message = current.message) }
+            Async.Loading -> Unit
+        }
     }
 
     if (showCreate) {
@@ -190,7 +221,7 @@ fun PlaylistsTab(
             onDismiss = { showCreate = false },
             onCreate = { name ->
                 showCreate = false
-                viewModel.create(name)
+                viewModel.create(name) { id -> navigator.toPlaylist(id) }
             },
         )
     }

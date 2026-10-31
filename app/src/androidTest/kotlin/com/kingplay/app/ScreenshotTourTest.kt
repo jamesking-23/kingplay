@@ -276,7 +276,7 @@ class ScreenshotTourTest {
             step("large font") {
                 openUi("KING_NEON")
                 shot("30_large_library")
-                repeat(5) {
+                repeat(1) {
                     inst.uiAutomation.executeShellCommand("input swipe 900 1300 120 1300 150").close()
                     Thread.sleep(500)
                 }

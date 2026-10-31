@@ -41,6 +41,11 @@ class MainActivity : ComponentActivity() {
                         WelcomeScreen()
                     } else {
                         PermissionGate { KingPlayRoot(startRoute = debugStartRoute()) }
+                        WhatsNewDialog(
+                            lastSeen = saved.lastSeenVersion,
+                            installed = BuildConfig.RELEASE_TAG,
+                            onSeen = { appViewModel.markVersionSeen(BuildConfig.RELEASE_TAG) },
+                        )
                     }
                 }
             }

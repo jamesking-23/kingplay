@@ -34,10 +34,11 @@ class PlaylistsViewModel @Inject constructor(
     private val playlists: PlaylistRepository,
 ) : ListViewModel<Playlist>(playlists.playlists()) {
 
-    fun create(name: String) {
+    /** Creates the playlist and reports its id, so the screen can open it ready for adding songs. */
+    fun create(name: String, onCreated: (Long) -> Unit = {}) {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return
-        viewModelScope.launch { playlists.create(trimmed) }
+        viewModelScope.launch { onCreated(playlists.create(trimmed)) }
     }
 
     fun delete(id: Long) {

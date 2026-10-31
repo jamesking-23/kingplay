@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -134,13 +135,21 @@ fun PlaylistDetailRoute(navigator: AppNavigator, modifier: Modifier = Modifier) 
     val viewModel: PlaylistDetailViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    var adding by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     CollectEffects(viewModel.effects, snackbar)
+    if (adding) {
+        com.kingplay.feature.library.options.AddSongsDialog(
+            playlistId = viewModel.playlistId,
+            onDismiss = { adding = false },
+        )
+    }
     DetailScreen(
         state = state,
         onEvent = viewModel::onEvent,
         onBack = navigator::back,
         snackbar = snackbar,
         modifier = modifier,
+        onAddSongs = { adding = true },
         extraTrackMenu = { index, dismiss ->
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.playlist_remove_track)) },

@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -70,6 +71,7 @@ fun DetailScreen(
     extraContent: LazyListScope.() -> Unit = {},
     extraTrackMenu: (@Composable ColumnScope.(index: Int, dismiss: () -> Unit) -> Unit)? = null,
     showPlayCounts: Boolean = false,
+    onAddSongs: (() -> Unit)? = null,
 ) {
     Scaffold(
         modifier = modifier,
@@ -104,12 +106,15 @@ fun DetailScreen(
                     icon = KpIcons.MusicNote,
                     title = stringResource(R.string.detail_empty_title),
                     message = stringResource(R.string.detail_empty_message),
+                    actionLabel = onAddSongs?.let { stringResource(R.string.add_songs_button) },
+                    onAction = onAddSongs,
                 )
                 is Async.Error -> KpErrorState(onRetry = { onEvent(DetailEvent.Retry) }, message = tracks.message)
                 is Async.Content -> TrackList(
                     state = state,
                     tracks = tracks.data,
                     onEvent = onEvent,
+                    onAddSongs = onAddSongs,
                     extraContent = extraContent,
                     extraTrackMenu = extraTrackMenu,
                     showPlayCounts = showPlayCounts,
@@ -124,12 +129,13 @@ private fun TrackList(
     state: DetailState,
     tracks: List<Track>,
     onEvent: (DetailEvent) -> Unit,
+    onAddSongs: (() -> Unit)?,
     extraContent: LazyListScope.() -> Unit,
     extraTrackMenu: (@Composable ColumnScope.(index: Int, dismiss: () -> Unit) -> Unit)?,
     showPlayCounts: Boolean,
 ) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
-        item(key = "header") { Header(state, tracks, onEvent) }
+        item(key = "header") { Header(state, tracks, onEvent, onAddSongs) }
         extraContent()
         itemsIndexed(tracks, key = { index, track -> "${track.id}#$index" }) { index, track ->
             MediaRow(
@@ -165,7 +171,12 @@ private fun TrackList(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Header(state: DetailState, trackList: List<Track>, onEvent: (DetailEvent) -> Unit) {
+private fun Header(
+    state: DetailState,
+    trackList: List<Track>,
+    onEvent: (DetailEvent) -> Unit,
+    onAddSongs: (() -> Unit)? = null,
+) {
     val header = state.header
     val spacing = KpTheme.spacing
     Column(
@@ -220,6 +231,14 @@ private fun Header(state: DetailState, trackList: List<Track>, onEvent: (DetailE
                 style = KpButtonStyle.Tonal,
                 leadingIcon = KpIcons.Shuffle,
             )
+            if (onAddSongs != null) {
+                KpButton(
+                    text = stringResource(R.string.add_songs_button),
+                    onClick = onAddSongs,
+                    style = KpButtonStyle.Tonal,
+                    leadingIcon = Icons.Default.Add,
+                )
+            }
         }
     }
 }

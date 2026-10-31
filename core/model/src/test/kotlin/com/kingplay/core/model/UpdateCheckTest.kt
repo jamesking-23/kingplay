@@ -59,4 +59,13 @@ class UpdateCheckTest {
         val shown = UpdateCheck.plainNotes(raw)
         assertEquals("Better search", shown)
     }
+
+    @Test
+    fun whatsNewShowsOnlyAfterAnUpdate() {
+        val w = com.kingplay.core.model.update.WhatsNew
+        assertFalse(w.shouldShow("", "v1.0.0-preview16"))
+        assertFalse(w.shouldShow("v1.0.0-preview16", "v1.0.0-preview16"))
+        assertFalse(w.shouldShow("v1.0.0-preview15", "dev"))
+        assertTrue(w.shouldShow("v1.0.0-preview15", "v1.0.0-preview16"))
+    }
 }

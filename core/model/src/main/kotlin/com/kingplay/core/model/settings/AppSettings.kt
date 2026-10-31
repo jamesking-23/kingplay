@@ -57,6 +57,8 @@ data class AppSettings(
     val profilePhoto: String? = null,
     /** Tint the app's colours with the colours of the cover art of the song that is playing. */
     val coverTheme: Boolean = true,
+    /** The app version whose "What's new" the person has already seen; empty on a fresh install. */
+    val lastSeenVersion: String = "",
 ) {
     companion object {
         const val MIN_TEXT_SCALE = 0.85f

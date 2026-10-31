@@ -19,6 +19,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -52,6 +55,12 @@ fun MiniPlayer(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     if (!state.visible) return
+    var showQueue by rememberSaveable { mutableStateOf(false) }
+    if (showQueue) {
+        val queueModel: NowPlayingViewModel = hiltViewModel()
+        val queueState by queueModel.state.collectAsStateWithLifecycle()
+        QueueSheet(state = queueState, onEvent = queueModel::onEvent, onDismiss = { showQueue = false })
+    }
 
     val artist = displayName(state.artist)
     val openDescription = if (artist.isBlank()) {
@@ -125,6 +134,11 @@ fun MiniPlayer(
                     onClick = { viewModel.onEvent(MiniPlayerEvent.TogglePlayPause) },
                     haptic = HapticKind.PLAY,
                     modifier = Modifier.shakeOn(state.isPlaying),
+                )
+                KpIconButton(
+                    icon = KpIcons.QueueMusic,
+                    contentDescription = stringResource(R.string.np_open_queue),
+                    onClick = { showQueue = true },
                 )
                 KpIconButton(
                     icon = KpIcons.SkipNext,
