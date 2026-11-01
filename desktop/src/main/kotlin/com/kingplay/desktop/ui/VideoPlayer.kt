@@ -212,6 +212,7 @@ fun VideoWindow(
     Window(
         onCloseRequest = onClose,
         title = video.title,
+        icon = trayIconPainter(),
         state = windowState,
         onPreviewKeyEvent = { event ->
             wake.set(true)

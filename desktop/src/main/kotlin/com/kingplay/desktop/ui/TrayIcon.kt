@@ -7,23 +7,31 @@ import java.awt.Color
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 
-/** A violet disc with a white play triangle, drawn in code so it shows on light and dark taskbars alike. */
-fun trayIconPainter(): Painter {
+/** The KingPlay logo (black on white), used for the tray, every window and the taskbar. */
+fun trayIconPainter(): Painter = logoPainter
+
+private val logoPainter: Painter by lazy {
+    val loaded = runCatching {
+        Thread.currentThread().contextClassLoader.getResourceAsStream("logo.png")?.use { javax.imageio.ImageIO.read(it) }
+    }.getOrNull()
     val size = ICON_SIZE
     val image = BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
     val g = image.createGraphics()
     try {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-        g.color = Color(0x6D, 0x4A, 0xFF)
-        g.fillOval(2, 2, size - 4, size - 4)
-        g.color = Color.WHITE
-        val xs = intArrayOf(size * 2 / 5, size * 2 / 5, size * 7 / 10)
-        val ys = intArrayOf(size / 4, size * 3 / 4, size / 2)
-        g.fillPolygon(xs, ys, 3)
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+        if (loaded != null) {
+            g.drawImage(loaded, 0, 0, size, size, null)
+        } else {
+            g.color = Color.WHITE
+            g.fillRect(0, 0, size, size)
+            g.color = Color.BLACK
+            g.fillOval(size / 4, size / 4, size / 2, size / 2)
+        }
     } finally {
         g.dispose()
     }
-    return BitmapPainter(image.toComposeImageBitmap())
+    BitmapPainter(image.toComposeImageBitmap())
 }
 
-private const val ICON_SIZE = 64
+private const val ICON_SIZE = 128

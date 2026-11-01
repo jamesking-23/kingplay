@@ -50,6 +50,7 @@ compose.desktop {
             ).forEach { (mime, extension, description) -> fileAssociation(mime, extension, description) }
             windows {
                 menuGroup = "KingPlay"
+                iconFile.set(project.file("icon.ico"))
                 shortcut = true
                 perUserInstall = true
                 // Keep this value fixed for the life of the app: Windows uses it to recognise upgrades.

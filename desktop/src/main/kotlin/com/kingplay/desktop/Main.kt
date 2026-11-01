@@ -153,6 +153,7 @@ private fun runApp(inbox: Channel<LaunchRequest?>) = application {
         Window(
             onCloseRequest = { miniVisible = false },
             title = "KingPlay mini player",
+            icon = trayIconPainter(),
             state = rememberWindowState(size = DpSize(380.dp, 190.dp)),
             resizable = false,
             alwaysOnTop = true,
@@ -189,6 +190,7 @@ private fun runApp(inbox: Channel<LaunchRequest?>) = application {
             }
         },
         title = "KingPlay",
+        icon = trayIconPainter(),
         state = rememberWindowState(size = DpSize(1100.dp, 720.dp)),
         onPreviewKeyEvent = { event ->
             val controller = app.controller
