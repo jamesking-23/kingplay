@@ -128,6 +128,8 @@
     <string name="update_up_to_date">You have the latest version.</string>
     <string name="update_available">A new version is available: %1$s</string>
     <string name="update_install">Download and install</string>
+    <string name="update_ready">Version %1$s is downloaded and ready to install.</string>
+    <string name="update_install_ready">Install version %1$s</string>
     <string name="update_downloading">Downloading… %1$d%%</string>
     <string name="update_installing">Android is asking you to confirm. Tap Update, then Open to start the new version.</string>
     <string name="update_needs_permission">Android needs your permission before KingPlay can install updates. Allow it on the next page, then come back and try again.</string>

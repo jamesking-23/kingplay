@@ -45,6 +45,7 @@ fun UpdateSection(modifier: Modifier = Modifier, viewModel: UpdateViewModel = hi
                     Message(R.string.update_downloading, s.percent)
                     LinearProgressIndicator(progress = { s.percent / PERCENT }, modifier = Modifier.fillMaxWidth())
                 }
+                is UpdateState.Ready -> Message(R.string.update_ready, s.release.tag)
                 is UpdateState.Installing -> Message(R.string.update_installing)
                 is UpdateState.NeedsPermission -> Message(R.string.update_needs_permission)
                 is UpdateState.Failed -> Message(
@@ -70,11 +71,15 @@ fun UpdateSection(modifier: Modifier = Modifier, viewModel: UpdateViewModel = hi
                 }
                 KpButton(stringResource(R.string.update_install), onClick = { viewModel.install(s.release) })
             }
+            is UpdateState.Ready -> KpButton(
+                stringResource(R.string.update_install_ready, s.release.tag),
+                onClick = viewModel::installReady,
+            )
             is UpdateState.NeedsPermission -> {
                 KpButton(stringResource(R.string.update_open_permission), onClick = viewModel::openPermissionSettings)
                 KpButton(
                     stringResource(R.string.update_try_again),
-                    onClick = { viewModel.install(s.release) },
+                    onClick = viewModel::permissionGranted,
                     style = KpButtonStyle.Tonal,
                 )
             }

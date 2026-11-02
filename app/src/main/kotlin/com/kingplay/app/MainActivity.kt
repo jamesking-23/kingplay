@@ -1,5 +1,6 @@
 package com.kingplay.app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,10 +11,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingplay.core.designsystem.theme.KingPlayTheme
 import com.kingplay.feature.settings.profile.WelcomeScreen
 import com.kingplay.feature.settings.toThemeConfig
+import com.kingplay.feature.settings.update.UpdateManager
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject lateinit var updates: UpdateManager
+
     private val appViewModel: AppViewModel by viewModels()
     private val coverViewModel: CoverColorViewModel by viewModels()
 
@@ -28,6 +33,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) handleUpdateTap(intent)
         setContent {
             val settings by appViewModel.settings.collectAsStateWithLifecycle()
             val cover by coverViewModel.color.collectAsStateWithLifecycle()
@@ -49,6 +55,19 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleUpdateTap(intent)
+    }
+
+    /** The "update is ready" notification was tapped: open the installer for the downloaded file. */
+    private fun handleUpdateTap(intent: Intent?) {
+        if (intent?.getBooleanExtra(UpdateManager.EXTRA_INSTALL_UPDATE, false) == true) {
+            intent.removeExtra(UpdateManager.EXTRA_INSTALL_UPDATE)
+            updates.installReady()
         }
     }
 }
