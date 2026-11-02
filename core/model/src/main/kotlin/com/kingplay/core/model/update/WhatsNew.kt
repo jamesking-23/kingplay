@@ -6,6 +6,9 @@ package com.kingplay.core.model.update
  */
 object WhatsNew {
     val highlights: List<String> = listOf(
+        "Songs now start with the newest first. Pick another order any time.",
+        "The monthly report banner shows only for the first days of a month, and goes away once you open it.",
+        "A new KingPlay logo.",
         "Playlists come right after Songs, and a new playlist opens ready for you to add songs to it.",
         "Add songs to any playlist from inside it, with search.",
         "The queue is one tap away from the mini player.",

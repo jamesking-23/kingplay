@@ -77,6 +77,8 @@ import com.kingplay.desktop.DesktopAppState
 import com.kingplay.desktop.ScanStatus
 import com.kingplay.desktop.cover.CoverRepository
 import com.kingplay.desktop.library.LibraryIndex
+import com.kingplay.desktop.library.SongOrder
+import com.kingplay.desktop.library.sortedBy
 import com.kingplay.desktop.library.sortedForList
 import com.kingplay.desktop.settings.DesktopSettings
 import com.kingplay.desktop.userdata.UserData
@@ -392,7 +394,22 @@ private fun PageContent(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
             )
-            val shown = remember(index, query) { index.search(query).sortedForList() }
+            var order by remember { mutableStateOf(SongOrder.NEWEST) }
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Order", style = MaterialTheme.typography.labelLarge)
+                SongOrder.entries.forEach { option ->
+                    androidx.compose.material3.FilterChip(
+                        selected = order == option,
+                        onClick = { order = option },
+                        label = { Text(option.label) },
+                    )
+                }
+            }
+            val shown = remember(index, query, order) { index.search(query).sortedBy(order) }
             SongList(
                 shown,
                 currentId,

@@ -26,7 +26,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 data class SongsState(
-    val sort: SongSort = SongSort(),
+    // Newest first until the person picks another order.
+    val sort: SongSort = SongSort(SongSortField.DATE_ADDED, ascending = false),
     val currentTrackId: Long? = null,
 ) : UiState
 

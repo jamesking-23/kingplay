@@ -70,3 +70,13 @@ class LibraryIndex(val tracks: List<Track>) {
 
 fun List<Track>.sortedForList(): List<Track> =
     sortedWith(compareBy({ it.title.lowercase() }, { it.artistName.lowercase() }))
+
+/** The orders offered on the Songs page. Newest first is the default. */
+enum class SongOrder(val label: String) { NEWEST("Newest"), TITLE("Title"), ARTIST("Artist"), ALBUM("Album") }
+
+fun List<Track>.sortedBy(order: SongOrder): List<Track> = when (order) {
+    SongOrder.NEWEST -> sortedWith(compareByDescending<Track> { it.dateAddedMs }.thenBy { it.title.lowercase() })
+    SongOrder.TITLE -> sortedForList()
+    SongOrder.ARTIST -> sortedWith(compareBy({ it.artistName.lowercase() }, { it.albumTitle.lowercase() }, { it.title.lowercase() }))
+    SongOrder.ALBUM -> sortedWith(compareBy({ it.albumTitle.lowercase() }, { it.trackNumber }, { it.title.lowercase() }))
+}

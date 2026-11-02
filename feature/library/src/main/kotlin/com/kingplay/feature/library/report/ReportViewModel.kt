@@ -72,9 +72,12 @@ class ReportBannerViewModel @Inject constructor(
     private val prefs = context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
     private val seen = MutableStateFlow(prefs.getString(SEEN_KEY, null))
 
-    /** Last month's report, or null when there is none or the person has already opened it from this banner. */
+    /** Last month's report during the first 4 days of a month, or null when there is none or it was already opened. */
     val lastMonth: StateFlow<MonthKey?> = combine(reports.months(), seen) { months, seenMonth ->
-        YearMonth.now().minusMonths(1).toString().takeIf { it in months && it != seenMonth }
+        val today = java.time.LocalDate.now()
+        // The banner is for the first days of a month only; after that the report is still in Playlists.
+        YearMonth.from(today).minusMonths(1).toString()
+            .takeIf { today.dayOfMonth <= BANNER_DAYS && it in months && it != seenMonth }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), null)
 
     /** Hides the banner for [month] for good (a new month brings a new banner). */
@@ -85,6 +88,7 @@ class ReportBannerViewModel @Inject constructor(
 
     private companion object {
         const val STOP_MS = 5_000L
+        const val BANNER_DAYS = 4
         const val PREFS = "kingplay_report_banner"
         const val SEEN_KEY = "seen_month"
     }
