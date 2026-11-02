@@ -65,12 +65,27 @@ class ReportViewModel @Inject constructor(
 fun hasLastMonthReport(months: List<MonthKey>): Boolean = YearMonth.now().minusMonths(1).toString() in months
 
 @HiltViewModel
-class ReportBannerViewModel @Inject constructor(reports: ListeningReportRepository) : ViewModel() {
-    val lastMonth: StateFlow<MonthKey?> = combine(reports.months(), MutableStateFlow(Unit)) { months, _ ->
-        YearMonth.now().minusMonths(1).toString().takeIf { it in months }
+class ReportBannerViewModel @Inject constructor(
+    reports: ListeningReportRepository,
+    @dagger.hilt.android.qualifiers.ApplicationContext context: android.content.Context,
+) : ViewModel() {
+    private val prefs = context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+    private val seen = MutableStateFlow(prefs.getString(SEEN_KEY, null))
+
+    /** Last month's report, or null when there is none or the person has already opened it from this banner. */
+    val lastMonth: StateFlow<MonthKey?> = combine(reports.months(), seen) { months, seenMonth ->
+        YearMonth.now().minusMonths(1).toString().takeIf { it in months && it != seenMonth }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), null)
+
+    /** Hides the banner for [month] for good (a new month brings a new banner). */
+    fun markSeen(month: MonthKey) {
+        prefs.edit().putString(SEEN_KEY, month).apply()
+        seen.value = month
+    }
 
     private companion object {
         const val STOP_MS = 5_000L
+        const val PREFS = "kingplay_report_banner"
+        const val SEEN_KEY = "seen_month"
     }
 }

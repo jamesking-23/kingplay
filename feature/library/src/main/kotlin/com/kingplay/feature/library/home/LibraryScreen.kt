@@ -115,7 +115,10 @@ fun LibraryScreen(
             val lastMonth by reportBanner.lastMonth.collectAsStateWithLifecycle()
             lastMonth?.let { month ->
                 TextButton(
-                    onClick = { navigator.toReport(month) },
+                    onClick = {
+                        reportBanner.markSeen(month)
+                        navigator.toReport(month)
+                    },
                     modifier = Modifier.padding(horizontal = KpTheme.spacing.sm),
                 ) { Text("Your listening report for last month is ready →") }
             }
