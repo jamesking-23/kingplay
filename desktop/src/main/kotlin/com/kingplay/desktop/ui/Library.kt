@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -55,6 +56,13 @@ class SongActions(
     val newPlaylistWith: (Track) -> Unit,
     val showInFolder: (Track) -> Unit = {},
     val delete: (Track) -> Unit = {},
+    val playMany: (List<Track>) -> Unit = {},
+    val playNextMany: (List<Track>) -> Unit = {},
+    val addToQueueMany: (List<Track>) -> Unit = {},
+    val addToPlaylistMany: (playlistId: Long, tracks: List<Track>) -> Unit = { _, _ -> },
+    val newPlaylistWithMany: (List<Track>) -> Unit = {},
+    val favoriteMany: (List<Track>) -> Unit = {},
+    val deleteMany: (List<Track>) -> Unit = {},
 )
 
 @Composable
@@ -70,19 +78,43 @@ fun SongList(
     onMove: ((from: Int, to: Int) -> Unit)? = null,
     header: (@Composable () -> Unit)? = null,
 ) {
-    LazyColumn(modifier = modifier.fillMaxSize()) {
-        if (header != null) item { header() }
-        itemsIndexed(tracks, key = { position, t -> "$position-${t.id}" }) { position, track ->
-            SongRow(
-                track = track,
-                playing = track.id == currentId,
-                favorite = track.id in actions.favorites,
-                actions = actions,
-                onPlay = { controller?.playMedia(tracks.map { MediaRef.Audio(it.id) }, position) },
-                canPlay = controller != null,
-                onRemove = onRemoveAt?.let { remove -> { remove(position) } },
-                reorder = onMove?.let { move -> ReorderSpec(position, tracks.size, move) },
-            )
+    // Ticked rows (by song id). Cleared when the list changes to another one, and as songs disappear.
+    var ticked by remember { mutableStateOf(emptySet<Long>()) }
+    val present = remember(tracks) { tracks.mapTo(HashSet()) { it.id } }
+    val live = ticked.filterTo(HashSet()) { it in present }
+    Column(modifier = modifier.fillMaxSize()) {
+        if (live.isNotEmpty()) {
+            val chosen = tracks.filter { it.id in live }.distinctBy { it.id }
+            SelectionStrip(
+                count = live.size,
+                onSelectAll = { ticked = present },
+                onClear = { ticked = emptySet() },
+            ) {
+                SongSelectionActions(
+                    chosen = chosen,
+                    allFavorite = chosen.all { it.id in actions.favorites },
+                    actions = actions,
+                    onDone = { ticked = emptySet() },
+                )
+            }
+        }
+        LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            if (header != null) item { header() }
+            itemsIndexed(tracks, key = { position, t -> "$position-${t.id}" }) { position, track ->
+                SongRow(
+                    track = track,
+                    playing = track.id == currentId,
+                    favorite = track.id in actions.favorites,
+                    actions = actions,
+                    onPlay = { controller?.playMedia(tracks.map { MediaRef.Audio(it.id) }, position) },
+                    canPlay = controller != null,
+                    onRemove = onRemoveAt?.let { remove -> { remove(position) } },
+                    reorder = onMove?.let { move -> ReorderSpec(position, tracks.size, move) },
+                    selected = track.id in live,
+                    selecting = live.isNotEmpty(),
+                    onSelect = { ticked = if (track.id in live) live - track.id else live + track.id },
+                )
+            }
         }
     }
 }
@@ -97,6 +129,9 @@ private fun SongRow(
     canPlay: Boolean,
     onRemove: (() -> Unit)?,
     reorder: ReorderSpec? = null,
+    selected: Boolean = false,
+    selecting: Boolean = false,
+    onSelect: () -> Unit = {},
 ) {
     val drag = reorder?.let { rememberDragState(it) }
     val description = "${track.title}, ${track.artistName}, ${track.albumTitle}"
@@ -106,14 +141,19 @@ private fun SongRow(
         modifier = (drag?.rowModifier ?: Modifier)
             .fillMaxWidth()
             .then(rowSize)
-            .padding(start = 16.dp, end = 4.dp),
+            .padding(start = 4.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Checkbox(
+            checked = selected,
+            onCheckedChange = { onSelect() },
+            modifier = Modifier.semantics { contentDescription = "Select ${track.title}" },
+        )
         Row(
             modifier = Modifier
                 .weight(1f)
                 .heightIn(min = 56.dp)
-                .clickable(enabled = canPlay, role = Role.Button, onClick = onPlay)
+                .clickable(enabled = canPlay || selecting, role = Role.Button, onClick = if (selecting) onSelect else onPlay)
                 .semantics(mergeDescendants = true) {
                     contentDescription = description
                     selected = playing

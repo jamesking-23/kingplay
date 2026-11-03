@@ -12,11 +12,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -34,8 +39,24 @@ fun VideosPage(
     videos: List<VideoFile>,
     progress: Map<Long, VideoProgress>,
     onPlay: (VideoFile, startMs: Long, queueAll: Boolean) -> Unit,
+    onDelete: (List<VideoFile>) -> Unit = {},
 ) {
+    var ticked by remember { mutableStateOf(emptySet<Long>()) }
+    val present = remember(videos) { videos.mapTo(HashSet()) { it.id } }
+    val live = ticked.filterTo(HashSet()) { it in present }
     Column(modifier = Modifier.fillMaxSize()) {
+        if (live.isNotEmpty()) {
+            SelectionStrip(
+                count = live.size,
+                onSelectAll = { ticked = present },
+                onClear = { ticked = emptySet() },
+            ) {
+                OutlinedButton(onClick = {
+                    onDelete(videos.filter { it.id in live })
+                    ticked = emptySet()
+                }) { Text("Move to Recycle Bin…", color = MaterialTheme.colorScheme.error) }
+            }
+        }
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -65,12 +86,25 @@ fun VideosPage(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 56.dp)
-                        .clickable(role = Role.Button) { onPlay(video, resumeAt, false) }
+                        .clickable(role = Role.Button) {
+                            if (live.isNotEmpty()) {
+                                ticked = if (video.id in live) live - video.id else live + video.id
+                            } else {
+                                onPlay(video, resumeAt, false)
+                            }
+                        }
                         .semantics { contentDescription = "${video.title}, $detail" }
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        .padding(horizontal = 4.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Checkbox(
+                        checked = video.id in live,
+                        onCheckedChange = {
+                            ticked = if (video.id in live) live - video.id else live + video.id
+                        },
+                        modifier = Modifier.semantics { contentDescription = "Select ${video.title}" },
+                    )
                     Icon(
                         Icons.Filled.Movie,
                         contentDescription = null,

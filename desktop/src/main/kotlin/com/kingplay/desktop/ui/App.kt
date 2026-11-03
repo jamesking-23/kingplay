@@ -158,7 +158,7 @@ fun App(
     var query by remember { mutableStateOf("") }
     var nameDialog by remember { mutableStateOf<NameDialogState?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
-    var deleting by remember { mutableStateOf<Track?>(null) }
+    var deleting by remember { mutableStateOf<List<DeleteTarget>?>(null) }
     val currentId = (playback.current as? MediaRef.Audio)?.id
     // The dominant colour of the playing song's cover; the theme blends it in until the next song.
     val coverArgb by produceState<Int?>(null, currentId, covers, settings.coverTheme) {
@@ -193,7 +193,22 @@ fun App(
             nameDialog = NameDialogState("New playlist", "", "Create") { app.createPlaylist(it, listOf(track)) }
         },
         showInFolder = { track -> showInFolder(track.uri) },
-        delete = { deleting = it },
+        delete = { deleting = listOf(DeleteTarget(it.title, it.uri)) },
+        playMany = { tracks -> app.controller?.playMedia(tracks.map { MediaRef.Audio(it.id) }, 0) },
+        playNextMany = { app.controller?.playNext(it.map { t -> MediaRef.Audio(t.id) }) },
+        addToQueueMany = { app.controller?.addToQueue(it.map { t -> MediaRef.Audio(t.id) }) },
+        addToPlaylistMany = { playlistId, tracks ->
+            app.updateUser { it.addToPlaylist(playlistId, tracks.map { t -> t.id }) }
+        },
+        newPlaylistWithMany = { tracks ->
+            nameDialog = NameDialogState("New playlist", "", "Create") { app.createPlaylist(it, tracks) }
+        },
+        favoriteMany = { tracks ->
+            // Everything is a favorite already: remove them all; otherwise add the ones that are not yet.
+            val remove = tracks.all { it.id in user.favorites }
+            tracks.filter { (it.id in user.favorites) == remove }.forEach { app.toggleFavorite(it.id) }
+        },
+        deleteMany = { tracks -> deleting = tracks.map { DeleteTarget(it.title, it.uri) } },
     )
 
     KingPlayDesktopTheme(settings, coverArgb) {
@@ -265,6 +280,7 @@ fun App(
                                     onOpenMini = onOpenMini,
                                     videos = videos,
                                     onPlayVideo = onPlayVideo,
+                                    onDeleteVideos = { files -> deleting = files.map { DeleteTarget(it.title, it.path) } },
                                 )
                             }
                         }
@@ -282,17 +298,22 @@ fun App(
                 }
             }
             nameDialog?.let { NameDialog(it) { nameDialog = null } }
-            deleting?.let { track ->
+            deleting?.let { targets ->
                 ConfirmDialog(
                     title = "Move to Recycle Bin?",
-                    message = "\"${track.title}\" will be moved to the Recycle Bin and removed from KingPlay.",
+                    message = if (targets.size == 1) {
+                        "\"${targets.first().title}\" will be moved to the Recycle Bin and removed from KingPlay."
+                    } else {
+                        "${targets.size} files will be moved to the Recycle Bin and removed from KingPlay."
+                    },
                     confirmLabel = "Move",
                     onConfirm = {
-                        if (moveToTrash(track.uri)) {
-                            app.rescan()
-                            notice = "Moved \"${track.title}\" to the Recycle Bin."
-                        } else {
-                            notice = "Could not move that file. It may be open in another program."
+                        val failed = targets.count { !moveToTrash(it.path) }
+                        app.rescan()
+                        notice = when {
+                            failed == 0 && targets.size == 1 -> "Moved \"${targets.first().title}\" to the Recycle Bin."
+                            failed == 0 -> "Moved ${targets.size} files to the Recycle Bin."
+                            else -> "Could not move $failed of ${targets.size} files. They may be open in another program."
                         }
                     },
                     onDismiss = { deleting = null },
@@ -384,6 +405,7 @@ private fun PageContent(
     onOpenMini: () -> Unit,
     videos: List<VideoFile>,
     onPlayVideo: (VideoFile, startMs: Long, queueAll: Boolean) -> Unit,
+    onDeleteVideos: (List<VideoFile>) -> Unit,
 ) {
     when (page) {
         Page.Songs -> {
@@ -465,7 +487,7 @@ private fun PageContent(
             onDeletePreset = { name -> app.updateUser { it.withoutEqPreset(name) } },
             onDialog = onDialog,
         )
-        Page.Videos -> VideosPage(videos, user.videoProgress, onPlayVideo)
+        Page.Videos -> VideosPage(videos, user.videoProgress, onPlayVideo, onDelete = onDeleteVideos)
         Page.Library -> LibraryPage(
             folders = folders,
             onAdd = { chooseFolder()?.let(app::addFolder) },
@@ -861,6 +883,9 @@ private fun showInFolder(path: String) {
         runCatching { java.awt.Desktop.getDesktop().open(java.io.File(path).parentFile) }
     }
 }
+
+/** A file the person asked to move to the Recycle Bin. */
+private data class DeleteTarget(val title: String, val path: String)
 
 private fun moveToTrash(path: String): Boolean = runCatching {
     val desktop = java.awt.Desktop.getDesktop()
