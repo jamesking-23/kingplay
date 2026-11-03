@@ -10,39 +10,22 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.kingplay.core.model.update.ReleaseInfo
+import com.kingplay.desktop.update.UpdateModel
+import com.kingplay.desktop.update.UpdateUi
 import com.kingplay.desktop.update.Updater
 import com.kingplay.desktop.update.installedTag
 import kotlin.system.exitProcess
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-
-private sealed interface UpdateUi {
-    data object Idle : UpdateUi
-    data object Checking : UpdateUi
-    data object UpToDate : UpdateUi
-    data object Failed : UpdateUi
-    data object DownloadFailed : UpdateUi
-    data class Available(val release: ReleaseInfo) : UpdateUi
-    data class Downloading(val percent: Int) : UpdateUi
-    data object Installing : UpdateUi
-}
 
 /** "Check for updates": downloads the newest installer, runs it, and starts KingPlay again afterwards. */
 @Composable
 fun UpdateSection() {
-    var ui by remember { mutableStateOf<UpdateUi>(UpdateUi.Idle) }
-    val scope = rememberCoroutineScope()
+    val ui by UpdateModel.state.collectAsState()
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Installed version: $installedTag", style = MaterialTheme.typography.bodyMedium)
         Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
@@ -54,37 +37,20 @@ fun UpdateSection() {
                 UpdateUi.DownloadFailed -> Text("The download failed. Try again.", color = MaterialTheme.colorScheme.error)
                 is UpdateUi.Available -> Text("A new version is available: ${s.release.tag}")
                 is UpdateUi.Downloading -> {
-                    Text("Downloading… ${s.percent}%")
+                    Text("Downloading… ${s.percent}%. You can keep using KingPlay.")
                     LinearProgressIndicator(progress = { s.percent / 100f }, modifier = Modifier.fillMaxWidth())
                 }
-                UpdateUi.Installing -> Text("Starting the installer. KingPlay will close and open again when it is done.")
+                is UpdateUi.Ready -> Text("Version ${s.release.tag} is downloaded and ready to install.")
             }
         }
         when (val s = ui) {
-            is UpdateUi.Available -> Button(onClick = {
-                ui = UpdateUi.Downloading(0)
-                scope.launch {
-                    val file = withContext(Dispatchers.IO) { Updater.download(s.release) { ui = UpdateUi.Downloading(it) } }
-                    if (file == null) {
-                        ui = UpdateUi.DownloadFailed
-                    } else {
-                        ui = UpdateUi.Installing
-                        withContext(Dispatchers.IO) { Updater.installAndRestart(file) }
-                        exitProcess(0)
-                    }
-                }
-            }) { Text("Download and install") }
-            UpdateUi.Checking, is UpdateUi.Downloading, UpdateUi.Installing -> Unit
-            else -> OutlinedButton(onClick = {
-                ui = UpdateUi.Checking
-                scope.launch {
-                    ui = when (val r = withContext(Dispatchers.IO) { Updater.check() }) {
-                        Updater.Result.UpToDate -> UpdateUi.UpToDate
-                        Updater.Result.Failed -> UpdateUi.Failed
-                        is Updater.Result.Available -> UpdateUi.Available(r.release)
-                    }
-                }
-            }) { Text("Check for updates") }
+            is UpdateUi.Available -> Button(onClick = { UpdateModel.download(s.release) }) { Text("Download update") }
+            is UpdateUi.Ready -> Button(onClick = {
+                Updater.installAndRestart(s.file)
+                exitProcess(0)
+            }) { Text("Install version ${s.release.tag} and restart") }
+            UpdateUi.Checking, is UpdateUi.Downloading -> Unit
+            else -> OutlinedButton(onClick = UpdateModel::check) { Text("Check for updates") }
         }
         Text(
             "You can also update by uninstalling KingPlay and installing the newest version.",

@@ -30,7 +30,7 @@ object Updater {
 
     /** Downloads the installer to a temporary folder, reporting percent done. Returns null if it failed. */
     fun download(release: ReleaseInfo, onProgress: (Int) -> Unit): File? = runCatching {
-        val dir = File(System.getProperty("java.io.tmpdir"), "kingplay-update").apply { mkdirs() }
+        val dir = updateDir()
         dir.listFiles()?.forEach { it.delete() }
         val target = File(dir, release.fileName)
         val conn = open(release.downloadUrl)
@@ -51,10 +51,47 @@ object Updater {
                 }
             }
             if (release.sizeBytes > 0) check(target.length() == release.sizeBytes) { "Incomplete download" }
+            writeMeta(dir, release)
+        } catch (t: Throwable) {
+            target.delete()
+            throw t
         } finally {
             conn.disconnect()
         }
         target
+    }.getOrNull()
+
+    private fun updateDir() = File(System.getProperty("java.io.tmpdir"), "kingplay-update").apply { mkdirs() }
+
+    private const val SEP = "\u0001"
+
+    private fun writeMeta(dir: File, r: ReleaseInfo) {
+        runCatching {
+            File(dir, "update.meta").writeText(
+                listOf(r.tag, r.sizeBytes, r.downloadUrl, r.fileName, r.notes.replace("\n", SEP)).joinToString("\n"),
+            )
+        }
+    }
+
+    /** A finished download from an earlier visit that has not been installed: the release and its installer file. */
+    fun restoreDownloaded(): Pair<ReleaseInfo, File>? = runCatching {
+        val dir = updateDir()
+        val lines = File(dir, "update.meta").readText().split("\n")
+        val release = ReleaseInfo(
+            tag = lines[0],
+            sizeBytes = lines[1].toLong(),
+            downloadUrl = lines[2],
+            fileName = lines[3],
+            notes = lines.getOrElse(4) { "" }.replace(SEP, "\n"),
+        )
+        val file = File(dir, release.fileName)
+        val complete = file.exists() && (release.sizeBytes <= 0 || file.length() == release.sizeBytes)
+        if (complete && UpdateCheck.isNewer(release.tag, installedTag)) {
+            release to file
+        } else {
+            dir.listFiles()?.forEach { it.delete() }
+            null
+        }
     }.getOrNull()
 
     /**
