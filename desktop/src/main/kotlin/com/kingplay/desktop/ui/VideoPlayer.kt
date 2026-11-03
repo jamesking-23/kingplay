@@ -380,6 +380,7 @@ fun VideoWindow(
             TrackPanel.Audio ->
                 player.audio().trackDescriptions().map { TrackChoice(it.id(), it.description()) } to
                     player.audio().track()
+            else -> tracks
         }
     }
 
