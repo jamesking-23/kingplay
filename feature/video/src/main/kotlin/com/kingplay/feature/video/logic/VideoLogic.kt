@@ -8,8 +8,44 @@ enum class TapZone { LEFT, CENTER, RIGHT }
 
 enum class DragAxis { HORIZONTAL, VERTICAL }
 
-/** How the picture fills the screen. */
-enum class VideoResize { FIT, ZOOM, FILL }
+/**
+ * How the picture fills the screen. The first three follow the video's own shape; the others force one shape, the way
+ * VLC's aspect ratio menu does ([ratio] is width divided by height).
+ */
+enum class VideoResize(val ratio: Float? = null) {
+    FIT,
+    ZOOM,
+    FILL,
+    RATIO_16_9(16f / 9f),
+    RATIO_4_3(4f / 3f),
+    RATIO_21_9(21f / 9f),
+    RATIO_16_10(16f / 10f),
+    RATIO_1_1(1f),
+}
+
+/** What happens when a video ends. */
+enum class RepeatChoice { OFF, ONE, ALL }
+
+/** Minutes the sleep timer can wait before pausing; the first entry means "off". */
+val SleepTimerMinutes = listOf(0, 15, 30, 45, 60, 90)
+
+/**
+ * A–B repeat: playback jumps back to [start] when it reaches [end]. Either end can be missing while the person is
+ * still setting it.
+ */
+data class AbLoop(val start: Long? = null, val end: Long? = null) {
+    val active: Boolean get() = start != null && end != null && end > start
+
+    /** Where to seek now, or null when playback should just carry on. */
+    fun jumpFor(positionMs: Long): Long? = if (active && positionMs >= end!!) start else null
+
+    /** Marks [positionMs] as the next end that is still missing: first A, then B, then starts over with A. */
+    fun mark(positionMs: Long): AbLoop = when {
+        start == null || end != null -> AbLoop(start = positionMs)
+        positionMs > start -> copy(end = positionMs)
+        else -> AbLoop(start = positionMs)
+    }
+}
 
 const val DOUBLE_TAP_SEEK_MS = 10_000L
 const val SEEK_SPAN_MS = 120_000L
@@ -19,7 +55,7 @@ const val RESUME_END_MARGIN_MS = 10_000L
 private const val SIDE_ZONE = 0.35f
 private const val LEVEL_RANGE = 1.2f
 
-val SpeedSteps = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f, 3f)
+val SpeedSteps = listOf(0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f, 3f, 4f)
 
 /** Subtitle text sizes as a fraction of the picture height, smallest first. */
 val SubtitleSizes = listOf(0.04f, 0.0533f, 0.07f, 0.09f)
@@ -80,6 +116,9 @@ fun formatSpeed(speed: Float): String =
 
 fun nextResize(current: VideoResize): VideoResize =
     VideoResize.entries[(current.ordinal + 1) % VideoResize.entries.size]
+
+/** Label for a speed such as "1.25x" is [formatSpeed]; this is the same idea for a sleep timer entry. */
+fun formatTimerMinutes(minutes: Int): String = if (minutes <= 0) "Off" else "$minutes min"
 
 /** A wide picture is best watched with the phone turned sideways. */
 fun prefersLandscape(width: Int, height: Int): Boolean = width > 0 && height > 0 && width >= height

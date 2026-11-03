@@ -42,6 +42,15 @@ object KpIcons {
         }
     }
 
+    val Tune: ImageVector by lazy {
+        icon("Tune") {
+            path(
+                "M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10z" +
+                    "m-6-4h2V7h4V5h-4V3h-2v6z",
+            )
+        }
+    }
+
     val Equalizer: ImageVector by lazy {
         icon("Equalizer") { path("M10 20h4V4h-4v16zm-6 0h4v-8H4v8zM16 9v11h4V9h-4z") }
     }

@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -59,13 +60,14 @@ import com.kingplay.feature.video.R
 import com.kingplay.feature.video.VideoEvent
 import com.kingplay.feature.video.VideoLoad
 import com.kingplay.feature.video.VideoViewModel
+import com.kingplay.feature.video.logic.AbLoop
 import com.kingplay.feature.video.logic.CONTROLS_HIDE_MS
+import com.kingplay.feature.video.logic.RepeatChoice
 import com.kingplay.feature.video.logic.DEFAULT_SUBTITLE_SIZE_INDEX
 import com.kingplay.feature.video.logic.SubtitleSizes
 import com.kingplay.feature.video.logic.TapZone
 import com.kingplay.feature.video.logic.VideoResize
 import com.kingplay.feature.video.logic.doubleTapSeekMs
-import com.kingplay.feature.video.logic.nextResize
 import com.kingplay.feature.video.logic.prefersLandscape
 import com.kingplay.feature.video.logic.subtitleMimeType
 import com.kingplay.feature.video.logic.swipeLevel
@@ -76,6 +78,8 @@ import kotlinx.coroutines.delay
 private const val HOLD_SPEED = 2f
 private const val INDICATOR_MS = 900L
 private const val PERCENT = 100
+private const val AB_POLL_MS = 200L
+private const val MS_PER_MINUTE = 60_000L
 
 @Composable
 fun VideoPlayerScreen(navigator: AppNavigator, viewModel: VideoViewModel = hiltViewModel()) {
@@ -106,7 +110,7 @@ fun VideoPlayerScreen(navigator: AppNavigator, viewModel: VideoViewModel = hiltV
     }
 }
 
-private enum class VideoSheet { Speed, Audio, Subtitles }
+private enum class VideoSheet { Speed, Audio, Subtitles, Options }
 
 @Composable
 private fun VideoPlayerContent(
@@ -130,6 +134,10 @@ private fun VideoPlayerContent(
     var locked by rememberSaveable { mutableStateOf(false) }
     var resize by rememberSaveable { mutableStateOf(VideoResize.FIT) }
     var sheet by remember { mutableStateOf<VideoSheet?>(null) }
+    var repeat by rememberSaveable { mutableStateOf(RepeatChoice.OFF) }
+    var abLoop by remember { mutableStateOf(AbLoop()) }
+    var sleepMinutes by remember { mutableIntStateOf(0) }
+    var muted by rememberSaveable { mutableStateOf(false) }
     var subtitleSize by rememberSaveable { mutableIntStateOf(DEFAULT_SUBTITLE_SIZE_INDEX) }
     var indicator by remember { mutableStateOf<String?>(null) }
     var indicatorSticky by remember { mutableStateOf(false) }
@@ -145,6 +153,28 @@ private fun VideoPlayerContent(
             } else {
                 ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             }
+        }
+    }
+
+    // Repeat, mute and the sleep timer belong to this screen; hand the shared player back as it was found.
+    LaunchedEffect(repeat) {
+        player.repeatMode = when (repeat) {
+            RepeatChoice.OFF -> Player.REPEAT_MODE_OFF
+            RepeatChoice.ONE -> Player.REPEAT_MODE_ONE
+            RepeatChoice.ALL -> Player.REPEAT_MODE_ALL
+        }
+    }
+    LaunchedEffect(muted) { player.volume = if (muted) 0f else 1f }
+    DisposableEffect(player) {
+        onDispose {
+            player.repeatMode = Player.REPEAT_MODE_OFF
+            player.volume = 1f
+        }
+    }
+    LaunchedEffect(abLoop) {
+        while (abLoop.active) {
+            delay(AB_POLL_MS)
+            abLoop.jumpFor(player.currentPosition)?.let { player.seekTo(it) }
         }
     }
 
@@ -175,6 +205,17 @@ private fun VideoPlayerContent(
         onDispose {
             onSavePosition()
             player.pause()
+        }
+    }
+
+    val sleepPaused = stringResource(R.string.video_sleep_paused)
+    LaunchedEffect(sleepMinutes) {
+        if (sleepMinutes > 0) {
+            delay(sleepMinutes * MS_PER_MINUTE)
+            player.pause()
+            sleepMinutes = 0
+            indicator = sleepPaused
+            indicatorSticky = false
         }
     }
 
@@ -281,7 +322,8 @@ private fun VideoPlayerContent(
         onPrevious = { player.seekToPreviousMediaItem() },
         onSeekTo = { player.seekTo(it) },
         onSpeed = { sheet = VideoSheet.Speed },
-        onResize = { resize = nextResize(resize) },
+        onResize = { sheet = VideoSheet.Options },
+        onOptions = { sheet = VideoSheet.Options },
         onAudio = { sheet = VideoSheet.Audio },
         onSubtitles = { sheet = VideoSheet.Subtitles },
         onRotate = {
@@ -377,6 +419,20 @@ private fun VideoPlayerContent(
             onSize = { subtitleSize = it },
             onDismiss = { sheet = null },
         )
+        VideoSheet.Options -> VideoOptionsSheet(
+            resize = resize,
+            repeat = repeat,
+            abLoop = abLoop,
+            sleepMinutes = sleepMinutes,
+            muted = muted,
+            onResize = { resize = it },
+            onRepeat = { repeat = it },
+            onMarkAb = { abLoop = abLoop.mark(player.currentPosition) },
+            onClearAb = { abLoop = AbLoop() },
+            onSleep = { sleepMinutes = it },
+            onMute = { muted = it },
+            onDismiss = { sheet = null },
+        )
         null -> Unit
     }
 }
@@ -384,8 +440,10 @@ private fun VideoPlayerContent(
 @OptIn(UnstableApi::class)
 @Composable
 private fun VideoSurface(player: Player, resize: VideoResize, keepOn: Boolean, subtitleFraction: Float) {
+    val ratio = resize.ratio
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
     AndroidView(
-        modifier = Modifier.fillMaxSize(),
+        modifier = if (ratio != null) Modifier.aspectRatio(ratio) else Modifier.fillMaxSize(),
         factory = { context ->
             PlayerView(context).apply {
                 useController = false
@@ -397,13 +455,14 @@ private fun VideoSurface(player: Player, resize: VideoResize, keepOn: Boolean, s
             view.resizeMode = when (resize) {
                 VideoResize.FIT -> AspectRatioFrameLayout.RESIZE_MODE_FIT
                 VideoResize.ZOOM -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                VideoResize.FILL -> AspectRatioFrameLayout.RESIZE_MODE_FILL
+                else -> AspectRatioFrameLayout.RESIZE_MODE_FILL
             }
             view.keepScreenOn = keepOn
             view.subtitleView?.setFractionalTextSize(subtitleFraction)
         },
         onRelease = { view -> view.player = null },
     )
+    }
 }
 
 private fun displayName(context: Context, uri: Uri): String? =

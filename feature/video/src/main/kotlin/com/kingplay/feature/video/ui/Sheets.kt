@@ -2,6 +2,8 @@ package com.kingplay.feature.video.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +18,8 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,8 +30,14 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.kingplay.core.designsystem.theme.KpTheme
+import com.kingplay.core.ui.format.formatDuration
 import com.kingplay.feature.video.R
+import com.kingplay.feature.video.logic.AbLoop
+import com.kingplay.feature.video.logic.RepeatChoice
+import com.kingplay.feature.video.logic.SleepTimerMinutes
 import com.kingplay.feature.video.logic.SpeedSteps
+import com.kingplay.feature.video.logic.VideoResize
+import com.kingplay.feature.video.logic.formatTimerMinutes
 import com.kingplay.feature.video.logic.formatSpeed
 import kotlin.math.abs
 
@@ -192,4 +202,121 @@ fun SubtitleSheet(
             }
         }
     }
+}
+
+/** Picture shape, repeat, A–B repeat, sleep timer and mute in one place, like VLC's playback menus. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+fun VideoOptionsSheet(
+    resize: VideoResize,
+    repeat: RepeatChoice,
+    abLoop: AbLoop,
+    sleepMinutes: Int,
+    muted: Boolean,
+    onResize: (VideoResize) -> Unit,
+    onRepeat: (RepeatChoice) -> Unit,
+    onMarkAb: () -> Unit,
+    onClearAb: () -> Unit,
+    onSleep: (Int) -> Unit,
+    onMute: (Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = KpTheme.spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm),
+        ) {
+            SheetTitle(stringResource(R.string.video_options))
+            SectionLabel(stringResource(R.string.video_options_picture))
+            FlowRow(
+                modifier = Modifier.padding(horizontal = KpTheme.spacing.lg),
+                horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm),
+            ) {
+                VideoResize.entries.forEach { choice ->
+                    FilterChip(
+                        selected = choice == resize,
+                        onClick = { onResize(choice) },
+                        label = { Text(stringResource(resizeLabel(choice))) },
+                    )
+                }
+            }
+            SectionLabel(stringResource(R.string.video_options_repeat))
+            Row(
+                modifier = Modifier.padding(horizontal = KpTheme.spacing.lg),
+                horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm),
+            ) {
+                listOf(
+                    RepeatChoice.OFF to R.string.video_repeat_off,
+                    RepeatChoice.ONE to R.string.video_repeat_one,
+                    RepeatChoice.ALL to R.string.video_repeat_all,
+                ).forEach { (choice, label) ->
+                    FilterChip(
+                        selected = choice == repeat,
+                        onClick = { onRepeat(choice) },
+                        label = { Text(stringResource(label)) },
+                    )
+                }
+            }
+            SectionLabel(stringResource(R.string.video_options_ab))
+            Text(
+                text = when {
+                    abLoop.active -> stringResource(
+                        R.string.video_ab_active,
+                        formatDuration(abLoop.start ?: 0L),
+                        formatDuration(abLoop.end ?: 0L),
+                    )
+                    abLoop.start != null -> stringResource(R.string.video_ab_start, formatDuration(abLoop.start))
+                    else -> stringResource(R.string.video_ab_none)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = KpTheme.spacing.lg),
+            )
+            Row(modifier = Modifier.padding(horizontal = KpTheme.spacing.md)) {
+                TextButton(onClick = onMarkAb) { Text(stringResource(R.string.video_ab_set)) }
+                TextButton(onClick = onClearAb, enabled = abLoop.start != null) {
+                    Text(stringResource(R.string.video_ab_clear))
+                }
+            }
+            SectionLabel(stringResource(R.string.video_options_sleep))
+            FlowRow(
+                modifier = Modifier.padding(horizontal = KpTheme.spacing.lg),
+                horizontalArrangement = Arrangement.spacedBy(KpTheme.spacing.sm),
+            ) {
+                SleepTimerMinutes.forEach { minutes ->
+                    FilterChip(
+                        selected = minutes == sleepMinutes,
+                        onClick = { onSleep(minutes) },
+                        label = { Text(formatTimerMinutes(minutes)) },
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = OptionHeight)
+                    .padding(horizontal = KpTheme.spacing.lg),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.video_mute),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                Switch(checked = muted, onCheckedChange = onMute)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.padding(horizontal = KpTheme.spacing.lg).semantics { heading() },
+    )
 }

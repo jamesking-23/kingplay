@@ -2,6 +2,7 @@ package com.kingplay.feature.video
 
 import com.kingplay.feature.video.logic.DragAxis
 import com.kingplay.feature.video.logic.TapZone
+import com.kingplay.feature.video.logic.AbLoop
 import com.kingplay.feature.video.logic.VideoResize
 import com.kingplay.feature.video.logic.doubleTapSeekMs
 import com.kingplay.feature.video.logic.dragAxis
@@ -67,7 +68,7 @@ class VideoLogicTest {
 
     @Test fun speedCyclesAndWrapsAndRecovers() {
         assertEquals(1.25f, nextSpeed(1f), 0.0001f)
-        assertEquals(0.5f, nextSpeed(3f), 0.0001f)
+        assertEquals(0.25f, nextSpeed(4f), 0.0001f)
         assertEquals(1f, nextSpeed(1.1f), 0.0001f)
         assertEquals("1x", formatSpeed(1f))
         assertEquals("1.25x", formatSpeed(1.25f))
@@ -77,7 +78,33 @@ class VideoLogicTest {
     @Test fun resizeCyclesThroughAllModes() {
         assertEquals(VideoResize.ZOOM, nextResize(VideoResize.FIT))
         assertEquals(VideoResize.FILL, nextResize(VideoResize.ZOOM))
-        assertEquals(VideoResize.FIT, nextResize(VideoResize.FILL))
+        assertEquals(VideoResize.RATIO_16_9, nextResize(VideoResize.FILL))
+        assertEquals(VideoResize.FIT, nextResize(VideoResize.RATIO_1_1))
+    }
+
+    @Test fun forcedRatiosAreWidthOverHeight() {
+        assertEquals(null, VideoResize.FIT.ratio)
+        assertEquals(16f / 9f, VideoResize.RATIO_16_9.ratio!!, 0.0001f)
+        assertEquals(1f, VideoResize.RATIO_1_1.ratio!!, 0.0001f)
+    }
+
+    @Test fun abLoopMarksAThenBThenRestarts() {
+        var loop = AbLoop()
+        assertFalse(loop.active)
+        loop = loop.mark(10_000)
+        assertEquals(10_000L, loop.start)
+        assertEquals(null, loop.end)
+        assertFalse(loop.active)
+        loop = loop.mark(20_000)
+        assertTrue(loop.active)
+        assertEquals(null, loop.jumpFor(19_999))
+        assertEquals(10_000L, loop.jumpFor(20_000))
+        loop = loop.mark(30_000)
+        assertEquals(AbLoop(start = 30_000), loop)
+    }
+
+    @Test fun abLoopIgnoresAnEndBeforeTheStart() {
+        assertEquals(AbLoop(start = 5_000), AbLoop(start = 10_000).mark(5_000))
     }
 
     @Test fun landscapeForWidePictures() {

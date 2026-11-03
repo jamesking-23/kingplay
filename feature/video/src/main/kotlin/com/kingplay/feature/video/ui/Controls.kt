@@ -56,6 +56,7 @@ class ControlActions(
     val onSeekTo: (Long) -> Unit,
     val onSpeed: () -> Unit,
     val onResize: () -> Unit,
+    val onOptions: () -> Unit,
     val onAudio: () -> Unit,
     val onSubtitles: () -> Unit,
     val onRotate: () -> Unit,
@@ -97,6 +98,11 @@ private fun TopRow(state: VideoPlayerState, actions: ControlActions, modifier: M
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
+        )
+        KpIconButton(
+            icon = KpIcons.Tune,
+            contentDescription = stringResource(R.string.video_options),
+            onClick = actions.onOptions,
         )
         KpIconButton(
             icon = KpIcons.Subtitles,
@@ -211,4 +217,9 @@ fun resizeLabel(resize: VideoResize): Int = when (resize) {
     VideoResize.FIT -> R.string.video_resize_fit
     VideoResize.ZOOM -> R.string.video_resize_zoom
     VideoResize.FILL -> R.string.video_resize_fill
+    VideoResize.RATIO_16_9 -> R.string.video_ratio_16_9
+    VideoResize.RATIO_4_3 -> R.string.video_ratio_4_3
+    VideoResize.RATIO_21_9 -> R.string.video_ratio_21_9
+    VideoResize.RATIO_16_10 -> R.string.video_ratio_16_10
+    VideoResize.RATIO_1_1 -> R.string.video_ratio_1_1
 }

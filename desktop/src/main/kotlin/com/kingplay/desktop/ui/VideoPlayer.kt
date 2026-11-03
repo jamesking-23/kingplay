@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -36,6 +37,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,12 +60,25 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.rememberWindowState
 import com.kingplay.desktop.settings.DesktopSettings
+import java.io.File
+import com.kingplay.desktop.video.AbLoop
+import com.kingplay.desktop.video.AspectRatios
+import com.kingplay.desktop.video.CropShapes
+import com.kingplay.desktop.video.MAX_VOLUME_PERCENT
+import com.kingplay.desktop.video.PlaybackSpeeds
+import com.kingplay.desktop.video.VideoCommand
 import com.kingplay.desktop.video.VideoFile
+import com.kingplay.desktop.video.clampVolume
+import com.kingplay.desktop.video.commandForKey
+import com.kingplay.desktop.video.formatDelay
+import com.kingplay.desktop.video.formatRate
+import com.kingplay.desktop.video.nextInCycle
+import com.kingplay.desktop.video.steppedSpeed
 import kotlinx.coroutines.delay
 import uk.co.caprica.vlcj.player.base.State
 import uk.co.caprica.vlcj.player.component.EmbeddedMediaPlayerComponent
 
-private enum class TrackPanel { Subtitles, Audio }
+private enum class TrackPanel { Subtitles, Audio, Picture, Speed, Sync, Tools }
 
 private const val SKIP_MS = 10_000L
 private const val POLL_MS = 500L
@@ -71,6 +86,13 @@ private const val SURFACE_POLL_MS = 50L
 private const val SAVE_EVERY_POLLS = 10
 private const val ACTIVITY_POLL_MS = 150L
 private const val HIDE_AFTER_MS = 2_000L
+private const val VOLUME_WHEEL = 5
+private const val AB_POLL_MS = 100L
+private const val OSD_MS = 1_800L
+private const val MICROS_PER_MS = 1_000L
+private const val SNAPSHOT_NAME_MAX = 60
+private const val MS_PER_SECOND_INT = 1_000L
+private const val SPEED_EPSILON = 0.01f
 
 /** One choice in the subtitle or audio list. */
 private data class TrackChoice(val id: Int, val label: String)
@@ -107,6 +129,15 @@ fun VideoWindow(
     var dragging by remember(video.id) { mutableStateOf<Float?>(null) }
     var panel by remember(video.id) { mutableStateOf<TrackPanel?>(null) }
     var tracks by remember(video.id) { mutableStateOf<Pair<List<TrackChoice>, Int>>(emptyList<TrackChoice>() to -1) }
+    var muted by remember(video.id) { mutableStateOf(false) }
+    var rate by remember(video.id) { mutableFloatStateOf(1f) }
+    var aspect by remember(video.id) { mutableIntStateOf(0) }
+    var crop by remember(video.id) { mutableIntStateOf(0) }
+    var subDelayMs by remember(video.id) { mutableIntStateOf(0) }
+    var audioDelayMs by remember(video.id) { mutableIntStateOf(0) }
+    var looping by remember(video.id) { mutableStateOf(false) }
+    var abLoop by remember(video.id) { mutableStateOf(AbLoop()) }
+    var osd by remember(video.id) { mutableStateOf<String?>(null) }
     val fullscreen = windowState.placement == WindowPlacement.Fullscreen
     // In full screen the controls fade away after a short idle time and come back on any mouse or key activity.
     var controlsVisible by remember(video.id) { mutableStateOf(true) }
@@ -124,23 +155,32 @@ fun VideoWindow(
         player.audio().setVolume(settings.volumePercent)
     }
 
+    // What a command does lives further down; the AWT listeners below call it through this holder.
+    val runner = remember(video.id) { arrayOf<(VideoCommand) -> Unit>({}) }
+
     DisposableEffect(component) {
         // Key presses and clicks on the native video surface never reach Compose, so listen on it directly.
         val surface = component.videoSurfaceComponent()
-        val key = object : java.awt.event.KeyAdapter() {
-            override fun keyPressed(e: java.awt.event.KeyEvent) = wake.set(true)
-        }
         val mouse = object : java.awt.event.MouseAdapter() {
-            override fun mousePressed(e: java.awt.event.MouseEvent) = wake.set(true)
+            override fun mousePressed(e: java.awt.event.MouseEvent) {
+                wake.set(true)
+                surface.requestFocusInWindow()
+            }
+            override fun mouseClicked(e: java.awt.event.MouseEvent) {
+                if (!javax.swing.SwingUtilities.isLeftMouseButton(e)) return
+                // One click plays or pauses; a quick second click goes full screen (the two pauses cancel out).
+                runner[0](if (e.clickCount == 2) VideoCommand.ToggleFullscreen else VideoCommand.TogglePlay)
+            }
             override fun mouseMoved(e: java.awt.event.MouseEvent) = wake.set(true)
-            override fun mouseWheelMoved(e: java.awt.event.MouseWheelEvent) = wake.set(true)
+            override fun mouseWheelMoved(e: java.awt.event.MouseWheelEvent) {
+                wake.set(true)
+                runner[0](VideoCommand.VolumeBy(if (e.wheelRotation < 0) VOLUME_WHEEL else -VOLUME_WHEEL))
+            }
         }
-        surface.addKeyListener(key)
         surface.addMouseListener(mouse)
         surface.addMouseMotionListener(mouse)
         surface.addMouseWheelListener(mouse)
         onDispose {
-            surface.removeKeyListener(key)
             surface.removeMouseListener(mouse)
             surface.removeMouseMotionListener(mouse)
             surface.removeMouseWheelListener(mouse)
@@ -182,6 +222,19 @@ fun VideoWindow(
         }
     }
 
+    LaunchedEffect(abLoop) {
+        while (abLoop.active) {
+            delay(AB_POLL_MS)
+            abLoop.jumpFor(player.status().time())?.let { player.controls().setTime(it) }
+        }
+    }
+    LaunchedEffect(osd) {
+        if (osd != null) {
+            delay(OSD_MS)
+            osd = null
+        }
+    }
+
     fun togglePlay() {
         val status = player.status()
         when {
@@ -194,8 +247,129 @@ fun VideoWindow(
     fun skip(ms: Long) = player.controls().skipTime(ms)
 
     fun toggleFullscreen() {
-        windowState.placement = if (fullscreen) WindowPlacement.Floating else WindowPlacement.Fullscreen
+        val now = windowState.placement == WindowPlacement.Fullscreen
+        windowState.placement = if (now) WindowPlacement.Floating else WindowPlacement.Fullscreen
     }
+
+    fun setVolume(percent: Int) {
+        val clamped = clampVolume(percent)
+        volume = clamped.toFloat()
+        player.audio().setVolume(clamped)
+    }
+
+    fun setRate(value: Float) {
+        rate = value
+        player.controls().setRate(value)
+    }
+
+    fun setAspect(index: Int) {
+        aspect = index
+        player.video().setAspectRatio(AspectRatios[index].vlc)
+    }
+
+    fun setCrop(index: Int) {
+        crop = index
+        player.video().setCropGeometry(CropShapes[index].vlc)
+    }
+
+    fun setSubDelay(ms: Int) {
+        subDelayMs = ms
+        player.subpictures().setDelay(ms * MICROS_PER_MS)
+    }
+
+    fun setAudioDelay(ms: Int) {
+        audioDelayMs = ms
+        player.audio().setDelay(ms * MICROS_PER_MS)
+    }
+
+    fun setMuted(value: Boolean) {
+        muted = value
+        player.audio().setMute(value)
+    }
+
+    fun setLooping(value: Boolean) {
+        looping = value
+        player.controls().setRepeat(value)
+    }
+
+    fun snapshot() {
+        val folder = File(System.getProperty("user.home"), "Pictures/KingPlay").apply { mkdirs() }
+        val name = video.title.replace(Regex("[^A-Za-z0-9 ._-]"), "_").take(SNAPSHOT_NAME_MAX)
+        val file = File(folder, "$name ${formatTime(player.status().time()).replace(':', '-')}.png")
+        osd = if (player.snapshots().save(file)) "Saved screenshot to Pictures/KingPlay" else "Could not save a screenshot"
+    }
+
+    fun cycleTrack(subtitles: Boolean) {
+        val ids = if (subtitles) {
+            player.subpictures().trackDescriptions().map { it.id() }
+        } else {
+            player.audio().trackDescriptions().map { it.id() }
+        }
+        val next = nextInCycle(ids, if (subtitles) player.subpictures().track() else player.audio().track()) ?: return
+        if (subtitles) player.subpictures().setTrack(next) else player.audio().setTrack(next)
+        val names = if (subtitles) player.subpictures().trackDescriptions() else player.audio().trackDescriptions()
+        val label = names.firstOrNull { it.id() == next }?.description().orEmpty().ifBlank { "Off" }
+        osd = (if (subtitles) "Subtitles: " else "Audio: ") + label
+    }
+
+    fun execute(command: VideoCommand) {
+        when (command) {
+            VideoCommand.TogglePlay -> togglePlay()
+            is VideoCommand.Seek -> {
+                skip(command.ms)
+                osd = if (command.ms > 0) "Forward ${command.ms / MS_PER_SECOND_INT} s" else "Back ${-command.ms / MS_PER_SECOND_INT} s"
+            }
+            is VideoCommand.VolumeBy -> {
+                setVolume(volume.toInt() + command.delta)
+                osd = "Volume ${volume.toInt()}%"
+            }
+            VideoCommand.ToggleMute -> {
+                setMuted(!muted)
+                osd = if (muted) "Muted" else "Sound on"
+            }
+            VideoCommand.ToggleFullscreen -> toggleFullscreen()
+            VideoCommand.ExitFullscreen -> if (windowState.placement == WindowPlacement.Fullscreen) toggleFullscreen()
+            VideoCommand.Next -> onNext?.invoke()
+            VideoCommand.Previous -> onPrevious?.invoke()
+            VideoCommand.SpeedUp, VideoCommand.SpeedDown -> {
+                setRate(steppedSpeed(rate, command == VideoCommand.SpeedUp))
+                osd = "Speed ${formatRate(rate)}"
+            }
+            VideoCommand.SpeedNormal -> {
+                setRate(1f)
+                osd = "Speed 1x"
+            }
+            VideoCommand.CycleAspect -> {
+                setAspect((aspect + 1) % AspectRatios.size)
+                osd = "Aspect ratio: ${AspectRatios[aspect].label}"
+            }
+            VideoCommand.CycleCrop -> {
+                setCrop((crop + 1) % CropShapes.size)
+                osd = "Crop: ${CropShapes[crop].label}"
+            }
+            VideoCommand.CycleSubtitles -> cycleTrack(subtitles = true)
+            VideoCommand.CycleAudio -> cycleTrack(subtitles = false)
+            is VideoCommand.SubtitleDelay -> {
+                setSubDelay(subDelayMs + command.deltaMs)
+                osd = "Subtitle delay ${formatDelay(subDelayMs)}"
+            }
+            is VideoCommand.AudioDelay -> {
+                setAudioDelay(audioDelayMs + command.deltaMs)
+                osd = "Audio delay ${formatDelay(audioDelayMs)}"
+            }
+            VideoCommand.NextFrame -> {
+                player.controls().setPause(true)
+                player.controls().nextFrame()
+            }
+            VideoCommand.Snapshot -> snapshot()
+            VideoCommand.ToggleLoop -> {
+                setLooping(!looping)
+                osd = if (looping) "Repeat on" else "Repeat off"
+            }
+            VideoCommand.Restart -> player.controls().setTime(0L)
+        }
+    }
+    runner[0] = ::execute
 
     fun showTracks(which: TrackPanel) {
         panel = if (panel == which) null else which
@@ -214,23 +388,32 @@ fun VideoWindow(
         title = video.title,
         icon = trayIconPainter(),
         state = windowState,
-        onPreviewKeyEvent = { event ->
+        onPreviewKeyEvent = { _ ->
             wake.set(true)
-            if (event.type != KeyEventType.KeyDown) {
-                false
-            } else {
-                when (event.key) {
-                    Key.Spacebar -> togglePlay().let { true }
-                    Key.DirectionRight -> skip(SKIP_MS).let { true }
-                    Key.DirectionLeft -> skip(-SKIP_MS).let { true }
-                    Key.F -> toggleFullscreen().let { true }
-                    Key.Escape -> if (fullscreen) toggleFullscreen().let { true } else false
-                    else -> false
-                }
-            }
+            false
         },
     ) {
         val density = androidx.compose.ui.platform.LocalDensity.current.density
+        DisposableEffect(window) {
+            // Catch shortcuts wherever the keyboard focus is, including on the native video surface.
+            val manager = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager()
+            val dispatcher = java.awt.KeyEventDispatcher { e ->
+                if (e.id != java.awt.event.KeyEvent.KEY_PRESSED || manager.activeWindow !== window) {
+                    false
+                } else {
+                    wake.set(true)
+                    val command = commandForKey(e.keyCode, e.isShiftDown, e.isControlDown)
+                    if (command == null) {
+                        false
+                    } else {
+                        runner[0](command)
+                        true
+                    }
+                }
+            }
+            manager.addKeyEventDispatcher(dispatcher)
+            onDispose { manager.removeKeyEventDispatcher(dispatcher) }
+        }
         LaunchedEffect(fullscreen, component) {
             val blank = java.awt.Toolkit.getDefaultToolkit().createCustomCursor(
                 java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB),
@@ -283,7 +466,17 @@ fun VideoWindow(
                     if (!fullscreen || controlsVisible) Column(
                         modifier = Modifier.onSizeChanged { controlsHeightDp = it.height / density },
                     ) {
-                    panel?.let { which ->
+                    osd?.let { text ->
+                        Surface(color = MaterialTheme.colorScheme.inverseSurface, modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                text,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.inverseOnSurface,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
+                    panel?.takeIf { it == TrackPanel.Subtitles || it == TrackPanel.Audio }?.let { which ->
                         TrackStrip(
                             title = if (which == TrackPanel.Subtitles) "Subtitles" else "Audio track",
                             choices = tracks.first,
@@ -307,7 +500,40 @@ fun VideoWindow(
                             },
                         )
                     }
+                    when (panel) {
+                        TrackPanel.Picture -> ChoiceStrip("Aspect ratio", AspectRatios.map { it.label }, aspect, ::setAspect) {
+                            ChoiceRow("Crop", CropShapes.map { it.label }, crop, ::setCrop)
+                        }
+                        TrackPanel.Speed -> ChoiceStrip(
+                            "Speed",
+                            PlaybackSpeeds.map { formatRate(it) },
+                            PlaybackSpeeds.indexOfFirst { kotlin.math.abs(it - rate) < SPEED_EPSILON },
+                            { setRate(PlaybackSpeeds[it]) },
+                        )
+                        TrackPanel.Sync -> SyncStrip(
+                            subDelayMs = subDelayMs,
+                            audioDelayMs = audioDelayMs,
+                            onSubtitles = ::setSubDelay,
+                            onAudio = ::setAudioDelay,
+                        )
+                        TrackPanel.Tools -> ToolsStrip(
+                            looping = looping,
+                            abLoop = abLoop,
+                            onLoop = { setLooping(it) },
+                            onMarkAb = { abLoop = abLoop.mark(player.status().time()) },
+                            onClearAb = { abLoop = AbLoop() },
+                            onSnapshot = ::snapshot,
+                            onFrame = { execute(VideoCommand.NextFrame) },
+                        )
+                        else -> Unit
+                    }
                     Controls(
+                        muted = muted,
+                        onMute = { execute(VideoCommand.ToggleMute) },
+                        onPicture = { panel = if (panel == TrackPanel.Picture) null else TrackPanel.Picture },
+                        onSpeedPanel = { panel = if (panel == TrackPanel.Speed) null else TrackPanel.Speed },
+                        onSync = { panel = if (panel == TrackPanel.Sync) null else TrackPanel.Sync },
+                        onTools = { panel = if (panel == TrackPanel.Tools) null else TrackPanel.Tools },
                         playing = playing,
                         position = dragging?.let { (it * length).toLong() } ?: position,
                         length = length,
@@ -321,7 +547,7 @@ fun VideoWindow(
                             dragging?.let { player.controls().setTime((it * length).toLong()) }
                             dragging = null
                         },
-                        onVolume = { volume = it; player.audio().setVolume(it.toInt()) },
+                        onVolume = { setVolume(it.toInt()) },
                         onSubtitles = { showTracks(TrackPanel.Subtitles) },
                         onAudio = { showTracks(TrackPanel.Audio) },
                         onFullscreen = ::toggleFullscreen,
@@ -365,7 +591,108 @@ private fun TrackStrip(
 }
 
 @Composable
+private fun ChoiceRow(title: String, labels: List<String>, selected: Int, onPick: (Int) -> Unit) {
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(title, style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(CHOICE_TITLE_WIDTH))
+        labels.forEachIndexed { index, label ->
+            FilterChip(selected = index == selected, onClick = { onPick(index) }, label = { Text(label) })
+        }
+    }
+}
+
+@Composable
+private fun ChoiceStrip(
+    title: String,
+    labels: List<String>,
+    selected: Int,
+    onPick: (Int) -> Unit,
+    extra: @Composable () -> Unit = {},
+) {
+    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
+        Column {
+            ChoiceRow(title, labels, selected, onPick)
+            extra()
+        }
+    }
+}
+
+@Composable
+private fun DelayRow(title: String, delayMs: Int, onChange: (Int) -> Unit) {
+    Row(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(title, style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(CHOICE_TITLE_WIDTH))
+        TextButton(onClick = { onChange(delayMs - com.kingplay.desktop.video.DELAY_STEP_MS) }) { Text("Earlier  −0.05 s") }
+        Text(formatDelay(delayMs), style = MaterialTheme.typography.bodyMedium)
+        TextButton(onClick = { onChange(delayMs + com.kingplay.desktop.video.DELAY_STEP_MS) }) { Text("Later  +0.05 s") }
+        TextButton(onClick = { onChange(0) }, enabled = delayMs != 0) { Text("Reset") }
+    }
+}
+
+@Composable
+private fun SyncStrip(
+    subDelayMs: Int,
+    audioDelayMs: Int,
+    onSubtitles: (Int) -> Unit,
+    onAudio: (Int) -> Unit,
+) {
+    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
+        Column {
+            DelayRow("Subtitles (H / J)", subDelayMs, onSubtitles)
+            DelayRow("Audio (G / L)", audioDelayMs, onAudio)
+        }
+    }
+}
+
+@Composable
+private fun ToolsStrip(
+    looping: Boolean,
+    abLoop: AbLoop,
+    onLoop: (Boolean) -> Unit,
+    onMarkAb: () -> Unit,
+    onClearAb: () -> Unit,
+    onSnapshot: () -> Unit,
+    onFrame: () -> Unit,
+) {
+    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FilterChip(selected = looping, onClick = { onLoop(!looping) }, label = { Text("Repeat this video (R)") })
+            TextButton(onClick = onMarkAb) {
+                Text(
+                    when {
+                        abLoop.active -> "A–B ${formatTime(abLoop.start ?: 0L)} to ${formatTime(abLoop.end ?: 0L)}"
+                        abLoop.start != null -> "Mark end of A–B (A at ${formatTime(abLoop.start)})"
+                        else -> "Mark start of A–B"
+                    },
+                )
+            }
+            TextButton(onClick = onClearAb, enabled = abLoop.start != null) { Text("Clear A–B") }
+            TextButton(onClick = onFrame) { Text("Next frame (E)") }
+            TextButton(onClick = onSnapshot) { Text("Screenshot (S)") }
+        }
+    }
+}
+
+private val CHOICE_TITLE_WIDTH = 140.dp
+
+@Composable
 private fun Controls(
+    muted: Boolean,
+    onMute: () -> Unit,
+    onPicture: () -> Unit,
+    onSpeedPanel: () -> Unit,
+    onSync: () -> Unit,
+    onTools: () -> Unit,
     playing: Boolean,
     position: Long,
     length: Long,
@@ -425,14 +752,24 @@ private fun Controls(
                 if (onNext != null) {
                     IconButton(onClick = onNext) { Icon(Icons.Filled.SkipNext, contentDescription = "Next video") }
                 }
-                TextButton(onClick = onSubtitles) { Text("Subtitles") }
-                TextButton(onClick = onAudio) { Text("Audio") }
-                Box(modifier = Modifier.weight(1f))
-                Icon(Icons.Filled.VolumeUp, contentDescription = null)
+                Row(modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
+                    TextButton(onClick = onSubtitles) { Text("Subtitles") }
+                    TextButton(onClick = onAudio) { Text("Audio") }
+                    TextButton(onClick = onPicture) { Text("Picture") }
+                    TextButton(onClick = onSpeedPanel) { Text("Speed") }
+                    TextButton(onClick = onSync) { Text("Sync") }
+                    TextButton(onClick = onTools) { Text("Tools") }
+                }
+                IconButton(onClick = onMute) {
+                    Icon(
+                        imageVector = if (muted) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                        contentDescription = if (muted) "Unmute" else "Mute",
+                    )
+                }
                 Slider(
                     value = volume,
                     onValueChange = onVolume,
-                    valueRange = 0f..MAX_VOLUME,
+                    valueRange = 0f..MAX_VOLUME_PERCENT.toFloat(),
                     modifier = Modifier.width(VOLUME_WIDTH).semantics { contentDescription = "Volume" },
                 )
                 IconButton(onClick = onFullscreen) {
@@ -450,5 +787,4 @@ private fun Controls(
 private val WINDOW_WIDTH = 960.dp
 private val WINDOW_HEIGHT = 600.dp
 private val VOLUME_WIDTH = 120.dp
-private const val MAX_VOLUME = 100f
 private const val MS_PER_SECOND = 1000.0

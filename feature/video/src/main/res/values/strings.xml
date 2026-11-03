@@ -39,5 +39,26 @@
     <string name="video_brightness">Brightness %1$d%%</string>
     <string name="video_volume">Volume %1$d%%</string>
     <string name="video_fast">2x</string>
+    <string name="video_options">Video options</string>
+    <string name="video_options_picture">Picture shape</string>
+    <string name="video_options_repeat">Repeat</string>
+    <string name="video_repeat_off">Off</string>
+    <string name="video_repeat_one">This video</string>
+    <string name="video_repeat_all">All in folder</string>
+    <string name="video_options_ab">Repeat a section (A–B)</string>
+    <string name="video_ab_set">Mark point</string>
+    <string name="video_ab_clear">Clear</string>
+    <string name="video_ab_none">Tap Mark point at the start, then again at the end of the part to repeat.</string>
+    <string name="video_ab_start">Start marked at %1$s. Mark the end.</string>
+    <string name="video_ab_active">Repeating %1$s to %2$s</string>
+    <string name="video_options_sleep">Sleep timer</string>
+    <string name="video_sleep_set">Pausing in %1$d minutes</string>
+    <string name="video_sleep_paused">Sleep timer: paused</string>
+    <string name="video_mute">Mute sound</string>
+    <string name="video_ratio_16_9">16:9</string>
+    <string name="video_ratio_4_3">4:3</string>
+    <string name="video_ratio_21_9">21:9</string>
+    <string name="video_ratio_16_10">16:10</string>
+    <string name="video_ratio_1_1">1:1</string>
     <string name="video_close_sheet">Close</string>
 </resources>
