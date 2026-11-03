@@ -61,6 +61,12 @@ sealed interface DetailEvent : UiEvent {
 
     data class ToggleFavorite(val track: Track) : DetailEvent
 
+    data class PlayNextMany(val tracks: List<Track>) : DetailEvent
+
+    data class AddManyToQueue(val tracks: List<Track>) : DetailEvent
+
+    data class ToggleFavorites(val tracks: List<Track>) : DetailEvent
+
     data object Retry : DetailEvent
 }
 
@@ -119,6 +125,15 @@ abstract class DetailViewModel(
                 sendEffect(LibraryEffect.Message(R.string.library_added_queue))
             }
             is DetailEvent.ToggleFavorite -> viewModelScope.launch { actions.toggleFavorite(event.track) }
+            is DetailEvent.PlayNextMany -> {
+                actions.playNext(event.tracks)
+                sendEffect(LibraryEffect.Message(R.string.library_added_next))
+            }
+            is DetailEvent.AddManyToQueue -> {
+                actions.addToQueue(event.tracks)
+                sendEffect(LibraryEffect.Message(R.string.library_added_queue))
+            }
+            is DetailEvent.ToggleFavorites -> viewModelScope.launch { actions.toggleFavorites(event.tracks) }
             DetailEvent.Retry -> retryTick.update { it + 1 }
         }
     }

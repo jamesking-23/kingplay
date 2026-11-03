@@ -22,14 +22,14 @@ class TrackOptionsViewModel @Inject constructor(
     val playlists: StateFlow<List<Playlist>> = repository.playlists()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), emptyList())
 
-    fun add(playlistId: Long, track: Track) {
-        viewModelScope.launch { repository.add(playlistId, listOf(MediaRef.Audio(track.id))) }
+    fun add(playlistId: Long, tracks: List<Track>) {
+        viewModelScope.launch { repository.add(playlistId, tracks.map { MediaRef.Audio(it.id) }) }
     }
 
-    fun createWith(name: String, track: Track) {
+    fun createWith(name: String, tracks: List<Track>) {
         viewModelScope.launch {
             val id = repository.create(name)
-            repository.add(id, listOf(MediaRef.Audio(track.id)))
+            repository.add(id, tracks.map { MediaRef.Audio(it.id) })
         }
     }
 

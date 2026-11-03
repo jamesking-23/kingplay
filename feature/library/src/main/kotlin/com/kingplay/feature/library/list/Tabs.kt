@@ -4,6 +4,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.Alignment
 import com.kingplay.core.designsystem.component.KpErrorState
+import androidx.compose.runtime.LaunchedEffect
 import com.kingplay.core.ui.Async
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.size
@@ -273,9 +274,18 @@ internal fun CreatePlaylistDialog(onDismiss: () -> Unit, onCreate: (String) -> U
 @Composable
 fun VideosTab(navigator: AppNavigator, modifier: Modifier = Modifier, viewModel: VideosViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val selection = com.kingplay.core.ui.component.rememberSelection()
+    androidx.activity.compose.BackHandler(enabled = selection.active) { selection.clear() }
+    val loaded = (state as? Async.Content)?.data.orEmpty()
+    LaunchedEffect(loaded) { selection.retainOnly(loaded.map { it.id }.toSet()) }
     ListTab(
         state = state,
         onRetry = viewModel::retry,
+        header = if (selection.active) {
+            { com.kingplay.feature.library.options.VideoSelectionBar(selection, loaded) }
+        } else {
+            null
+        },
         emptyIcon = KpIcons.Movie,
         emptyTitle = stringResource(R.string.videos_empty_title),
         emptyMessage = stringResource(R.string.videos_empty_message),
@@ -294,6 +304,9 @@ fun VideosTab(navigator: AppNavigator, modifier: Modifier = Modifier, viewModel:
             artworkUri = video.uri,
             artworkKey = "video:${video.id}",
             leadingIcon = KpIcons.Movie,
+            selecting = selection.active,
+            selected = video.id in selection,
+            onToggleSelect = { selection.toggle(video.id) },
             onClick = { navigator.toVideo(video.id) },
         )
     }

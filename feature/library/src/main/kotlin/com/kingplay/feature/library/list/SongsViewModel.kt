@@ -70,6 +70,30 @@ class SongsViewModel @Inject constructor(
         }
     }
 
+    /** Loads the songs behind ticked ids (the list is paged, so most of them are not in memory). */
+    fun tracksFor(ids: List<Long>, onLoaded: (List<Track>) -> Unit) {
+        viewModelScope.launch { onLoaded(library.getTracks(ids)) }
+    }
+
+    /** Every song id in the current order, for "select all". */
+    fun allIds(onLoaded: (List<Long>) -> Unit) {
+        viewModelScope.launch { onLoaded(library.songIds(state.value.sort)) }
+    }
+
+    fun playNext(tracks: List<Track>) {
+        actions.playNext(tracks)
+        sendEffect(LibraryEffect.Message(R.string.library_added_next))
+    }
+
+    fun addToQueue(tracks: List<Track>) {
+        actions.addToQueue(tracks)
+        sendEffect(LibraryEffect.Message(R.string.library_added_queue))
+    }
+
+    fun toggleFavorites(tracks: List<Track>) {
+        viewModelScope.launch { actions.toggleFavorites(tracks) }
+    }
+
     override fun onEvent(event: SongsEvent) {
         when (event) {
             is SongsEvent.SortBy -> setState { copy(sort = sort.chooseField(event.field)) }

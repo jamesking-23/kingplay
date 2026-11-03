@@ -8,6 +8,11 @@
     <string name="ui_add_to_queue">Add to queue</string>
     <string name="ui_add_favorite">Add to favorites</string>
     <string name="ui_remove_favorite">Remove from favorites</string>
+    <string name="ui_selected_count">%1$d selected</string>
+    <string name="ui_select_all">Select all</string>
+    <string name="ui_clear_selection">Cancel selection</string>
+    <string name="ui_selection_actions">Actions for selected items</string>
+    <string name="ui_row_select">Select %1$s</string>
     <string name="ui_now_playing">Now playing</string>
     <string name="ui_unknown_artist">Unknown artist</string>
     <string name="ui_unknown_album">Unknown album</string>

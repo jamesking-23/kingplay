@@ -70,6 +70,9 @@
     <string name="options_share_failed">No app can share this file.</string>
     <string name="options_delete_title">Delete this song?</string>
     <string name="options_delete_message">%1$s will be deleted from your phone. This cannot be undone.</string>
+    <string name="options_delete_many_title">Delete these items?</string>
+    <string name="options_delete_many_message">%1$d items will be deleted from your phone. This cannot be undone.</string>
+    <string name="options_share_many_title">Share %1$d items</string>
     <string name="options_delete_confirm">Delete</string>
     <string name="options_delete_unsupported">This Android version does not allow KingPlay to delete files. Delete it from your Files app.</string>
     <string name="playlist_name_label">Playlist name</string>

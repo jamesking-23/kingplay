@@ -26,5 +26,15 @@ class TrackActions @Inject constructor(
 
     fun addToQueue(track: Track) = playback.addToQueue(listOf(MediaRef.Audio(track.id)))
 
+    fun playNext(tracks: List<Track>) = playback.playNext(tracks.map { MediaRef.Audio(it.id) })
+
+    fun addToQueue(tracks: List<Track>) = playback.addToQueue(tracks.map { MediaRef.Audio(it.id) })
+
+    /** Adds all to favorites, or removes them all when every one already is a favorite. */
+    suspend fun toggleFavorites(tracks: List<Track>) {
+        val makeFavorite = tracks.any { !it.isFavorite }
+        tracks.forEach { library.setFavorite(it.id, makeFavorite) }
+    }
+
     suspend fun toggleFavorite(track: Track) = library.setFavorite(track.id, !track.isFavorite)
 }

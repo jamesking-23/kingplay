@@ -3,6 +3,7 @@ package com.kingplay.feature.library.options
 import android.app.Activity
 import android.app.RecoverableSecurityException
 import android.content.ActivityNotFoundException
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -37,6 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kingplay.core.designsystem.theme.KpTheme
 import com.kingplay.core.model.Track
+import com.kingplay.core.model.VideoItem
 import com.kingplay.core.ui.component.LocalTrackOptions
 import com.kingplay.core.ui.component.TrackOptions
 import com.kingplay.feature.library.R
@@ -54,49 +56,62 @@ fun TrackOptionsHost(
 ) {
     val context = LocalContext.current
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
-    var playlistTarget by remember { mutableStateOf<Track?>(null) }
-    var creatingFor by remember { mutableStateOf<Track?>(null) }
-    var deleteTarget by remember { mutableStateOf<Track?>(null) }
-    var retryDelete by remember { mutableStateOf<Track?>(null) }
+    var playlistTarget by remember { mutableStateOf<List<Track>?>(null) }
+    var creatingFor by remember { mutableStateOf<List<Track>?>(null) }
+    var deleteTarget by remember { mutableStateOf<List<FileItem>?>(null) }
+    var retryDelete by remember { mutableStateOf<List<FileItem>?>(null) }
 
+    // The launcher is needed inside its own result callback (Android 10 asks once per file), so reach it through this.
+    val launch = remember { arrayOf<(android.content.IntentSender) -> Unit>({}) }
     val deleteLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
-        if (result.resultCode != Activity.RESULT_OK) return@rememberLauncherForActivityResult
         val again = retryDelete
         retryDelete = null
-        // On Android 10 the screen only grants permission; the file is deleted by trying again.
-        if (again != null) deleteFile(context, again, onNeedsPermission = {}, onDone = viewModel::afterDeleted)
+        if (result.resultCode != Activity.RESULT_OK) return@rememberLauncherForActivityResult
+        // On Android 10 the screen only grants permission for one file; carry on with it and the rest.
+        if (again != null) startDelete(context, again, viewModel, launch[0], setRetry = { retryDelete = it })
         else viewModel.afterDeleted()
     }
 
-    fun startDelete(track: Track) {
-        deleteFile(
-            context = context,
-            track = track,
-            onNeedsPermission = { sender ->
-                retryDelete = track.takeIf { Build.VERSION.SDK_INT < Build.VERSION_CODES.R }
-                deleteLauncher.launch(IntentSenderRequest.Builder(sender).build())
-            },
-            onDone = viewModel::afterDeleted,
-        )
+    launch[0] = { sender -> deleteLauncher.launch(IntentSenderRequest.Builder(sender).build()) }
+
+    fun deleteFiles(items: List<FileItem>) {
+        if (items.isEmpty()) return
+        // From Android 11 the system shows its own confirmation, so a second question would be noise.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            startDelete(context, items, viewModel, launch[0], setRetry = { retryDelete = it })
+        } else {
+            deleteTarget = items
+        }
     }
 
     val options = remember {
         object : TrackOptions {
             override fun addToPlaylist(track: Track) {
-                playlistTarget = track
+                playlistTarget = listOf(track)
             }
 
-            override fun share(track: Track) = shareTrack(context, track)
+            override fun share(track: Track) = shareFiles(context, listOf(track.toFile()), "audio/*")
 
-            override fun delete(track: Track) {
-                // From Android 11 the system shows its own confirmation, so a second question would be noise.
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) startDelete(track) else deleteTarget = track
+            override fun delete(track: Track) = deleteFiles(listOf(track.toFile()))
+
+            override fun addToPlaylist(tracks: List<Track>) {
+                if (tracks.isNotEmpty()) playlistTarget = tracks
             }
+
+            override fun share(tracks: List<Track>) = shareFiles(context, tracks.map { it.toFile() }, "audio/*")
+
+            override fun delete(tracks: List<Track>) = deleteFiles(tracks.map { it.toFile() })
+
+            override fun shareVideos(videos: List<VideoItem>) =
+                shareFiles(context, videos.map { FileItem(it.uri, it.title) }, "video/*")
+
+            override fun deleteVideos(videos: List<VideoItem>) =
+                deleteFiles(videos.map { FileItem(it.uri, it.title) })
         }
     }
     CompositionLocalProvider(LocalTrackOptions provides options) { content() }
 
-    playlistTarget?.let { track ->
+    playlistTarget?.let { chosen ->
         AlertDialog(
             onDismissRequest = { playlistTarget = null },
             title = { Text(stringResource(R.string.options_choose_playlist)) },
@@ -110,7 +125,7 @@ fun TrackOptionsHost(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    creatingFor = track
+                                    creatingFor = chosen
                                     playlistTarget = null
                                 }
                                 .padding(vertical = KpTheme.spacing.md),
@@ -121,7 +136,7 @@ fun TrackOptionsHost(
                             Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    viewModel.add(playlist.id, track)
+                                    viewModel.add(playlist.id, chosen)
                                     Toast.makeText(
                                         context,
                                         context.getString(R.string.options_added_to, playlist.name),
@@ -138,25 +153,39 @@ fun TrackOptionsHost(
             dismissButton = { TextButton(onClick = { playlistTarget = null }) { Text(stringResource(R.string.playlist_cancel)) } },
         )
     }
-    creatingFor?.let { track ->
+    creatingFor?.let { chosen ->
         CreatePlaylistDialog(
             onDismiss = { creatingFor = null },
             onCreate = { name ->
                 creatingFor = null
-                viewModel.createWith(name, track)
+                viewModel.createWith(name, chosen)
                 Toast.makeText(context, context.getString(R.string.options_added_to, name), Toast.LENGTH_SHORT).show()
             },
         )
     }
-    deleteTarget?.let { track ->
+    deleteTarget?.let { items ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text(stringResource(R.string.options_delete_title)) },
-            text = { Text(stringResource(R.string.options_delete_message, track.title)) },
+            title = {
+                Text(
+                    stringResource(
+                        if (items.size == 1) R.string.options_delete_title else R.string.options_delete_many_title,
+                    ),
+                )
+            },
+            text = {
+                Text(
+                    if (items.size == 1) {
+                        stringResource(R.string.options_delete_message, items.first().title)
+                    } else {
+                        stringResource(R.string.options_delete_many_message, items.size)
+                    },
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     deleteTarget = null
-                    startDelete(track)
+                    startDelete(context, items, viewModel, launch[0], setRetry = { retryDelete = it })
                 }) { Text(stringResource(R.string.options_delete_confirm)) }
             },
             dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(stringResource(R.string.playlist_cancel)) } },
@@ -166,18 +195,37 @@ fun TrackOptionsHost(
 
 private val PICKER_MAX_HEIGHT = 320.dp
 
-/** Opens Android's share sheet with the song file, so it can go by Bluetooth, Quick Share, chat apps and so on. */
-private fun shareTrack(context: Context, track: Track) {
-    val uri = Uri.parse(track.uri)
-    val type = context.contentResolver.getType(uri) ?: "audio/*"
-    val send = Intent(Intent.ACTION_SEND)
-        .setType(type)
-        .putExtra(Intent.EXTRA_STREAM, uri)
-        .putExtra(Intent.EXTRA_SUBJECT, track.title)
-        .putExtra(Intent.EXTRA_TITLE, track.title)
-        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    val chooser = Intent.createChooser(send, context.getString(R.string.options_share_title, track.title))
-        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+/** A file the person picked: a song or a video, reduced to what sharing and deleting need. */
+internal data class FileItem(val uri: String, val title: String)
+
+private fun Track.toFile() = FileItem(uri, title)
+
+/** Opens Android's share sheet with the files, so they can go by Bluetooth, Quick Share, chat apps and so on. */
+private fun shareFiles(context: Context, files: List<FileItem>, defaultType: String) {
+    if (files.isEmpty()) return
+    val uris = files.map { Uri.parse(it.uri) }
+    val send: Intent
+    val title: String
+    if (files.size == 1) {
+        val type = context.contentResolver.getType(uris.first()) ?: defaultType
+        send = Intent(Intent.ACTION_SEND)
+            .setType(type)
+            .putExtra(Intent.EXTRA_STREAM, uris.first())
+            .putExtra(Intent.EXTRA_SUBJECT, files.first().title)
+            .putExtra(Intent.EXTRA_TITLE, files.first().title)
+        title = context.getString(R.string.options_share_title, files.first().title)
+    } else {
+        send = Intent(Intent.ACTION_SEND_MULTIPLE)
+            .setType(defaultType)
+            .putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+        // The grant to read every file only reaches the other app when the uris are also in the clip data.
+        send.clipData = ClipData.newRawUri("", uris.first()).also { clip ->
+            uris.drop(1).forEach { clip.addItem(ClipData.Item(it)) }
+        }
+        title = context.getString(R.string.options_share_many_title, files.size)
+    }
+    send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    val chooser = Intent.createChooser(send, title).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     try {
         context.startActivity(chooser)
     } catch (e: ActivityNotFoundException) {
@@ -186,27 +234,33 @@ private fun shareTrack(context: Context, track: Track) {
 }
 
 /**
- * Deletes the file through MediaStore. Android 11 and later ask the person to confirm in a system screen
- * (handed back through [onNeedsPermission]); Android 10 may ask for permission first. [onDone] runs once it is gone.
+ * Deletes the files through MediaStore. Android 11 and later ask once, in a system screen, for all of them. Android 10
+ * may ask per file: the ones left to do are handed to [setRetry] and tried again when permission is granted.
  */
-private fun deleteFile(
+private fun startDelete(
     context: Context,
-    track: Track,
-    onNeedsPermission: (android.content.IntentSender) -> Unit,
-    onDone: () -> Unit,
+    files: List<FileItem>,
+    viewModel: TrackOptionsViewModel,
+    launch: (android.content.IntentSender) -> Unit,
+    setRetry: (List<FileItem>?) -> Unit,
 ) {
     val resolver = context.contentResolver
-    val uri = Uri.parse(track.uri)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-        onNeedsPermission(MediaStore.createDeleteRequest(resolver, listOf(uri)).intentSender)
+        val request = MediaStore.createDeleteRequest(resolver, files.map { Uri.parse(it.uri) })
+        launch(request.intentSender)
         return
     }
-    try {
-        resolver.delete(uri, null, null)
-        onDone()
-    } catch (e: RecoverableSecurityException) {
-        onNeedsPermission(e.userAction.actionIntent.intentSender)
-    } catch (e: SecurityException) {
-        Toast.makeText(context, R.string.options_delete_unsupported, Toast.LENGTH_LONG).show()
+    files.forEachIndexed { index, file ->
+        try {
+            resolver.delete(Uri.parse(file.uri), null, null)
+        } catch (e: RecoverableSecurityException) {
+            setRetry(files.drop(index))
+            launch(e.userAction.actionIntent.intentSender)
+            return
+        } catch (e: SecurityException) {
+            Toast.makeText(context, R.string.options_delete_unsupported, Toast.LENGTH_LONG).show()
+            return
+        }
     }
+    viewModel.afterDeleted()
 }

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -65,6 +66,9 @@ fun MediaRow(
     leadingIcon: ImageVector? = null,
     trailingText: String? = null,
     highlighted: Boolean = false,
+    selecting: Boolean = false,
+    selected: Boolean = false,
+    onToggleSelect: (() -> Unit)? = null,
     menu: (@Composable ColumnScope.(dismiss: () -> Unit) -> Unit)? = null,
 ) {
     val spacing = KpTheme.spacing
@@ -73,9 +77,14 @@ fun MediaRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .styledFrame(KpTheme.uiStyle, highlighted)
+            .styledFrame(KpTheme.uiStyle, highlighted || selected)
             .heightIn(min = MinRowHeight)
-            .combinedClickable(role = Role.Button, onClick = onClick, onLongClick = menu?.let { { menuOpen = true } })
+            .combinedClickable(
+                role = Role.Button,
+                // While items are ticked a tap ticks or unticks; otherwise a long press starts ticking.
+                onClick = if (selecting && onToggleSelect != null) onToggleSelect else onClick,
+                onLongClick = onToggleSelect ?: menu?.let { { menuOpen = true } },
+            )
             .padding(horizontal = spacing.lg, vertical = spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -84,10 +93,12 @@ fun MediaRow(
                 .weight(1f)
                 .semantics(mergeDescendants = true) {
                     contentDescription = description
-                    selected = highlighted // TalkBack announces "selected" on the song that is playing
+                    // TalkBack announces "selected" on the song that is playing, or on a ticked row
+                    this.selected = highlighted || selected
                 },
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (selecting) Checkbox(checked = selected, onCheckedChange = null)
             ArtworkImage(
                 audioUri = artworkUri,
                 cacheKey = artworkKey,
@@ -123,7 +134,7 @@ fun MediaRow(
                 )
             }
         }
-        if (menu != null) RowMenu(title = title, expanded = menuOpen, onExpanded = { menuOpen = it }, content = menu)
+        if (menu != null && !selecting) RowMenu(title = title, expanded = menuOpen, onExpanded = { menuOpen = it }, content = menu)
     }
 }
 

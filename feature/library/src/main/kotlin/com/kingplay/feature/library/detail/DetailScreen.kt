@@ -1,5 +1,6 @@
 package com.kingplay.feature.library.detail
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -26,6 +27,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -46,6 +48,8 @@ import com.kingplay.core.ui.artwork.ArtworkImage
 import com.kingplay.core.ui.artwork.ArtworkSize
 import com.kingplay.core.ui.component.MediaRow
 import com.kingplay.core.ui.component.TrackMenuItems
+import com.kingplay.core.ui.component.rememberSelection
+import com.kingplay.feature.library.options.TrackSelectionBar
 import com.kingplay.core.ui.displayName
 import com.kingplay.core.ui.format.formatDuration
 import com.kingplay.core.ui.format.formatTotalDuration
@@ -138,7 +142,21 @@ private fun TrackList(
     extraTrackMenu: (@Composable ColumnScope.(index: Int, dismiss: () -> Unit) -> Unit)?,
     showPlayCounts: Boolean,
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
+    val selection = rememberSelection()
+    BackHandler(enabled = selection.active) { selection.clear() }
+    LaunchedEffect(tracks) { selection.retainOnly(tracks.map { it.id }.toSet()) }
+    Column(modifier = Modifier.fillMaxSize()) {
+    if (selection.active) {
+        TrackSelectionBar(
+            selection = selection,
+            onSelectAll = { selection.selectAll(tracks.map { it.id }) },
+            resolve = { done -> done(tracks.filter { it.id in selection }) },
+            onPlayNext = { onEvent(DetailEvent.PlayNextMany(it)) },
+            onAddToQueue = { onEvent(DetailEvent.AddManyToQueue(it)) },
+            onToggleFavorite = { onEvent(DetailEvent.ToggleFavorites(it)) },
+        )
+    }
+    LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
         item(key = "header") { Header(state, tracks, onEvent, onAddSongs) }
         extraContent()
         itemsIndexed(tracks, key = { index, track -> "${track.id}#$index" }) { index, track ->
@@ -157,6 +175,9 @@ private fun TrackList(
                 artworkUri = track.uri,
                 artworkKey = "album:${track.albumId}",
                 highlighted = track.id == state.currentTrackId,
+                selecting = selection.active,
+                selected = track.id in selection,
+                onToggleSelect = { selection.toggle(track.id) },
                 onClick = { onEvent(DetailEvent.Play(track.id)) },
                 menu = { dismiss ->
                     TrackMenuItems(
@@ -170,6 +191,7 @@ private fun TrackList(
                 },
             )
         }
+    }
     }
 }
 

@@ -1,5 +1,6 @@
 package com.kingplay.feature.library.list
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,6 +43,8 @@ import com.kingplay.core.model.SongSort
 import com.kingplay.core.model.SongSortField
 import com.kingplay.core.ui.component.MediaRow
 import com.kingplay.core.ui.component.TrackMenuItems
+import com.kingplay.core.ui.component.rememberSelection
+import com.kingplay.feature.library.options.TrackSelectionBar
 import com.kingplay.core.ui.displayName
 import com.kingplay.core.ui.format.formatDuration
 import com.kingplay.core.ui.joinWithDot
@@ -57,6 +60,8 @@ fun SongsTab(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val songs = viewModel.songs.collectAsLazyPagingItems()
     CollectEffects(viewModel.effects, snackbar)
+    val selection = rememberSelection()
+    BackHandler(enabled = selection.active) { selection.clear() }
 
     val refresh = songs.loadState.refresh
     val showSkeleton = songs.itemCount == 0 && refresh is LoadState.Loading
@@ -64,12 +69,23 @@ fun SongsTab(
     val showError = songs.itemCount == 0 && refresh is LoadState.Error
 
     Column(modifier = modifier.fillMaxSize()) {
-        SongsToolbar(
-            sort = state.sort,
-            onSort = { viewModel.onEvent(SongsEvent.SortBy(it)) },
-            onShuffle = { viewModel.onEvent(SongsEvent.ShuffleAll) },
-            shuffleEnabled = songs.itemCount > 0,
-        )
+        if (selection.active) {
+            TrackSelectionBar(
+                selection = selection,
+                onSelectAll = { viewModel.allIds { selection.selectAll(it) } },
+                resolve = { done -> viewModel.tracksFor(selection.ids.toList(), done) },
+                onPlayNext = viewModel::playNext,
+                onAddToQueue = viewModel::addToQueue,
+                onToggleFavorite = viewModel::toggleFavorites,
+            )
+        } else {
+            SongsToolbar(
+                sort = state.sort,
+                onSort = { viewModel.onEvent(SongsEvent.SortBy(it)) },
+                onShuffle = { viewModel.onEvent(SongsEvent.ShuffleAll) },
+                shuffleEnabled = songs.itemCount > 0,
+            )
+        }
         when {
             showSkeleton -> KpSkeletonList(modifier = Modifier.fillMaxWidth())
             showError -> KpErrorState(onRetry = { songs.retry() })
@@ -91,6 +107,9 @@ fun SongsTab(
                             artworkUri = track.uri,
                             artworkKey = "album:${track.albumId}",
                             highlighted = track.id == state.currentTrackId,
+                            selecting = selection.active,
+                            selected = track.id in selection,
+                            onToggleSelect = { selection.toggle(track.id) },
                             onClick = { viewModel.onEvent(SongsEvent.Play(track.id)) },
                             menu = { dismiss ->
                                 TrackMenuItems(
