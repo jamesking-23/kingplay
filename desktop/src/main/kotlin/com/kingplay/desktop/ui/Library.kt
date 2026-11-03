@@ -156,7 +156,7 @@ private fun SongRow(
                 .clickable(enabled = canPlay || selecting, role = Role.Button, onClick = if (selecting) onSelect else onPlay)
                 .semantics(mergeDescendants = true) {
                     contentDescription = description
-                    selected = playing
+                    this.selected = playing || selected
                 },
             verticalAlignment = Alignment.CenterVertically,
         ) {
