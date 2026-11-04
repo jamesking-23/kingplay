@@ -767,7 +767,7 @@ private fun QueuePage(
                             .weight(1f)
                             .heightIn(min = 52.dp)
                             .clickable(role = Role.Button) { controller?.skipToQueueIndex(position) }
-                            .padding(vertical = 6.dp),
+                            .padding(vertical = 2.dp),
                         verticalArrangement = Arrangement.Center,
                     ) {
                         Text(
@@ -786,6 +786,7 @@ private fun QueuePage(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                     Box {

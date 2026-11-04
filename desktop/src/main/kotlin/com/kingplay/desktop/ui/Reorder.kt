@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 
 /** Rows that can be dragged are all this tall, so the drop position is plain arithmetic. */
-val REORDER_ROW_HEIGHT = 56.dp
+val REORDER_ROW_HEIGHT = 72.dp
 
 /** What a row needs to be reorderable: where it is, how many rows there are, and what to do on a drop. */
 class ReorderSpec(val position: Int, val count: Int, val onMove: (from: Int, to: Int) -> Unit)
