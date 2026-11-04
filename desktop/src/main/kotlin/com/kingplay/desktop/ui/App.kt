@@ -108,6 +108,8 @@ private sealed interface Page {
 
     data object Queue : Page
 
+    data object NowPlaying : Page
+
     data object Lyrics : Page
 
     data object Equalizer : Page
@@ -155,6 +157,7 @@ fun App(
     val playback by (app.controller?.state ?: idle).collectAsState()
 
     var page by remember { mutableStateOf<Page>(Page.Songs) }
+    var pageBeforePlayer by remember { mutableStateOf<Page>(Page.Songs) }
     var query by remember { mutableStateOf("") }
     var nameDialog by remember { mutableStateOf<NameDialogState?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
@@ -293,6 +296,15 @@ fun App(
                             initialVolumePercent = settings.volumePercent,
                             onVolumeChange = app::setVolume,
                             onQueue = { page = Page.Queue },
+                            onOpen = {
+                                // Clicking the bar again closes the view and returns to where the person was.
+                                if (page is Page.NowPlaying) {
+                                    page = pageBeforePlayer
+                                } else {
+                                    pageBeforePlayer = page
+                                    page = Page.NowPlaying
+                                }
+                            },
                         )
                     }
                 }
@@ -472,6 +484,15 @@ private fun PageContent(
             onNotice = onNotice,
         )
         Page.Queue -> QueuePage(app, index, playback, onDialog)
+        Page.NowPlaying -> NowPlayingPage(
+            track = currentId?.let(index::get),
+            playback = playback,
+            favorite = currentId != null && currentId in actions.favorites,
+            onToggleFavorite = { currentId?.let(actions.toggleFavorite) },
+            onBack = { onPage(Page.Songs) },
+            onLyrics = { onPage(Page.Lyrics) },
+            onQueue = { onPage(Page.Queue) },
+        )
         Page.Lyrics -> LyricsPage(
             app = app,
             track = currentId?.let(index::get),

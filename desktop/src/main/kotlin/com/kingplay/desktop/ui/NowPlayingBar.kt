@@ -1,5 +1,6 @@
 package com.kingplay.desktop.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,14 +52,23 @@ fun NowPlayingBar(
     onVolumeChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
     onQueue: (() -> Unit)? = null,
+    onOpen: (() -> Unit)? = null,
 ) {
     var volume by remember { mutableFloatStateOf(initialVolumePercent.toFloat() / PERCENT) }
     var dragging by remember { mutableStateOf<Float?>(null) }
     val duration = state.durationMs.coerceAtLeast(1)
     val shownPosition = dragging ?: (state.positionMs.toFloat() / duration).coerceIn(0f, 1f)
 
+    // Clicking any empty part of the bar opens the full now-playing view; the buttons and sliders keep their own clicks.
+    val open = Modifier.fillMaxWidth().let { base ->
+        if (onOpen != null) {
+            base.clickable(role = Role.Button, onClickLabel = "Open the now playing view", onClick = onOpen)
+        } else {
+            base
+        }
+    }
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.then(open),
         color = MaterialTheme.colorScheme.surfaceVariant,
         tonalElevation = 3.dp,
     ) {
