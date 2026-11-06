@@ -444,7 +444,7 @@ fun VideoWindow(
                         Text(
                             when {
                                 abLoop.active -> "A–B ${formatTime(abLoop.start ?: 0L)} to ${formatTime(abLoop.end ?: 0L)}: restart"
-                                abLoop.start != null -> "Mark end of A–B (A at ${formatTime(abLoop.start)})"
+                                abLoop.start != null -> "Mark end of A–B (A at ${formatTime(abLoop.start ?: 0L)})"
                                 else -> "Mark start of A–B"
                             },
                         )
