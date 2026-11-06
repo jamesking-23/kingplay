@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Fullscreen
@@ -23,7 +25,9 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -78,7 +82,7 @@ import kotlinx.coroutines.delay
 import uk.co.caprica.vlcj.player.base.State
 import uk.co.caprica.vlcj.player.component.EmbeddedMediaPlayerComponent
 
-private enum class TrackPanel { Subtitles, Audio, Picture, Speed, Sync, Tools }
+private enum class TrackPanel { Subtitles, Audio, Aspect, Crop, Speed, Sync, Tools }
 
 private const val SKIP_MS = 10_000L
 private const val POLL_MS = 500L
@@ -384,6 +388,88 @@ fun VideoWindow(
         }
     }
 
+    // Each option button opens a small popup beside it; picking an entry applies it and the popup goes away.
+    val menus: @Composable ColumnScope.(TrackPanel) -> Unit = { which ->
+        when (which) {
+            TrackPanel.Subtitles, TrackPanel.Audio -> {
+                val subtitles = which == TrackPanel.Subtitles
+                if (tracks.first.isEmpty()) {
+                    DropdownMenuItem(text = { Text("None found") }, onClick = {}, enabled = false)
+                }
+                tracks.first.forEach { choice ->
+                    ChoiceItem(choice.label.ifBlank { "Track ${choice.id}" }, choice.id == tracks.second) {
+                        if (subtitles) player.subpictures().setTrack(choice.id) else player.audio().setTrack(choice.id)
+                        tracks = tracks.first to choice.id
+                        panel = null
+                    }
+                }
+                if (subtitles) {
+                    HorizontalDivider()
+                    DropdownMenuItem(text = { Text("Add subtitle file…") }, onClick = {
+                        panel = null
+                        chooseSubtitleFile()?.let { file -> player.subpictures().setSubTitleFile(file.absolutePath) }
+                    })
+                }
+            }
+            TrackPanel.Aspect -> AspectRatios.forEachIndexed { i, shape ->
+                ChoiceItem(shape.label, i == aspect) {
+                    setAspect(i)
+                    panel = null
+                }
+            }
+            TrackPanel.Crop -> CropShapes.forEachIndexed { i, shape ->
+                ChoiceItem(shape.label, i == crop) {
+                    setCrop(i)
+                    panel = null
+                }
+            }
+            TrackPanel.Speed -> PlaybackSpeeds.forEach { speed ->
+                ChoiceItem(formatRate(speed), kotlin.math.abs(speed - rate) < SPEED_EPSILON) {
+                    setRate(speed)
+                    panel = null
+                }
+            }
+            TrackPanel.Sync -> Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) {
+                DelayRow("Subtitles (H / J)", subDelayMs, ::setSubDelay)
+                DelayRow("Audio (G / L)", audioDelayMs, ::setAudioDelay)
+                TextButton(onClick = { panel = null }, modifier = Modifier.align(Alignment.End)) { Text("Done") }
+            }
+            TrackPanel.Tools -> {
+                ChoiceItem("Repeat this video (R)", looping) {
+                    setLooping(!looping)
+                    panel = null
+                }
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            when {
+                                abLoop.active -> "A–B ${formatTime(abLoop.start ?: 0L)} to ${formatTime(abLoop.end ?: 0L)}: restart"
+                                abLoop.start != null -> "Mark end of A–B (A at ${formatTime(abLoop.start)})"
+                                else -> "Mark start of A–B"
+                            },
+                        )
+                    },
+                    onClick = {
+                        abLoop = if (abLoop.active) AbLoop(start = player.status().time()) else abLoop.mark(player.status().time())
+                        panel = null
+                    },
+                )
+                DropdownMenuItem(text = { Text("Clear A–B") }, enabled = abLoop.start != null, onClick = {
+                    abLoop = AbLoop()
+                    panel = null
+                })
+                DropdownMenuItem(text = { Text("Next frame (E)") }, onClick = {
+                    panel = null
+                    execute(VideoCommand.NextFrame)
+                })
+                DropdownMenuItem(text = { Text("Screenshot (S)") }, onClick = {
+                    panel = null
+                    snapshot()
+                })
+            }
+        }
+    }
+
     Window(
         onCloseRequest = onClose,
         title = video.title,
@@ -477,64 +563,18 @@ fun VideoWindow(
                             )
                         }
                     }
-                    panel?.takeIf { it == TrackPanel.Subtitles || it == TrackPanel.Audio }?.let { which ->
-                        TrackStrip(
-                            title = if (which == TrackPanel.Subtitles) "Subtitles" else "Audio track",
-                            choices = tracks.first,
-                            selectedId = tracks.second,
-                            onPick = { id ->
-                                if (which == TrackPanel.Subtitles) {
-                                    player.subpictures().setTrack(id)
-                                } else {
-                                    player.audio().setTrack(id)
-                                }
-                                tracks = tracks.first to id
-                            },
-                            onAddFile = if (which == TrackPanel.Subtitles) {
-                                {
-                                    chooseSubtitleFile()?.let { file ->
-                                        player.subpictures().setSubTitleFile(file.absolutePath)
-                                    }
-                                }
-                            } else {
-                                null
-                            },
-                        )
-                    }
-                    when (panel) {
-                        TrackPanel.Picture -> ChoiceStrip("Aspect ratio", AspectRatios.map { it.label }, aspect, ::setAspect) {
-                            ChoiceRow("Crop", CropShapes.map { it.label }, crop, ::setCrop)
-                        }
-                        TrackPanel.Speed -> ChoiceStrip(
-                            "Speed",
-                            PlaybackSpeeds.map { formatRate(it) },
-                            PlaybackSpeeds.indexOfFirst { kotlin.math.abs(it - rate) < SPEED_EPSILON },
-                            { setRate(PlaybackSpeeds[it]) },
-                        )
-                        TrackPanel.Sync -> SyncStrip(
-                            subDelayMs = subDelayMs,
-                            audioDelayMs = audioDelayMs,
-                            onSubtitles = ::setSubDelay,
-                            onAudio = ::setAudioDelay,
-                        )
-                        TrackPanel.Tools -> ToolsStrip(
-                            looping = looping,
-                            abLoop = abLoop,
-                            onLoop = { setLooping(it) },
-                            onMarkAb = { abLoop = abLoop.mark(player.status().time()) },
-                            onClearAb = { abLoop = AbLoop() },
-                            onSnapshot = ::snapshot,
-                            onFrame = { execute(VideoCommand.NextFrame) },
-                        )
-                        else -> Unit
-                    }
                     Controls(
                         muted = muted,
                         onMute = { execute(VideoCommand.ToggleMute) },
-                        onPicture = { panel = if (panel == TrackPanel.Picture) null else TrackPanel.Picture },
-                        onSpeedPanel = { panel = if (panel == TrackPanel.Speed) null else TrackPanel.Speed },
-                        onSync = { panel = if (panel == TrackPanel.Sync) null else TrackPanel.Sync },
-                        onTools = { panel = if (panel == TrackPanel.Tools) null else TrackPanel.Tools },
+                        panel = panel,
+                        onPanel = { which ->
+                            when (which) {
+                                TrackPanel.Subtitles, TrackPanel.Audio -> showTracks(which)
+                                else -> panel = which
+                            }
+                        },
+                        onClosePanel = { panel = null },
+                        menus = menus,
                         playing = playing,
                         position = dragging?.let { (it * length).toLong() } ?: position,
                         length = length,
@@ -549,8 +589,6 @@ fun VideoWindow(
                             dragging = null
                         },
                         onVolume = { setVolume(it.toInt()) },
-                        onSubtitles = { showTracks(TrackPanel.Subtitles) },
-                        onAudio = { showTracks(TrackPanel.Audio) },
                         onFullscreen = ::toggleFullscreen,
                         onClose = onClose,
                         onNext = onNext,
@@ -564,136 +602,40 @@ fun VideoWindow(
 }
 
 @Composable
-private fun TrackStrip(
-    title: String,
-    choices: List<TrackChoice>,
-    selectedId: Int,
-    onPick: (Int) -> Unit,
-    onAddFile: (() -> Unit)?,
-) {
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(title, style = MaterialTheme.typography.labelLarge)
-            if (choices.isEmpty()) Text("None found", style = MaterialTheme.typography.bodySmall)
-            choices.forEach { choice ->
-                FilterChip(
-                    selected = choice.id == selectedId,
-                    onClick = { onPick(choice.id) },
-                    label = { Text(choice.label.ifBlank { "Track ${choice.id}" }) },
-                )
-            }
-            if (onAddFile != null) TextButton(onClick = onAddFile) { Text("Add subtitle file…") }
-        }
-    }
-}
-
-@Composable
-private fun ChoiceRow(title: String, labels: List<String>, selected: Int, onPick: (Int) -> Unit) {
-    Row(
-        modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(title, style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(CHOICE_TITLE_WIDTH))
-        labels.forEachIndexed { index, label ->
-            FilterChip(selected = index == selected, onClick = { onPick(index) }, label = { Text(label) })
-        }
-    }
-}
-
-@Composable
-private fun ChoiceStrip(
-    title: String,
-    labels: List<String>,
-    selected: Int,
-    onPick: (Int) -> Unit,
-    extra: @Composable () -> Unit = {},
-) {
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
-        Column {
-            ChoiceRow(title, labels, selected, onPick)
-            extra()
-        }
-    }
+private fun ChoiceItem(label: String, selected: Boolean, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = { Text(label) },
+        leadingIcon = if (selected) {
+            { Icon(Icons.Filled.Check, contentDescription = "Selected") }
+        } else {
+            null
+        },
+        onClick = onClick,
+    )
 }
 
 @Composable
 private fun DelayRow(title: String, delayMs: Int, onChange: (Int) -> Unit) {
-    Row(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(title, style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(CHOICE_TITLE_WIDTH))
-        TextButton(onClick = { onChange(delayMs - com.kingplay.desktop.video.DELAY_STEP_MS) }) { Text("Earlier  −0.05 s") }
-        Text(formatDelay(delayMs), style = MaterialTheme.typography.bodyMedium)
-        TextButton(onClick = { onChange(delayMs + com.kingplay.desktop.video.DELAY_STEP_MS) }) { Text("Later  +0.05 s") }
-        TextButton(onClick = { onChange(0) }, enabled = delayMs != 0) { Text("Reset") }
-    }
-}
-
-@Composable
-private fun SyncStrip(
-    subDelayMs: Int,
-    audioDelayMs: Int,
-    onSubtitles: (Int) -> Unit,
-    onAudio: (Int) -> Unit,
-) {
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
-        Column {
-            DelayRow("Subtitles (H / J)", subDelayMs, onSubtitles)
-            DelayRow("Audio (G / L)", audioDelayMs, onAudio)
+    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+        Text(title, style = MaterialTheme.typography.labelLarge)
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = { onChange(delayMs - com.kingplay.desktop.video.DELAY_STEP_MS) }) { Text("Earlier") }
+            Text(formatDelay(delayMs), style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = { onChange(delayMs + com.kingplay.desktop.video.DELAY_STEP_MS) }) { Text("Later") }
+            TextButton(onClick = { onChange(0) }, enabled = delayMs != 0) { Text("Reset") }
         }
     }
 }
 
-@Composable
-private fun ToolsStrip(
-    looping: Boolean,
-    abLoop: AbLoop,
-    onLoop: (Boolean) -> Unit,
-    onMarkAb: () -> Unit,
-    onClearAb: () -> Unit,
-    onSnapshot: () -> Unit,
-    onFrame: () -> Unit,
-) {
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 2.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            FilterChip(selected = looping, onClick = { onLoop(!looping) }, label = { Text("Repeat this video (R)") })
-            TextButton(onClick = onMarkAb) {
-                Text(
-                    when {
-                        abLoop.active -> "A–B ${formatTime(abLoop.start ?: 0L)} to ${formatTime(abLoop.end ?: 0L)}"
-                        abLoop.start != null -> "Mark end of A–B (A at ${formatTime(abLoop.start)})"
-                        else -> "Mark start of A–B"
-                    },
-                )
-            }
-            TextButton(onClick = onClearAb, enabled = abLoop.start != null) { Text("Clear A–B") }
-            TextButton(onClick = onFrame) { Text("Next frame (E)") }
-            TextButton(onClick = onSnapshot) { Text("Screenshot (S)") }
-        }
-    }
-}
-
-private val CHOICE_TITLE_WIDTH = 140.dp
 
 @Composable
 private fun Controls(
     muted: Boolean,
     onMute: () -> Unit,
-    onPicture: () -> Unit,
-    onSpeedPanel: () -> Unit,
-    onSync: () -> Unit,
-    onTools: () -> Unit,
+    panel: TrackPanel?,
+    onPanel: (TrackPanel) -> Unit,
+    onClosePanel: () -> Unit,
+    menus: @Composable ColumnScope.(TrackPanel) -> Unit,
     playing: Boolean,
     position: Long,
     length: Long,
@@ -705,8 +647,6 @@ private fun Controls(
     onSeekDrag: (Float) -> Unit,
     onSeekDone: () -> Unit,
     onVolume: (Float) -> Unit,
-    onSubtitles: () -> Unit,
-    onAudio: () -> Unit,
     onFullscreen: () -> Unit,
     onClose: () -> Unit,
     onNext: (() -> Unit)?,
@@ -754,12 +694,20 @@ private fun Controls(
                     IconButton(onClick = onNext) { Icon(Icons.Filled.SkipNext, contentDescription = "Next video") }
                 }
                 Row(modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
-                    TextButton(onClick = onSubtitles) { Text("Subtitles") }
-                    TextButton(onClick = onAudio) { Text("Audio") }
-                    TextButton(onClick = onPicture) { Text("Picture") }
-                    TextButton(onClick = onSpeedPanel) { Text("Speed") }
-                    TextButton(onClick = onSync) { Text("Sync") }
-                    TextButton(onClick = onTools) { Text("Tools") }
+                    listOf(
+                        "Subtitles" to TrackPanel.Subtitles,
+                        "Audio" to TrackPanel.Audio,
+                        "Aspect" to TrackPanel.Aspect,
+                        "Crop" to TrackPanel.Crop,
+                        "Speed" to TrackPanel.Speed,
+                        "Sync" to TrackPanel.Sync,
+                        "Tools" to TrackPanel.Tools,
+                    ).forEach { (label, which) ->
+                        Box {
+                            TextButton(onClick = { onPanel(which) }, contentPadding = OPTION_PADDING) { Text(label) }
+                            DropdownMenu(expanded = panel == which, onDismissRequest = onClosePanel) { menus(which) }
+                        }
+                    }
                 }
                 IconButton(onClick = onMute) {
                     Icon(
@@ -787,5 +735,6 @@ private fun Controls(
 
 private val WINDOW_WIDTH = 960.dp
 private val WINDOW_HEIGHT = 600.dp
-private val VOLUME_WIDTH = 120.dp
+private val VOLUME_WIDTH = 100.dp
+private val OPTION_PADDING = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 6.dp)
 private const val MS_PER_SECOND = 1000.0

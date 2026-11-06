@@ -363,6 +363,7 @@ private fun Rail(page: Page, onPage: (Page) -> Unit) {
             onPage(Page.Artists)
         }
         RailItem("Queue", Icons.AutoMirrored.Filled.QueueMusic, page is Page.Queue) { onPage(Page.Queue) }
+        RailItem("Now playing", Icons.Filled.PlayArrow, page is Page.NowPlaying) { onPage(Page.NowPlaying) }
         RailItem("Lyrics", Icons.Filled.Lyrics, page is Page.Lyrics) { onPage(Page.Lyrics) }
         RailItem("Equalizer", Icons.Filled.Equalizer, page is Page.Equalizer) { onPage(Page.Equalizer) }
         RailItem("Videos", Icons.Filled.Movie, page is Page.Videos) { onPage(Page.Videos) }

@@ -5,10 +5,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +28,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -72,7 +76,8 @@ fun NowPlayingBar(
         color = MaterialTheme.colorScheme.surfaceVariant,
         tonalElevation = 3.dp,
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(formatTime((shownPosition * duration).toLong()), style = MaterialTheme.typography.labelMedium)
                 Slider(
@@ -85,6 +90,7 @@ fun NowPlayingBar(
                     enabled = state.hasMedia,
                     modifier = Modifier
                         .weight(1f)
+                        .height(SEEK_HEIGHT)
                         .padding(horizontal = 12.dp)
                         .semantics { contentDescription = "Seek" },
                 )
@@ -148,6 +154,11 @@ fun NowPlayingBar(
                             Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = "Show queue")
                         }
                     }
+                    if (onOpen != null) {
+                        IconButton(onClick = onOpen) {
+                            Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "Open the now playing view")
+                        }
+                    }
                 }
                 Row(
                     modifier = Modifier.weight(1f),
@@ -162,12 +173,14 @@ fun NowPlayingBar(
                             onVolumeChange((it * PERCENT).toInt())
                         },
                         modifier = Modifier
-                            .width(120.dp)
+                            .width(110.dp)
+                            .height(SEEK_HEIGHT)
                             .padding(start = 8.dp)
                             .semantics { contentDescription = "Volume" },
                     )
                 }
             }
+        }
         }
     }
 }
@@ -184,4 +197,5 @@ private fun ToggleIcon(icon: ImageVector, description: String, on: Boolean, onCl
 }
 
 private const val PERCENT = 100
-private val COVER_SIZE = 56.dp
+private val COVER_SIZE = 44.dp
+private val SEEK_HEIGHT = 28.dp
