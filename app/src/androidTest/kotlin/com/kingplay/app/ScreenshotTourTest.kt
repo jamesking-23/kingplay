@@ -266,7 +266,12 @@ class ScreenshotTourTest {
                 (find(root(), "Smoke FLAC") ?: error("no song row")).getBoundsInScreen(r)
                 inst.uiAutomation.executeShellCommand("input swipe ${r.centerX()} ${r.centerY()} ${r.centerX()} ${r.centerY()} 1000").close()
                 Thread.sleep(800)
-                shot("21_long_press_menu")
+                shot("21_long_press_selecting")
+                // Selecting: a tap on another row ticks it too, then the bar menu applies to both.
+                click("Smoke OGG")
+                shot("21b_two_selected")
+                click("Actions for selected items")
+                shot("21c_selection_menu")
                 click("Add to playlist")
                 shot("22_add_to_playlist")
             }
