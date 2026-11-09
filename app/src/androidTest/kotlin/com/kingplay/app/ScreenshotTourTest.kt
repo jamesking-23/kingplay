@@ -274,6 +274,7 @@ class ScreenshotTourTest {
                 shot("21c_selection_menu")
                 click("Add to playlist")
                 shot("22_add_to_playlist")
+                back()
             }
             step("playlist flow") {
                 openUi("KING_GLASS")
