@@ -74,6 +74,16 @@ class ScreenshotTourTest {
         return null
     }
 
+    /** A node whose text or description is exactly [needle], so "Add songs" is the button and not the sentence. */
+    private fun findExact(n: AccessibilityNodeInfo?, needle: String): AccessibilityNodeInfo? {
+        if (n == null) return null
+        if (n.text?.toString().equals(needle, ignoreCase = true) ||
+            n.contentDescription?.toString().equals(needle, ignoreCase = true)
+        ) return n
+        for (i in 0 until n.childCount) findExact(n.getChild(i), needle)?.let { return it }
+        return null
+    }
+
     /** The tallest scrollable node: the main vertical list, not a horizontal chip row. */
     private fun findScrollable(n: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
         var best: AccessibilityNodeInfo? = null
@@ -93,7 +103,7 @@ class ScreenshotTourTest {
 
     /** Clicks the node matching [needle], scrolling the screen down to find it when it is off-screen. */
     private fun click(needle: String) {
-        var node = find(root(), needle)
+        var node = findExact(root(), needle) ?: find(root(), needle)
         if (node == null) {
             // Back to the top, then down in steps, so a card between two steps is never skipped.
             repeat(8) {
