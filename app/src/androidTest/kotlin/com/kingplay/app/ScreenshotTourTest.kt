@@ -286,6 +286,7 @@ class ScreenshotTourTest {
                 click("Create")
                 shot("51_new_playlist_opened")
                 click("Add songs")
+                Thread.sleep(1500)
                 shot("52_add_songs_picker")
                 click("Smoke FLAC")
                 click("Smoke OGG")
